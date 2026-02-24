@@ -1,0 +1,386 @@
+﻿Specs Produit — Site de Démo Lemon Learning
+Description du projet
+Le but de ce projet est de créer des environnements simulés qui serviront à Lemon Learning (lemonlearning.com), pour 2 buts :
+* Avoir des environnements stables pour permettre aux commerciaux de faire des démos
+* Ouvrir des environnements de démos pour les prospects et pour les clients
+À ces environnements sera intégré le player Lemon Learning (via intégration JavaScript injecté par un tag manager).
+Les outils simulés (Salesforce, SAP, etc.) sont gérés et générés exclusivement par les équipes internes Lemon Learning, jamais par le client ou le prospect. 
+Le code est généré et maintenu par IA (Claude Code principalement). Le projet doit rester lisible, modulaire et maintenable par IA. 
+________________
+
+
+Stack technique
+Couche
+	Choix
+	Justification
+	Frontend
+	Svelte + SvelteKit
+	Code concis, proche du HTML, moins d'erreurs IA que React/Vue
+	Backend
+	Express.js (Node)
+	Simple, même langage que le front, suffisant pour le volume
+	BDD
+	SQLite + Drizzle ORM
+	Zéro config, un fichier, Drizzle typé et propre
+	Extension
+	Chrome Manifest V3
+	Standard actuel Chrome extensions
+	Hébergement
+	Railway
+	Zéro DevOps, déploiement auto, volumes persistants
+	CI/CD
+	GitHub Actions
+	Lint + tests → build → deploy sur push
+	Monitoring
+	Logs Railway + Better Stack (free tier)
+	Uptime check, alertes email
+	Tests
+	Vitest (unit) + Supertest (API) + Playwright (E2E, plus tard)
+	Vitest natif SvelteKit
+	________________
+
+
+Langues 
+Du code et des commentaires : anglais 
+De l’app pour les admin: multilingue français, anglais, allemand, espagnol 
+
+
+Architecture
+Monorepo
+/
+├── frontend/          # SvelteKit — admin + site de démo
+├── backend/           # Express.js — API REST
+├── extension/         # Chrome Manifest V3 — capture
+├── shared/            # Types partagés, constantes
+├── .github/workflows/ # CI/CD
+└── README.md
+Stockage
+* SQLite (via Drizzle) : métadonnées (users, rôles, projets, versions, logs, config obfuscation, liens entre pages, assignations)
+* Filesystem (volume Railway) : fichiers HTML capturés, stockés tels quels, un fichier par page
+* Si le volume dépasse 1 Go : migration vers Cloudflare R2
+Flux de données
+1. L'extension capture une page → condensation HTML+CSS+JS en un fichier unique → upload via API REST vers le backend
+2. Le backend stocke le fichier sur disque, enregistre les métadonnées en SQLite
+3. Quand un utilisateur accède à une page de démo, le backend lit le fichier HTML, applique les règles d'obfuscation (rechercher/remplacer), réécrit les liens internes vers les autres pages capturées, et sert le résultat
+4. Le tag manager injecte le JS Lemon Learning par-dessus
+Hébergement Railway
+* 2 services : frontend (SvelteKit) + backend (Express)
+* 1 volume persistant attaché au backend (SQLite + fichiers HTML)
+* 2 environnements : dev (branche dev) + prod (branche main)
+* Déploiement auto sur push
+DevOps
+* Développement et tests en local (SvelteKit dev server + Express local + SQLite fichier local)
+* Push sur dev → déploiement staging automatique
+* Merge sur main → déploiement prod automatique
+* Extension Chrome chargée en mode développeur localement, pointée vers backend local ou staging
+* Backups : le back up sera géré par un dev ops de lemon plus tard 
+________________
+
+
+Gestion des URLs
+L'objectif est que les URLs aient l'air d'un vrai outil. Exemple : salesforce.xxxx.com où xxxx est un domaine très court qui ressemble à un sous-domaine d'infrastructure.
+Chaque outil simulé a son sous-domaine générer automatisment (même url que la capture) mais editable . La racine est courte. Les URLs longues type Salesforce sont supportées.
+Les sous urls sont identiques à la source ( seul la racine est différent bien sûr )
+________________
+
+
+Composants fonctionnels
+🌐 Site Client / Démo
+Intégration Lemon Learning
+* Intégration JS Lemon Learning via un Tag Manager dans le back office 
+* Configuration globale et par projet/client
+Contenu de démo
+* Exemple de chaque contenu sur chaque outil
+* Process emblématique à montrer
+Authentification 
+Sso google pour les admin et l’extension et les commerciaux 
+Mail et mot de passe pour les prospects 
+
+
+Reproduction des performance de l’application aspirée 
+* Monitoring temps de chargement 
+* Monitoring du comportement de chargement des pages (ordre, JS, transitions)
+* Permets de donner un même look and feel et de ne pas être trop rapide 
+* Editable dans l’admin 
+Obfuscation
+* Manuelle : sélection d'éléments à obfusquer/changer (images, textes). Objetif : ne pas faire apparaître le nom des clients 
+* Automatique : système rechercher/remplacer configurable dans le back-office. Exemple : masquer le nom du client partout. Les termes à retraiter sont configurés dans l'admin.
+* Persistante : appliquée sur les données stockées (DOM capturé), pas juste au rendu. 
+Données fictives
+* Reproduction des données déjà présentes dans le logiciel source
+* OU création de nouvelles données via analyse IA contextuelle : l'IA détecte le type de champ (adresse, nom, email, société) et le pays/langue automatiquement, puis génère des données cohérentes (adresses françaises → adresses françaises, noms de sociétés → noms de sociétés)
+* Clé API Claude intégrée côté admin pour cette génération IA ( et d’autre si besoin). Gérer par le propriétaire de l’appli. 
+UI utilisateur site de démo 
+* Bandeau discret en haut à droite
+* Toutes les fonctionnalités tiennent en quelques icônes avec raccourcis rapides
+* Au survol/clic : infobulles avec le détail de chaque fonctionnalité et plus d’options 
+Assignation
+* Une démo peut être assignée à un utilisateur spécifique (client/prospect)
+* Le prospect reçoit un lien + un mot de passe
+________________
+
+
+⚙️ Admin
+Arbre de visualisation
+* Vue arborescente de tout ce qui a été produit (écrans capturés, guides, contenus)
+* Organisable par arborescence réelle du site OU par guide/parcours
+* Les projets de capture sont regroupés par outil
+Projets & Versions
+* Chaque version a une dénomination : "à jour", "test", "dépréciée"
+* Les versions "à jour" s'affichent en priorité ( case nécessaire à cocher pour afficher les autres) 
+* Chaque version affiche son auteur (nom + photo de profil)
+* On peut choisir sur quelle version faire sa démo en tant que commercial 
+* Les versions peuvent être associé à des langues ( pas de limitations), on peut faire une traduction automatique ou des captures dans plusieurs langues. 
+Accès & Rôles
+Rôle
+	Accès
+	Client / Prospect
+	Accès site de démo uniquement (via lien + mot de passe)
+	Commerciaux
+	Admin, test, live edit (textes uniquement), vision complète des démos faites. Gestion des comptes clients. 
+	Debug / Admin
+	comme commerciaux avec des fonctionnalités technique en plus. Gestion des admin. 
+	* Profils utilisateurs avec photo
+* Visibilité sur qui fait quoi, qui est auteur de quoi
+Configuration
+* Changement d'outil simulé (géré en interne uniquement)
+* Règles d'obfuscation automatique (termes à retraiter)
+Analytics & Logs
+* Nombre de fois que chaque guide a été joué
+* Temps passé par personne (données individualisées)
+* Logs organisés par session OU par applicatif
+* Le commercial peut filtrer par client ou voir une vue générale agrégée
+* Clic sur une session → détail complet du parcours et des temps passés 
+Demandes de mise à jour
+* Un commercial peut signaler une demande de mise à jour sur une page donnée
+* Commentaire explicatif joint à la demande
+* Vue centralisée de toutes les demandes (qui, quand, quoi)
+________________
+
+
+📸 Extension de Capture
+Format de capture
+* Capture du DOM complet : HTML + CSS + JS condensés en un seul fichier
+* Le JavaScript est adapté pour tout rendre statique et reproduire fidèlement le comportement. 
+* Les captures doivent être autosuffisantes, le plus possible en tout cas 
+* Données réutilisables stockées en BDD (pas en localStorage)
+* Gestion fine des liens entre les pages capturées
+Envoi et progression
+* Upload incrémental : chaque page est envoyée dès qu'elle est capturée (pas en batch), même si backlog possible pour ne pas ralentir la navigation. 
+* Barre de progression visible dans l'extension
+* Nombre de pages capturées / estimées
+* Statut par page : en cours, envoyé, erreur
+* Retry automatique en cas d'échec réseau
+Organisation
+* Pages organisables par guide
+* Possibilité de capturer plus de pages que nécessaire pour un guide (réalisme)
+* Les pages en surplus sont présentes sans distinction dans l'arbre
+* Projets de capture regroupés par outil
+3 modes de capture (mixables, du plus manuel au plus étendu)
+1. Capture libre — navigation manuelle, capture à la volée
+2. Capture pendant lecture — jouer un guide Lemon Learning, capturer les pages à chaque étape
+3. Capture automatique — jouer automatiquement tous les guides, capturer les pages associées
+Les trois modes se combinent entre eux. Exemple : capture auto sur tous les guides, puis complétion manuelle en capture libre pour les pages non couvertes.
+Algorithme de profondeur
+* Avant de lancer une capture, on définit un nombre de pages cible
+* L'algorithme avance par profondeur progressive
+* L'utilisateur peut naviguer manuellement sur plusieurs pages pour définir des "zones d'intérêt" et des zones off limites. 
+* Dans ces zones, la profondeur de capture est plus importante ( réglable ) 
+* L'algorithme évite les boucles et doublons
+* Prise en compte des effets JavaScript : modales, dropdowns, chargements asynchrones, SPA routing
+Connexion
+* L'utilisateur se connecte directement pendant la capture sur l'outil source
+* Pas de système de credentials automatique nécessaire
+________________
+
+
+💡 Fonctionnalités supplémentaires
+* Versioning des démos : snapshot d'un état complet de la démo pour y revenir
+* Mode live edit : modifier les textes directement dans la démo sans toucher au code (admins + commerciaux uniquement)
+* Générateur de données fictives : reproduction ou création via IA contextuelle
+* Duplicate & fork : cloner un environnement de démo pour un nouveau prospect en un clic
+________________
+
+
+Schéma de base de données (Drizzle / SQLite)
+Tables principales
+users
+  id, name, email, password_hash, role (admin|commercial|client), avatar_url, created_at
+
+
+projects
+  id, name, tool_name (salesforce|sap|...), subdomain, created_at
+
+
+versions
+  id, project_id, name, status (active|test|deprecated), author_id, created_at
+
+
+pages
+  id, version_id, url_source, title, file_path, capture_mode (free|guided|auto), created_at
+
+
+page_links
+  id, source_page_id, target_page_id, original_href
+
+
+guides
+  id, version_id, name, created_at
+
+
+guide_pages
+  id, guide_id, page_id, step_order
+
+
+obfuscation_rules
+  id, project_id, search_term, replace_term, is_active
+
+
+demo_assignments
+  id, version_id, user_id, access_token, password_hash, expires_at
+
+
+sessions
+  id, user_id, version_id, started_at, ended_at
+
+
+session_events
+  id, session_id, page_id, event_type (page_view|guide_play), timestamp, duration_seconds
+
+
+update_requests
+  id, page_id, requested_by, comment, status (pending|done), created_at
+
+
+capture_jobs
+  id, version_id, mode (free|guided|auto), target_page_count, pages_captured, status (running|done|error), started_at
+
+
+interest_zones
+  id, capture_job_id, url_pattern, depth_multiplier
+
+________________
+API endpoints (Express)
+Auth
+* POST /api/auth/login — login, retourne JWT
+* POST /api/auth/verify — vérifie token
+* POST /api/auth/demo-access — login prospect (token + password)
+Projects
+* GET /api/projects — liste des projets
+* POST /api/projects — créer un projet
+* GET /api/projects/:id — détail projet
+* PUT /api/projects/:id — modifier projet
+Versions
+* GET /api/projects/:id/versions — versions d'un projet
+* POST /api/projects/:id/versions — créer une version
+* PUT /api/versions/:id — modifier version (status, nom)
+* POST /api/versions/:id/duplicate — fork/clone
+Pages & Captures
+* POST /api/versions/:id/pages — upload d'une page capturée (multipart: fichier HTML + métadonnées)
+* GET /api/versions/:id/pages — liste des pages
+* GET /api/versions/:id/tree — arbre de visualisation
+* DELETE /api/pages/:id — supprimer une page
+Serving démo
+* GET /demo/:subdomain/* — sert une page de démo (applique obfuscation, réécrit liens)
+Obfuscation
+* GET /api/projects/:id/obfuscation — règles d'obfuscation
+* POST /api/projects/:id/obfuscation — ajouter une règle
+* PUT /api/obfuscation/:id — modifier une règle
+* DELETE /api/obfuscation/:id — supprimer une règle
+Assignments
+* GET /api/versions/:id/assignments — liste des assignations
+* POST /api/versions/:id/assignments — assigner un prospect
+* DELETE /api/assignments/:id — supprimer
+Analytics
+* GET /api/analytics/sessions — sessions filtrables (par user, par version, par date)
+* GET /api/analytics/sessions/:id — détail d'une session
+* GET /api/analytics/guides — stats par guide (nombre de plays)
+* GET /api/analytics/overview — vue agrégée
+Update requests
+* POST /api/pages/:id/update-request — signaler une demande
+* GET /api/update-requests — toutes les demandes
+* PUT /api/update-requests/:id — marquer comme traitée
+Capture jobs
+* POST /api/versions/:id/capture-jobs — lancer un job de capture
+* GET /api/capture-jobs/:id — statut du job
+* POST /api/capture-jobs/:id/interest-zones — définir zones d'intérêt
+Users
+* GET /api/users — liste
+* POST /api/users — créer
+* PUT /api/users/:id — modifier
+* DELETE /api/users/:id — supprimer
+________________
+
+
+Extension Chrome — Architecture
+Structure
+extension/
+├── manifest.json        # Manifest V3
+├── popup/               # UI popup (progression, contrôles)
+├── background/          # Service worker (gestion des jobs, communication API)
+├── content/             # Content script (injection DOM, capture)
+├── capture/
+│   ├── dom-capture.js   # Extraction DOM + CSS + JS → fichier unique
+│   ├── link-rewriter.js # Détection et mapping des liens
+│   ├── js-static.js     # Adaptation JS pour rendu statique
+│   └── depth-crawler.js # Algorithme de profondeur + zones d'intérêt
+└── api/
+    └── client.js        # Communication avec le backend (upload, progression, retry)
+Algorithme de capture (dom-capture.js)
+1. Capturer le DOM complet (document.documentElement.outerHTML)
+2. Inliner toutes les feuilles CSS (résoudre les <link> en <style>)
+3. Inliner le JS nécessaire, adapter pour rendu statique (désactiver les appels API, les timers, les event listeners de navigation)
+4. Condenser en un seul fichier HTML autonome
+5. Envoyer au backend via API
+Algorithme de profondeur (depth-crawler.js)
+1. L'utilisateur définit un nombre de pages cible et optionnellement des zones d'intérêt
+2. Crawler BFS (breadth-first) à partir de la page courante
+3. À chaque niveau de profondeur, prioriser les liens dans les zones d'intérêt
+4. Attendre le chargement complet (DOMContentLoaded + JS async) avant capture
+5. Détecter et gérer : SPA routing, modales, dropdowns, lazy loading
+6. S'arrêter quand le nombre de pages cible est atteint ou qu'il n'y a plus de liens à explorer
+7. Éviter les boucles (tracking des URLs déjà visitées, normalisation des URLs)
+________________
+
+
+Plan de développement phasé
+Phase 1 — Le cœur (2-3 semaines)
+* Setup monorepo, CI/CD, déploiement Railway
+* Backend Express + SQLite + Drizzle (tables: users, projects, versions, pages)
+* Extension : capture libre (DOM → fichier unique → upload)
+* Admin basique : arbre de visualisation, création projets/versions
+* Serving des pages capturées (GET /demo/:subdomain/*)
+Résultat : on peut capturer des pages et les servir.
+Phase 2 — L'usage (2-3 semaines)
+* Obfuscation manuelle + automatique (rechercher/remplacer)
+* Gestion des liens entre pages (réécriture au service)
+* Versioning (snapshot, status, auteur)
+* Rôles et accès (auth JWT, permissions par rôle)
+* Assignation de démos aux prospects (lien + mot de passe)
+Résultat : produit utilisable par les commerciaux.
+Phase 3 — L'automatisation (2-3 semaines)
+* Capture pendant lecture d'un guide
+* Capture automatique (tous les guides)
+* Algorithme de profondeur + zones d'intérêt
+* Suivi de progression dans l'extension (barre, statuts, retry)
+Résultat : capture à grande échelle.
+Phase 4 — Le polish (2-3 semaines)
+* Analytics et logs (sessions, événements, filtres, vue détail)
+* Données fictives via IA (détection type + génération contextuelle)
+* Live edit (modification textes in-place, admins + commerciaux)
+* Duplicate & fork de versions
+* Demandes de mise à jour (signalement, commentaires, vue centralisée)
+* UI polish : bandeau utilisateur, infobulles, raccourcis
+Résultat : produit complet.
+________________
+
+
+Conventions de code
+* Langue du code : anglais (variables, fonctions, commentaires, contexte )
+* Style : Prettier + ESLint
+* Commits : conventional commits (feat:, fix:, chore:)
+* Composants Svelte : un composant par fichier, nommage PascalCase
+* API : RESTful, réponses JSON, erreurs standardisées { error: string, code: number }
+* Tests : chaque fonction critique a un test Vitest associé
+* Convention de codage stricte respectant l’état de l’art 
+* Code destiné à être relu et édité par de l’IA
