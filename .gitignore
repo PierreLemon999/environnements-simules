@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.svelte-kit/
+build/
+
+# Database & uploads
+backend/data/app.db
+backend/data/app.db-shm
+backend/data/app.db-wal
+backend/data/uploads/
+
+# Logs
+phase-logs/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

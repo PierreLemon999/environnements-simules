@@ -1,0 +1,520 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { get, post, put, del } from '$lib/api';
+	import { toast } from '$lib/stores/toast';
+	import { Card, CardContent, CardHeader, CardTitle } from '$components/ui/card';
+	import { Button } from '$components/ui/button';
+	import { Badge } from '$components/ui/badge';
+	import { Input } from '$components/ui/input';
+	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
+	import {
+		Dialog,
+		DialogContent,
+		DialogHeader,
+		DialogTitle,
+		DialogDescription,
+		DialogFooter,
+	} from '$components/ui/dialog';
+	import {
+		EyeOff,
+		Plus,
+		Pencil,
+		Trash2,
+		ToggleLeft,
+		ToggleRight,
+		Eye,
+		AlertCircle,
+		Check,
+		X,
+	} from 'lucide-svelte';
+
+	interface Project {
+		id: string;
+		name: string;
+		toolName: string;
+	}
+
+	interface ObfuscationRule {
+		id: string;
+		projectId: string;
+		searchTerm: string;
+		replaceTerm: string;
+		isRegex: number;
+		isActive: number;
+		createdAt: string;
+	}
+
+	let projects: Project[] = $state([]);
+	let selectedProjectId = $state('');
+	let rules: ObfuscationRule[] = $state([]);
+	let loading = $state(true);
+	let rulesLoading = $state(false);
+	let activeTab = $state('auto');
+
+	// Inline add form
+	let showAddForm = $state(false);
+	let addSearchTerm = $state('');
+	let addReplaceTerm = $state('');
+	let addIsRegex = $state(false);
+	let addSubmitting = $state(false);
+	let addError = $state('');
+
+	// Edit dialog
+	let editDialogOpen = $state(false);
+	let editingRule: ObfuscationRule | null = $state(null);
+	let editSearchTerm = $state('');
+	let editReplaceTerm = $state('');
+	let editIsRegex = $state(false);
+	let editSubmitting = $state(false);
+	let editError = $state('');
+
+	// Delete dialog
+	let deleteDialogOpen = $state(false);
+	let deletingRule: ObfuscationRule | null = $state(null);
+	let deleteSubmitting = $state(false);
+
+	// Preview
+	let previewDialogOpen = $state(false);
+	let previewInput = $state('');
+	let previewOutput = $state('');
+	let previewLoading = $state(false);
+
+	let filteredRules = $derived(() => {
+		if (activeTab === 'auto') return rules.filter(r => !r.isRegex);
+		return rules.filter(r => r.isRegex);
+	});
+
+	let activeCount = $derived(rules.filter(r => r.isActive).length);
+
+	async function loadRules(projectId: string) {
+		if (!projectId) return;
+		rulesLoading = true;
+		try {
+			const res = await get<{ data: ObfuscationRule[] }>(`/projects/${projectId}/obfuscation`);
+			rules = res.data;
+		} catch (err) {
+			console.error('Failed to load obfuscation rules:', err);
+			rules = [];
+		} finally {
+			rulesLoading = false;
+		}
+	}
+
+	function handleProjectChange(e: Event) {
+		const value = (e.target as HTMLSelectElement).value;
+		selectedProjectId = value;
+		loadRules(value);
+	}
+
+	// Add rule
+	async function handleAdd() {
+		if (!addSearchTerm.trim() || !addReplaceTerm.trim()) {
+			addError = 'Les deux champs sont requis.';
+			return;
+		}
+
+		addSubmitting = true;
+		addError = '';
+
+		try {
+			const res = await post<{ data: ObfuscationRule }>(`/projects/${selectedProjectId}/obfuscation`, {
+				searchTerm: addSearchTerm.trim(),
+				replaceTerm: addReplaceTerm.trim(),
+				isRegex: addIsRegex,
+				isActive: true,
+			});
+			rules = [...rules, res.data];
+			addSearchTerm = '';
+			addReplaceTerm = '';
+			addIsRegex = false;
+			showAddForm = false;
+			toast.success('Règle ajoutée');
+		} catch (err: any) {
+			addError = err.message || 'Erreur lors de l\'ajout.';
+		} finally {
+			addSubmitting = false;
+		}
+	}
+
+	// Edit rule
+	function openEditDialog(rule: ObfuscationRule) {
+		editingRule = rule;
+		editSearchTerm = rule.searchTerm;
+		editReplaceTerm = rule.replaceTerm;
+		editIsRegex = !!rule.isRegex;
+		editError = '';
+		editDialogOpen = true;
+	}
+
+	async function handleEdit() {
+		if (!editingRule) return;
+		editSubmitting = true;
+		editError = '';
+
+		try {
+			const res = await put<{ data: ObfuscationRule }>(`/obfuscation/${editingRule.id}`, {
+				searchTerm: editSearchTerm.trim(),
+				replaceTerm: editReplaceTerm.trim(),
+				isRegex: editIsRegex,
+			});
+			rules = rules.map(r => r.id === editingRule!.id ? res.data : r);
+			editDialogOpen = false;
+			toast.success('Règle modifiée');
+		} catch (err: any) {
+			editError = err.message || 'Erreur lors de la modification.';
+		} finally {
+			editSubmitting = false;
+		}
+	}
+
+	// Toggle active
+	async function toggleActive(rule: ObfuscationRule) {
+		try {
+			const res = await put<{ data: ObfuscationRule }>(`/obfuscation/${rule.id}`, {
+				isActive: !rule.isActive,
+			});
+			rules = rules.map(r => r.id === rule.id ? res.data : r);
+		} catch (err) {
+			console.error('Failed to toggle rule:', err);
+		}
+	}
+
+	// Delete rule
+	function openDeleteDialog(rule: ObfuscationRule) {
+		deletingRule = rule;
+		deleteDialogOpen = true;
+	}
+
+	async function handleDelete() {
+		if (!deletingRule) return;
+		deleteSubmitting = true;
+
+		try {
+			await del(`/obfuscation/${deletingRule.id}`);
+			rules = rules.filter(r => r.id !== deletingRule!.id);
+			deleteDialogOpen = false;
+			deletingRule = null;
+			toast.success('Règle supprimée');
+		} catch (err) {
+			toast.error('Erreur lors de la suppression');
+		} finally {
+			deleteSubmitting = false;
+		}
+	}
+
+	// Preview
+	async function handlePreview() {
+		if (!previewInput.trim() || !selectedProjectId) return;
+		previewLoading = true;
+
+		try {
+			const res = await post<{ data: string }>(`/projects/${selectedProjectId}/obfuscation/preview`, {
+				sampleHtml: previewInput,
+			});
+			previewOutput = res.data;
+		} catch (err: any) {
+			previewOutput = `Erreur: ${err.message}`;
+		} finally {
+			previewLoading = false;
+		}
+	}
+
+	onMount(async () => {
+		try {
+			const res = await get<{ data: Project[] }>('/projects');
+			projects = res.data;
+			if (projects.length > 0) {
+				selectedProjectId = projects[0].id;
+				await loadRules(projects[0].id);
+			}
+		} catch (err) {
+			console.error('Failed to load projects:', err);
+		} finally {
+			loading = false;
+		}
+	});
+</script>
+
+<svelte:head>
+	<title>Obfuscation — Environnements Simulés</title>
+</svelte:head>
+
+<div class="space-y-6">
+	<!-- Header -->
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="text-lg font-semibold text-foreground">Obfuscation</h1>
+			<p class="text-sm text-muted-foreground">
+				Gérez les règles de masquage des données sensibles
+			</p>
+		</div>
+		<Button variant="outline" size="sm" class="gap-1.5" onclick={() => { previewInput = ''; previewOutput = ''; previewDialogOpen = true; }}>
+			<Eye class="h-3.5 w-3.5" />
+			Prévisualiser
+		</Button>
+	</div>
+
+	<!-- Project selector -->
+	<div class="flex items-center gap-4">
+		<label for="project-select" class="text-sm font-medium text-foreground">Projet :</label>
+		<select
+			id="project-select"
+			value={selectedProjectId}
+			onchange={handleProjectChange}
+			class="flex h-9 w-64 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+		>
+			{#if loading}
+				<option>Chargement...</option>
+			{:else}
+				{#each projects as project}
+					<option value={project.id}>{project.name} ({project.toolName})</option>
+				{/each}
+			{/if}
+		</select>
+	</div>
+
+	<!-- Rules card -->
+	<Card>
+		<CardHeader class="pb-3">
+			<div class="flex items-center justify-between">
+				<div class="flex items-center gap-3">
+					<CardTitle class="text-base">Règles d'obfuscation</CardTitle>
+					<Badge variant="secondary">{activeCount} active{activeCount !== 1 ? 's' : ''}</Badge>
+				</div>
+				<Button size="sm" class="gap-1.5" onclick={() => { showAddForm = true; addError = ''; }} disabled={!selectedProjectId}>
+					<Plus class="h-3.5 w-3.5" />
+					Ajouter une règle
+				</Button>
+			</div>
+		</CardHeader>
+		<CardContent>
+			<!-- Tab filters -->
+			<Tabs value={activeTab} onValueChange={(v) => { activeTab = v; }}>
+				<TabsList class="mb-4">
+					<TabsTrigger value="auto">
+						Règles auto
+						<Badge variant="secondary" class="ml-1.5 text-[10px]">{rules.filter(r => !r.isRegex).length}</Badge>
+					</TabsTrigger>
+					<TabsTrigger value="manual">Manuel</TabsTrigger>
+				</TabsList>
+			</Tabs>
+
+			{#if rulesLoading}
+				<div class="space-y-3">
+					{#each Array(3) as _}
+						<div class="flex items-center gap-4 rounded-lg border border-border p-4">
+							<div class="skeleton h-4 w-24"></div>
+							<div class="skeleton h-4 w-24"></div>
+							<div class="skeleton h-4 w-16"></div>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<!-- Rules table -->
+				<div class="overflow-x-auto">
+					<table class="w-full">
+						<thead>
+							<tr class="border-b border-border">
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rechercher</th>
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Remplacer par</th>
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
+								<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each filteredRules() as rule}
+								<tr class="border-b border-border last:border-0">
+									<td class="py-3 pr-4">
+										<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.searchTerm}</code>
+									</td>
+									<td class="py-3 pr-4">
+										<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.replaceTerm}</code>
+									</td>
+									<td class="py-3 pr-4">
+										<Badge variant={rule.isRegex ? 'default' : 'secondary'}>
+											{rule.isRegex ? 'Regex' : 'Texte'}
+										</Badge>
+									</td>
+									<td class="py-3 pr-4">
+										<button
+											class="flex items-center gap-1.5 text-sm transition-colors"
+											onclick={() => toggleActive(rule)}
+											title={rule.isActive ? 'Désactiver' : 'Activer'}
+										>
+											{#if rule.isActive}
+												<ToggleRight class="h-5 w-5 text-success" />
+												<span class="text-xs text-success">Actif</span>
+											{:else}
+												<ToggleLeft class="h-5 w-5 text-muted" />
+												<span class="text-xs text-muted">Inactif</span>
+											{/if}
+										</button>
+									</td>
+									<td class="py-3 text-right">
+										<div class="flex items-center justify-end gap-1">
+											<button
+												class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+												onclick={() => openEditDialog(rule)}
+												title="Modifier"
+											>
+												<Pencil class="h-3.5 w-3.5" />
+											</button>
+											<button
+												class="rounded-md p-1.5 text-muted transition-colors hover:bg-destructive-bg hover:text-destructive"
+												onclick={() => openDeleteDialog(rule)}
+												title="Supprimer"
+											>
+												<Trash2 class="h-3.5 w-3.5" />
+											</button>
+										</div>
+									</td>
+								</tr>
+							{:else}
+								<tr>
+									<td colspan="5" class="py-8 text-center text-sm text-muted-foreground">
+										<EyeOff class="mx-auto mb-2 h-8 w-8 text-muted" />
+										Aucune règle {activeTab === 'auto' ? 'automatique' : 'manuelle'} pour ce projet.
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+
+				<!-- Inline add form -->
+				{#if showAddForm}
+					<div class="mt-4 rounded-lg border border-primary/30 bg-accent/50 p-4">
+						<div class="flex items-end gap-3">
+							<div class="flex-1 space-y-1">
+								<label class="text-xs font-medium text-foreground">Rechercher</label>
+								<Input bind:value={addSearchTerm} placeholder="Texte à rechercher..." class="text-sm" />
+							</div>
+							<div class="flex-1 space-y-1">
+								<label class="text-xs font-medium text-foreground">Remplacer par</label>
+								<Input bind:value={addReplaceTerm} placeholder="Texte de remplacement..." class="text-sm" />
+							</div>
+							<div class="space-y-1">
+								<label class="text-xs font-medium text-foreground">Type</label>
+								<select
+									bind:value={addIsRegex}
+									class="flex h-9 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<option value={false}>Texte</option>
+									<option value={true}>Regex</option>
+								</select>
+							</div>
+							<div class="flex gap-2">
+								<Button size="sm" onclick={handleAdd} disabled={addSubmitting}>
+									{#if addSubmitting}
+										...
+									{:else}
+										<Check class="h-3.5 w-3.5" />
+									{/if}
+									Ajouter
+								</Button>
+								<Button variant="outline" size="sm" onclick={() => { showAddForm = false; addError = ''; }}>
+									<X class="h-3.5 w-3.5" />
+								</Button>
+							</div>
+						</div>
+						{#if addError}
+							<p class="mt-2 flex items-center gap-1 text-xs text-destructive">
+								<AlertCircle class="h-3 w-3" />
+								{addError}
+							</p>
+						{/if}
+					</div>
+				{/if}
+			{/if}
+		</CardContent>
+	</Card>
+</div>
+
+<!-- Edit Dialog -->
+<Dialog bind:open={editDialogOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Modifier la règle</DialogTitle>
+			<DialogDescription>Modifiez les paramètres de la règle d'obfuscation.</DialogDescription>
+		</DialogHeader>
+		<form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleEdit(); }}>
+			<div class="space-y-2">
+				<label for="edit-search" class="text-sm font-medium text-foreground">Rechercher</label>
+				<Input id="edit-search" bind:value={editSearchTerm} placeholder="Texte à rechercher..." />
+			</div>
+			<div class="space-y-2">
+				<label for="edit-replace" class="text-sm font-medium text-foreground">Remplacer par</label>
+				<Input id="edit-replace" bind:value={editReplaceTerm} placeholder="Texte de remplacement..." />
+			</div>
+			<div class="flex items-center gap-3">
+				<label class="text-sm font-medium text-foreground">Type :</label>
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" bind:checked={editIsRegex} class="rounded" />
+					Expression régulière (Regex)
+				</label>
+			</div>
+			{#if editError}
+				<p class="text-sm text-destructive">{editError}</p>
+			{/if}
+			<DialogFooter>
+				<Button variant="outline" type="button" onclick={() => { editDialogOpen = false; }}>Annuler</Button>
+				<Button type="submit" disabled={editSubmitting}>
+					{editSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+				</Button>
+			</DialogFooter>
+		</form>
+	</DialogContent>
+</Dialog>
+
+<!-- Delete Dialog -->
+<Dialog bind:open={deleteDialogOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Supprimer la règle</DialogTitle>
+			<DialogDescription>
+				Êtes-vous sûr de vouloir supprimer la règle « <strong>{deletingRule?.searchTerm}</strong> » ? Cette action est irréversible.
+			</DialogDescription>
+		</DialogHeader>
+		<DialogFooter>
+			<Button variant="outline" onclick={() => { deleteDialogOpen = false; }}>Annuler</Button>
+			<Button variant="destructive" onclick={handleDelete} disabled={deleteSubmitting}>
+				{deleteSubmitting ? 'Suppression...' : 'Supprimer'}
+			</Button>
+		</DialogFooter>
+	</DialogContent>
+</Dialog>
+
+<!-- Preview Dialog -->
+<Dialog bind:open={previewDialogOpen}>
+	<DialogContent class="max-w-2xl">
+		<DialogHeader>
+			<DialogTitle>Prévisualisation de l'obfuscation</DialogTitle>
+			<DialogDescription>
+				Testez les règles d'obfuscation sur un échantillon de texte HTML.
+			</DialogDescription>
+		</DialogHeader>
+		<div class="space-y-4">
+			<div class="space-y-2">
+				<label class="text-sm font-medium text-foreground">HTML source</label>
+				<textarea
+					bind:value={previewInput}
+					placeholder="Collez du HTML ici pour tester les règles..."
+					rows="5"
+					class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				></textarea>
+			</div>
+			<Button onclick={handlePreview} disabled={previewLoading || !previewInput.trim()}>
+				{previewLoading ? 'Application...' : 'Appliquer les règles'}
+			</Button>
+			{#if previewOutput}
+				<div class="space-y-2">
+					<label class="text-sm font-medium text-foreground">Résultat</label>
+					<div class="rounded-md border border-border bg-input p-3 font-mono text-sm">
+						{previewOutput}
+					</div>
+				</div>
+			{/if}
+		</div>
+	</DialogContent>
+</Dialog>

@@ -92,9 +92,9 @@ Intégration Lemon Learning
 Contenu de démo
 * Exemple de chaque contenu sur chaque outil
 * Process emblématique à montrer
-Authentification 
-Sso google pour les admin et l’extension et les commerciaux 
-Mail et mot de passe pour les prospects 
+Authentification
+SSO Google pour les admins et l'extension. Les utilisateurs Lemon Learning sont provisionnés automatiquement en tant qu'admin à leur première connexion Google. Il est impossible de se connecter en tant qu'admin avec un email/mot de passe.
+Mail et mot de passe pour les prospects uniquement.
 
 
 Reproduction des performance de l’application aspirée 
@@ -135,11 +135,9 @@ Accès & Rôles
 Rôle
 	Accès
 	Client / Prospect
-	Accès site de démo uniquement (via lien + mot de passe)
-	Commerciaux
-	Admin, test, live edit (textes uniquement), vision complète des démos faites. Gestion des comptes clients. 
-	Debug / Admin
-	comme commerciaux avec des fonctionnalités technique en plus. Gestion des admin. 
+	Accès site de démo uniquement (via lien + mot de passe, seul mode d'authentification pour ce rôle)
+	Admin (Lemon Learning)
+	Tous les droits : admin, test, live edit (textes uniquement), vision complète des démos faites, gestion des comptes clients, fonctionnalités techniques. Provisionnés automatiquement à la première connexion Google avec un email Lemon Learning. Pas de connexion possible via email/mot de passe pour ce rôle.
 	* Profils utilisateurs avec photo
 * Visibilité sur qui fait quoi, qui est auteur de quoi
 Configuration
@@ -205,7 +203,7 @@ ________________
 Schéma de base de données (Drizzle / SQLite)
 Tables principales
 users
-  id, name, email, password_hash, role (admin|commercial|client), avatar_url, created_at
+  id, name, email, password_hash (null pour les admins Google), role (admin|client), avatar_url, google_id, created_at
 
 
 projects

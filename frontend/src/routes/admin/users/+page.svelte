@@ -1,0 +1,427 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { get, post, put, del } from '$lib/api';
+	import { toast } from '$lib/stores/toast';
+	import { user as currentUser } from '$lib/stores/auth';
+	import { Card, CardContent, CardHeader, CardTitle } from '$components/ui/card';
+	import { Button } from '$components/ui/button';
+	import { Badge } from '$components/ui/badge';
+	import { Input } from '$components/ui/input';
+	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
+	import { Avatar, AvatarFallback, AvatarImage } from '$components/ui/avatar';
+	import {
+		Dialog,
+		DialogContent,
+		DialogHeader,
+		DialogTitle,
+		DialogDescription,
+		DialogFooter,
+	} from '$components/ui/dialog';
+	import {
+		Users,
+		Plus,
+		Search,
+		Pencil,
+		Trash2,
+		Shield,
+		User,
+		Mail,
+		Calendar,
+		MoreVertical,
+	} from 'lucide-svelte';
+	import {
+		DropdownMenu,
+		DropdownMenuTrigger,
+		DropdownMenuContent,
+		DropdownMenuItem,
+		DropdownMenuSeparator,
+	} from '$components/ui/dropdown-menu';
+
+	interface UserRecord {
+		id: string;
+		name: string;
+		email: string;
+		role: 'admin' | 'client';
+		avatarUrl: string | null;
+		googleId: string | null;
+		language: string;
+		createdAt: string;
+	}
+
+	let users: UserRecord[] = $state([]);
+	let loading = $state(true);
+	let roleFilter = $state('all');
+	let searchQuery = $state('');
+
+	// Create/Edit dialog
+	let dialogOpen = $state(false);
+	let editingUser: UserRecord | null = $state(null);
+	let formName = $state('');
+	let formEmail = $state('');
+	let formPassword = $state('');
+	let formRole = $state<'admin' | 'client'>('client');
+	let formSubmitting = $state(false);
+	let formError = $state('');
+
+	// Delete dialog
+	let deleteDialogOpen = $state(false);
+	let deletingUser: UserRecord | null = $state(null);
+	let deleteSubmitting = $state(false);
+	let deleteError = $state('');
+
+	let filteredUsers = $derived(() => {
+		let result = users;
+
+		if (roleFilter !== 'all') {
+			result = result.filter(u => u.role === roleFilter);
+		}
+
+		if (searchQuery.trim()) {
+			const q = searchQuery.toLowerCase();
+			result = result.filter(u =>
+				u.name.toLowerCase().includes(q) ||
+				u.email.toLowerCase().includes(q)
+			);
+		}
+
+		return result;
+	});
+
+	let adminCount = $derived(users.filter(u => u.role === 'admin').length);
+	let clientCount = $derived(users.filter(u => u.role === 'client').length);
+
+	function formatDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString('fr-FR', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric',
+		});
+	}
+
+	function getInitials(name: string): string {
+		return name
+			.split(' ')
+			.map(n => n[0])
+			.join('')
+			.toUpperCase()
+			.slice(0, 2);
+	}
+
+	function openCreateDialog() {
+		editingUser = null;
+		formName = '';
+		formEmail = '';
+		formPassword = '';
+		formRole = 'client';
+		formError = '';
+		dialogOpen = true;
+	}
+
+	function openEditDialog(user: UserRecord) {
+		editingUser = user;
+		formName = user.name;
+		formEmail = user.email;
+		formPassword = '';
+		formRole = user.role;
+		formError = '';
+		dialogOpen = true;
+	}
+
+	function openDeleteDialog(user: UserRecord) {
+		deletingUser = user;
+		deleteError = '';
+		deleteDialogOpen = true;
+	}
+
+	async function handleSubmit() {
+		if (!formName.trim() || !formEmail.trim()) {
+			formError = 'Le nom et l\'email sont requis.';
+			return;
+		}
+
+		formSubmitting = true;
+		formError = '';
+
+		try {
+			const body: Record<string, unknown> = {
+				name: formName.trim(),
+				email: formEmail.trim(),
+				role: formRole,
+			};
+			if (formPassword.trim()) {
+				body.password = formPassword.trim();
+			}
+
+			if (editingUser) {
+				const res = await put<{ data: UserRecord }>(`/users/${editingUser.id}`, body);
+				users = users.map(u => u.id === editingUser!.id ? res.data : u);
+				toast.success('Utilisateur modifié');
+			} else {
+				if (!formPassword.trim()) {
+					formError = 'Un mot de passe est requis pour les nouveaux utilisateurs.';
+					formSubmitting = false;
+					return;
+				}
+				const res = await post<{ data: UserRecord }>('/users', body);
+				users = [res.data, ...users];
+				toast.success('Utilisateur créé');
+			}
+			dialogOpen = false;
+		} catch (err: any) {
+			formError = err.message || 'Erreur lors de la sauvegarde.';
+		} finally {
+			formSubmitting = false;
+		}
+	}
+
+	async function handleDelete() {
+		if (!deletingUser) return;
+		deleteSubmitting = true;
+		deleteError = '';
+
+		try {
+			await del(`/users/${deletingUser.id}`);
+			users = users.filter(u => u.id !== deletingUser!.id);
+			deleteDialogOpen = false;
+			deletingUser = null;
+			toast.success('Utilisateur supprimé');
+		} catch (err: any) {
+			deleteError = err.message || 'Impossible de supprimer cet utilisateur.';
+			toast.error(deleteError);
+		} finally {
+			deleteSubmitting = false;
+		}
+	}
+
+	onMount(async () => {
+		try {
+			const res = await get<{ data: UserRecord[] }>('/users');
+			users = res.data;
+		} catch (err) {
+			console.error('Failed to load users:', err);
+		} finally {
+			loading = false;
+		}
+	});
+</script>
+
+<svelte:head>
+	<title>Utilisateurs — Environnements Simulés</title>
+</svelte:head>
+
+<div class="space-y-6">
+	<!-- Header -->
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="text-lg font-semibold text-foreground">Utilisateurs</h1>
+			<p class="text-sm text-muted-foreground">
+				{users.length} utilisateur{users.length !== 1 ? 's' : ''} — {adminCount} admin{adminCount !== 1 ? 's' : ''}, {clientCount} client{clientCount !== 1 ? 's' : ''}
+			</p>
+		</div>
+		<Button size="sm" class="gap-1.5" onclick={openCreateDialog}>
+			<Plus class="h-3.5 w-3.5" />
+			Nouvel utilisateur
+		</Button>
+	</div>
+
+	<!-- Filters -->
+	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+		<Tabs value={roleFilter} onValueChange={(v) => { roleFilter = v; }}>
+			<TabsList>
+				<TabsTrigger value="all">Tous ({users.length})</TabsTrigger>
+				<TabsTrigger value="admin">Admins ({adminCount})</TabsTrigger>
+				<TabsTrigger value="client">Clients ({clientCount})</TabsTrigger>
+			</TabsList>
+		</Tabs>
+
+		<div class="relative w-full sm:w-64">
+			<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+			<Input bind:value={searchQuery} placeholder="Rechercher un utilisateur..." class="pl-9" />
+		</div>
+	</div>
+
+	<!-- User list -->
+	{#if loading}
+		<div class="space-y-2">
+			{#each Array(5) as _}
+				<Card>
+					<CardContent class="p-4">
+						<div class="flex items-center gap-4">
+							<div class="skeleton h-10 w-10 rounded-full"></div>
+							<div class="flex-1 space-y-2">
+								<div class="skeleton h-4 w-32"></div>
+								<div class="skeleton h-3 w-48"></div>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			{/each}
+		</div>
+	{:else if filteredUsers().length === 0}
+		<Card>
+			<CardContent class="flex flex-col items-center justify-center py-16">
+				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+					<Users class="h-6 w-6 text-muted" />
+				</div>
+				<p class="mt-4 text-sm font-medium text-foreground">
+					{searchQuery ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur'}
+				</p>
+				<p class="mt-1 text-sm text-muted-foreground">
+					{searchQuery ? 'Essayez avec d\'autres termes.' : 'Ajoutez votre premier utilisateur.'}
+				</p>
+			</CardContent>
+		</Card>
+	{:else}
+		<div class="space-y-2">
+			{#each filteredUsers() as user}
+				{@const isCurrentUser = $currentUser?.id === user.id}
+				<Card class="group transition-shadow hover:shadow-md">
+					<CardContent class="p-4">
+						<div class="flex items-center gap-4">
+							<!-- Avatar -->
+							<Avatar class="h-10 w-10">
+								<AvatarImage src={user.avatarUrl} alt={user.name} />
+								<AvatarFallback class={user.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-accent text-muted-foreground'}>
+									{getInitials(user.name)}
+								</AvatarFallback>
+							</Avatar>
+
+							<!-- User info -->
+							<div class="min-w-0 flex-1">
+								<div class="flex items-center gap-2">
+									<p class="font-medium text-foreground">{user.name}</p>
+									{#if isCurrentUser}
+										<Badge variant="secondary" class="text-[10px]">Vous</Badge>
+									{/if}
+								</div>
+								<div class="flex items-center gap-3 text-xs text-muted-foreground">
+									<span class="inline-flex items-center gap-1">
+										<Mail class="h-3 w-3" />
+										{user.email}
+									</span>
+									{#if user.googleId}
+										<span class="inline-flex items-center gap-1 text-primary">
+											Google SSO
+										</span>
+									{/if}
+								</div>
+							</div>
+
+							<!-- Role badge -->
+							<Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+								{#if user.role === 'admin'}
+									<Shield class="mr-1 h-3 w-3" />
+								{:else}
+									<User class="mr-1 h-3 w-3" />
+								{/if}
+								{user.role === 'admin' ? 'Administrateur' : 'Client'}
+							</Badge>
+
+							<!-- Date -->
+							<div class="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">
+								<Calendar class="h-3 w-3" />
+								{formatDate(user.createdAt)}
+							</div>
+
+							<!-- Actions -->
+							<DropdownMenu>
+								<DropdownMenuTrigger>
+									<button class="rounded-md p-1 text-muted opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100">
+										<MoreVertical class="h-4 w-4" />
+									</button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="end">
+									<DropdownMenuItem onclick={() => openEditDialog(user)}>
+										<Pencil class="mr-2 h-3.5 w-3.5" />
+										Modifier
+									</DropdownMenuItem>
+									{#if !isCurrentUser}
+										<DropdownMenuSeparator />
+										<DropdownMenuItem class="text-destructive" onclick={() => openDeleteDialog(user)}>
+											<Trash2 class="mr-2 h-3.5 w-3.5" />
+											Supprimer
+										</DropdownMenuItem>
+									{/if}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						</div>
+					</CardContent>
+				</Card>
+			{/each}
+		</div>
+	{/if}
+</div>
+
+<!-- Create/Edit Dialog -->
+<Dialog bind:open={dialogOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>{editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</DialogTitle>
+			<DialogDescription>
+				{editingUser ? 'Modifiez les informations de l\'utilisateur.' : 'Créez un nouveau compte utilisateur.'}
+			</DialogDescription>
+		</DialogHeader>
+		<form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+			<div class="space-y-2">
+				<label for="user-name" class="text-sm font-medium text-foreground">Nom</label>
+				<Input id="user-name" bind:value={formName} placeholder="Jean Dupont" />
+			</div>
+			<div class="space-y-2">
+				<label for="user-email" class="text-sm font-medium text-foreground">Email</label>
+				<Input id="user-email" bind:value={formEmail} placeholder="jean@example.com" type="email" />
+			</div>
+			<div class="space-y-2">
+				<label for="user-password" class="text-sm font-medium text-foreground">
+					Mot de passe
+					{#if editingUser}
+						<span class="text-muted-foreground">(laisser vide pour ne pas modifier)</span>
+					{/if}
+				</label>
+				<Input id="user-password" bind:value={formPassword} placeholder="••••••••" type="password" />
+			</div>
+			<div class="space-y-2">
+				<label for="user-role" class="text-sm font-medium text-foreground">Rôle</label>
+				<select
+					id="user-role"
+					bind:value={formRole}
+					class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					<option value="admin">Administrateur</option>
+					<option value="client">Client</option>
+				</select>
+			</div>
+
+			{#if formError}
+				<p class="text-sm text-destructive">{formError}</p>
+			{/if}
+
+			<DialogFooter>
+				<Button variant="outline" type="button" onclick={() => { dialogOpen = false; }}>Annuler</Button>
+				<Button type="submit" disabled={formSubmitting}>
+					{formSubmitting ? 'Enregistrement...' : (editingUser ? 'Enregistrer' : 'Créer')}
+				</Button>
+			</DialogFooter>
+		</form>
+	</DialogContent>
+</Dialog>
+
+<!-- Delete Dialog -->
+<Dialog bind:open={deleteDialogOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Supprimer l'utilisateur</DialogTitle>
+			<DialogDescription>
+				Êtes-vous sûr de vouloir supprimer <strong>{deletingUser?.name}</strong> ({deletingUser?.email}) ? Cette action est irréversible.
+			</DialogDescription>
+		</DialogHeader>
+		{#if deleteError}
+			<p class="text-sm text-destructive">{deleteError}</p>
+		{/if}
+		<DialogFooter>
+			<Button variant="outline" onclick={() => { deleteDialogOpen = false; }}>Annuler</Button>
+			<Button variant="destructive" onclick={handleDelete} disabled={deleteSubmitting}>
+				{deleteSubmitting ? 'Suppression...' : 'Supprimer'}
+			</Button>
+		</DialogFooter>
+	</DialogContent>
+</Dialog>

@@ -1,0 +1,45 @@
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { resolve } from 'path';
+
+export default defineConfig({
+	plugins: [svelte()],
+	base: './',
+	build: {
+		outDir: 'dist',
+		emptyOutDir: true,
+		rollupOptions: {
+			input: {
+				popup: resolve(__dirname, 'src/popup/index.html'),
+				background: resolve(__dirname, 'src/background/service-worker.ts'),
+				content: resolve(__dirname, 'src/content/content-script.ts')
+			},
+			output: {
+				// Inline all chunks into entry files — Chrome MV3 service workers
+				// don't support dynamic imports from separate chunk files
+				inlineDynamicImports: false,
+				manualChunks: undefined,
+				entryFileNames: (chunkInfo) => {
+					if (chunkInfo.name === 'background') return 'background/service-worker.js';
+					if (chunkInfo.name === 'content') return 'content/content-script.js';
+					return 'popup/[name].js';
+				},
+				chunkFileNames: 'shared/[name]-[hash].js',
+				assetFileNames: (assetInfo) => {
+					if (assetInfo.names?.[0]?.endsWith('.css')) {
+						return 'popup/[name][extname]';
+					}
+					return 'assets/[name][extname]';
+				}
+			}
+		},
+		target: 'esnext',
+		minify: false,
+		sourcemap: process.env.NODE_ENV === 'development' ? 'inline' : false
+	},
+	resolve: {
+		alias: {
+			'$lib': resolve(__dirname, 'src/lib')
+		}
+	}
+});

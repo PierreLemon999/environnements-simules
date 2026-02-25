@@ -201,8 +201,16 @@ Les pages capturées "en plus" pour le réalisme sont présentes sans distinctio
 - Les versions "à jour" s'affichent en priorité
 - Chaque version affiche son auteur (nom + photo de profil)
 
+### Authentification et provisionnement
+
+Les utilisateurs Lemon Learning (admins) sont provisionnés automatiquement à leur première connexion via Google SSO. Tout email Lemon Learning crée un compte admin. Il est impossible de se connecter en tant qu'admin avec un email/mot de passe — seul Google SSO est accepté pour ce rôle.
+
+Les prospects/clients se connectent uniquement via email + mot de passe (généré par le système lors de l'assignation d'une démo).
+
+Note : les rôles "admin" et "commercial" sont fusionnés en un seul rôle "admin" avec les mêmes droits. Tous les utilisateurs Lemon Learning ont accès à toutes les fonctionnalités (admin, live edit, gestion clients, analytics, config technique).
+
 ### Live edit
-- Admins et commerciaux uniquement
+- Admins uniquement
 - Modification des textes directement dans la démo
 - Les modifications s'appliquent directement sur le fichier HTML capturé (pas de système d'overlay)
 - Persistantes
