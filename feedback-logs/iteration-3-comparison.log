@@ -1,0 +1,17 @@
+Audit complete. The report has been written to `feedback-logs/iteration-3-issues.md`.
+
+**Summary of findings: 29 issues total**
+
+| Severity | Count | Key highlights |
+|----------|-------|----------------|
+| **CRITICAL** | 2 | Analytics shows "-30093s" for average duration; Login may serve old design |
+| **HIGH** | 9 | Dashboard layout differs from mockup; Tree view missing detail panel + graph view; Obfuscation missing TYPE column; Analytics layout differences |
+| **MEDIUM** | 12 | UPPERCASE stat labels everywhere (should be sentence case); Command palette doesn't search pages; Duplicate buttons on projects; Wrong button label on invitations; Extra "Composants" sidebar item |
+| **LOW** | 6 | Breadcrumb inconsistencies; Users page OK; Update requests OK |
+
+**Top priorities to fix:**
+1. Fix the analytics negative duration bug (data computation error)
+2. Confirm only the new tabbed login design is served
+3. Implement the tree view right detail panel (biggest feature gap)
+4. Change all stat card labels from UPPERCASE to sentence case
+5. Add page search to the command palette

@@ -1,0 +1,23 @@
+Audit complete. Here's the summary:
+
+**Report written to**: `feedback-logs/iteration-1-issues.md`
+
+## Key Findings
+
+**TOTAL: 19 issues** (2 CRITICAL, 8 HIGH, 6 MEDIUM, 3 LOW)
+
+### The big problem: 11 of 14 screenshots show the login page
+The auth guard in `admin/+layout.ts` checks `isAuthenticated` synchronously before `loadFromStorage()` completes in the root layout's async `onMount`. This race condition causes every `/admin/*` route to redirect to `/login`. Combined with the test harness silently swallowing the failed Google SSO mock login, **all admin page screenshots are just the login page**.
+
+### Login page (the only page actually rendered) has 17 issues vs mockup:
+- **Wrong structure**: App uses tabs (client/admin), mockup shows unified single-page form
+- **Wrong branding**: "ES" / "Environnements Simulés" vs mockup's "ED" / "Environnements de Démonstration"  
+- **8+ missing elements**: password toggle, remember-me, forgot password link, section label, divider, footer, animated background, dot pattern
+- **Wrong Google icon**: Generic Chrome icon vs multicolor Google "G" logo
+- **Color mismatch**: #3B82F6 vs mockup's #2563eb
+
+### Next steps:
+1. Fix the auth guard race condition (CRITICAL)
+2. Fix the test harness to actually authenticate (CRITICAL)  
+3. Rewrite the login page to match the mockup
+4. Re-run screenshots and perform a second audit of all admin pages

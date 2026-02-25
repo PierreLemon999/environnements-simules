@@ -171,9 +171,10 @@
 	}
 
 	function formatDuration(seconds: number): string {
-		if (seconds < 60) return `${seconds}s`;
-		const m = Math.floor(seconds / 60);
-		const s = seconds % 60;
+		const abs = Math.max(0, Math.round(seconds));
+		if (abs < 60) return `${abs}s`;
+		const m = Math.floor(abs / 60);
+		const s = abs % 60;
 		if (m < 60) return `${m}m ${s}s`;
 		const h = Math.floor(m / 60);
 		return `${h}h ${m % 60}m`;
@@ -183,7 +184,7 @@
 		if (!session.endedAt) return 'En cours';
 		const start = new Date(session.startedAt).getTime();
 		const end = new Date(session.endedAt).getTime();
-		const seconds = Math.floor((end - start) / 1000);
+		const seconds = Math.max(0, Math.floor((end - start) / 1000));
 		return formatDuration(seconds);
 	}
 
@@ -191,7 +192,7 @@
 		if (!session.endedAt) return 0;
 		const start = new Date(session.startedAt).getTime();
 		const end = new Date(session.endedAt).getTime();
-		return Math.floor((end - start) / 1000);
+		return Math.max(0, Math.floor((end - start) / 1000));
 	}
 
 	function getInitials(name: string): string {
@@ -327,11 +328,23 @@
 <div class="flex gap-0">
 	<!-- Main content -->
 	<div class="min-w-0 flex-1 space-y-6 {detailPanelOpen ? 'pr-6' : ''}">
-		<!-- Page header -->
+		<!-- Page header with inline tabs -->
 		<div class="flex items-center justify-between">
-			<div>
+			<div class="flex items-center gap-4">
 				<h1 class="text-lg font-semibold text-foreground">Analytics</h1>
-				<p class="text-sm text-muted-foreground">Vue d'ensemble de l'activité sur vos démos</p>
+				<Tabs value={activeTab} onValueChange={(v) => { activeTab = v; }}>
+					<TabsList>
+						<TabsTrigger value="overview">
+							Vue générale
+							{#if !loading && overview}
+								<Badge variant="secondary" class="ml-1.5 text-[10px]">{overview.totalSessions}</Badge>
+							{/if}
+						</TabsTrigger>
+						<TabsTrigger value="clients">Par client</TabsTrigger>
+						<TabsTrigger value="tools">Par outil</TabsTrigger>
+						<TabsTrigger value="guides">Guides</TabsTrigger>
+					</TabsList>
+				</Tabs>
 			</div>
 			<div class="flex items-center gap-3">
 				<!-- Live indicator -->
@@ -342,6 +355,12 @@
 					</span>
 					<span class="text-xs font-medium text-success">En direct</span>
 				</div>
+
+				<!-- Date range picker -->
+				<button class="flex h-9 items-center gap-2 rounded-md border border-border bg-transparent px-3 text-sm text-muted-foreground transition-colors hover:bg-accent">
+					<Calendar class="h-3.5 w-3.5" />
+					<span>01 fév — 24 fév 2026</span>
+				</button>
 
 				<!-- Project filter -->
 				<select
@@ -356,16 +375,6 @@
 			</div>
 		</div>
 
-		<!-- Tabs -->
-		<Tabs value={activeTab} onValueChange={(v) => { activeTab = v; }}>
-			<TabsList>
-				<TabsTrigger value="overview">Vue générale</TabsTrigger>
-				<TabsTrigger value="clients">Par client</TabsTrigger>
-				<TabsTrigger value="tools">Par outil</TabsTrigger>
-				<TabsTrigger value="guides">Guides</TabsTrigger>
-			</TabsList>
-		</Tabs>
-
 		{#if activeTab === 'overview'}
 			<!-- Stats cards -->
 			<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -373,7 +382,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Sessions totales</p>
+								<p class="text-xs font-medium text-muted-foreground">Sessions totales</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>
@@ -399,7 +408,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Pages vues</p>
+								<p class="text-xs font-medium text-muted-foreground">Pages vues</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>
@@ -419,7 +428,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Utilisateurs uniques (7j)</p>
+								<p class="text-xs font-medium text-muted-foreground">Utilisateurs uniques (7j)</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>
@@ -439,7 +448,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Durée moyenne</p>
+								<p class="text-xs font-medium text-muted-foreground">Durée moyenne</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>
@@ -490,97 +499,103 @@
 				</CardContent>
 			</Card>
 
-			<!-- Two tables side by side -->
-			<div class="grid gap-4 lg:grid-cols-2">
-				<!-- Admins & Commerciaux -->
-				<Card>
-					<CardHeader class="pb-3">
-						<CardTitle class="text-base">Admins & Commerciaux</CardTitle>
-					</CardHeader>
-					<CardContent>
-						{#if loading}
-							<div class="space-y-3">
-								{#each Array(3) as _}
-									<div class="flex items-center gap-3">
-										<div class="skeleton h-8 w-8 rounded-full"></div>
-										<div class="flex-1 space-y-1">
-											<div class="skeleton h-3 w-24"></div>
-											<div class="skeleton h-2.5 w-16"></div>
-										</div>
+			<!-- Sessions récentes -->
+			<Card>
+				<CardHeader class="pb-3">
+					<div class="flex items-center justify-between">
+						<CardTitle class="text-base">
+							Sessions récentes
+							<Badge variant="secondary" class="ml-1.5 text-[10px]">{sessions.length} sessions</Badge>
+						</CardTitle>
+						<div class="flex items-center gap-2">
+							<div class="relative">
+								<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+								<Input
+									bind:value={searchQuery}
+									placeholder="Rechercher..."
+									class="h-8 w-48 pl-8 text-sm"
+								/>
+							</div>
+							<Button variant="outline" size="sm" class="gap-1.5" onclick={exportCSV}>
+								<Download class="h-3.5 w-3.5" />
+								Exporter CSV
+							</Button>
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent>
+					{#if loading}
+						<div class="space-y-3">
+							{#each Array(5) as _}
+								<div class="flex items-center gap-4 py-3">
+									<div class="skeleton h-8 w-8 rounded-full"></div>
+									<div class="flex-1 space-y-1.5">
+										<div class="skeleton h-3 w-48"></div>
+										<div class="skeleton h-2.5 w-24"></div>
 									</div>
-								{/each}
-							</div>
-						{:else if adminSessions.length === 0}
-							<p class="py-6 text-center text-sm text-muted-foreground">Aucune session admin.</p>
-						{:else}
-							<div class="space-y-1">
-								{#each adminSessions.slice(0, 10) as session}
-									<button
-										class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
-										onclick={() => openSessionDetail(session)}
-									>
-										<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-											{session.user ? getInitials(session.user.name) : '?'}
-										</div>
-										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-foreground">{session.user?.name ?? 'Anonyme'}</p>
-											<p class="text-xs text-muted-foreground">{session.eventCount} événement{session.eventCount !== 1 ? 's' : ''}</p>
-										</div>
-										<span class="text-xs text-muted-foreground">{formatRelativeTime(session.startedAt)}</span>
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</CardContent>
-				</Card>
-
-				<!-- Clients -->
-				<Card>
-					<CardHeader class="pb-3">
-						<CardTitle class="text-base">Clients</CardTitle>
-					</CardHeader>
-					<CardContent>
-						{#if loading}
-							<div class="space-y-3">
-								{#each Array(3) as _}
-									<div class="flex items-center gap-3">
-										<div class="skeleton h-8 w-8 rounded-full"></div>
-										<div class="flex-1 space-y-1">
-											<div class="skeleton h-3 w-24"></div>
-											<div class="skeleton h-2.5 w-16"></div>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{:else if clientSessions.length === 0}
-							<p class="py-6 text-center text-sm text-muted-foreground">Aucune session client.</p>
-						{:else}
-							<div class="space-y-1">
-								{#each clientSessions.slice(0, 10) as session}
-									<button
-										class="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
-										onclick={() => openSessionDetail(session)}
-									>
-										<div class="flex h-8 w-8 items-center justify-center rounded-full bg-warning/10 text-xs font-medium text-warning">
-											{session.user ? getInitials(session.user.name) : '?'}
-										</div>
-										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-foreground">{session.user?.name ?? 'Visiteur anonyme'}</p>
-											<p class="text-xs text-muted-foreground">
-												{session.user?.email ?? 'Entreprise inconnue'}
+									<div class="skeleton h-3 w-16"></div>
+								</div>
+							{/each}
+						</div>
+					{:else if filteredSessions.length === 0}
+						<p class="py-8 text-center text-sm text-muted-foreground">Aucune session trouvée.</p>
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="w-full">
+								<thead>
+									<tr class="border-b border-border">
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Utilisateur</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Début</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Durée</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Événements</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
+										<th class="pb-2"></th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each filteredSessions.slice(0, 20) as session}
+										<tr
+											class="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent"
+											onclick={() => openSessionDetail(session)}
+										>
+											<td class="py-3 pr-4">
+												<div class="flex items-center gap-3">
+													<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+														{session.user ? getInitials(session.user.name) : '?'}
+													</div>
+													<div>
+														<p class="text-sm font-medium text-foreground">{session.user?.name ?? 'Visiteur anonyme'}</p>
+														<p class="text-xs text-muted-foreground">{session.user?.email ?? ''}</p>
+													</div>
+												</div>
+											</td>
+											<td class="py-3 pr-4">
+												<span class="text-sm text-muted-foreground">{formatDateTime(session.startedAt)}</span>
+											</td>
+											<td class="py-3 pr-4">
+												<span class="text-sm text-foreground">{getSessionDuration(session)}</span>
+											</td>
+											<td class="py-3 pr-4">
+												<span class="text-sm text-foreground">{session.eventCount}</span>
+											</td>
+											<td class="py-3 pr-4">
 												{#if !session.endedAt}
-													<Badge variant="success" class="ml-1 text-[10px]">En cours</Badge>
+													<Badge variant="success">En cours</Badge>
+												{:else}
+													<Badge variant="default">Terminée</Badge>
 												{/if}
-											</p>
-										</div>
-										<span class="text-xs text-muted-foreground">{formatRelativeTime(session.startedAt)}</span>
-									</button>
-								{/each}
-							</div>
-						{/if}
-					</CardContent>
-				</Card>
-			</div>
+											</td>
+											<td class="py-3">
+												<ChevronRight class="h-4 w-4 text-muted" />
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</CardContent>
+			</Card>
 		{/if}
 
 		{#if activeTab === 'clients' || activeTab === 'tools'}
@@ -686,7 +701,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Guides lancés</p>
+								<p class="text-xs font-medium text-muted-foreground">Guides lancés</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>
@@ -705,7 +720,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Guides terminés</p>
+								<p class="text-xs font-medium text-muted-foreground">Guides terminés</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>
@@ -724,7 +739,7 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<div>
-								<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Taux de complétion</p>
+								<p class="text-xs font-medium text-muted-foreground">Taux de complétion</p>
 								<p class="mt-1 text-2xl font-bold text-foreground">
 									{#if loading}
 										<span class="skeleton inline-block h-8 w-12"></span>

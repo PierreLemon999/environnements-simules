@@ -1,0 +1,45 @@
+
+Running 13 tests using 1 worker
+
+[1A[2K[1/13] [functional] › tests/e2e/functional.spec.ts:17:7 › Functional tests › Login page loads
+[1A[2K[2/13] [functional] › tests/e2e/functional.spec.ts:25:7 › Functional tests › Client login with valid credentials
+[1A[2K  1) [functional] › tests/e2e/functional.spec.ts:25:7 › Functional tests › Client login with valid credentials 
+
+    Error: locator.click: Error: strict mode violation: locator('button[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter")') resolved to 2 elements:
+        1) <button type="submit" class="btn-primary s-BUJUVtHZo5xi">…</button> aka getByRole('button', { name: 'Se connecter', exact: true })
+        2) <button class="btn-google fade-up s-BUJUVtHZo5xi">…</button> aka getByRole('button', { name: 'Se connecter avec Google' })
+
+    Call log:
+    [2m  - waiting for locator('button[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter")')[22m
+
+
+      31 |     await page.locator('input[type="email"], input[placeholder*="email"]').fill('sophie.martin@acme.com');
+      32 |     await page.locator('input[type="password"]').fill('demo1234');
+    > 33 |     await page.locator('button[type="submit"], button:has-text("Connexion"), button:has-text("Se connecter")').click();
+         |                                                                                                                ^
+      34 |     await page.waitForTimeout(2000);
+      35 |     // Should redirect somewhere (not stay on login with error)
+      36 |     const currentUrl = page.url();
+        at /Users/pierre/Library/Mobile Documents/com~apple~CloudDocs/code/environnements simmulés/tests/e2e/functional.spec.ts:33:112
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    tests/results/functional-Functional-test-a65c4-ogin-with-valid-credentials-functional/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: tests/results/functional-Functional-test-a65c4-ogin-with-valid-credentials-functional/error-context.md
+
+
+[1A[2K[3/13] [functional] › tests/e2e/functional.spec.ts:42:7 › Functional tests › Admin login via Google SSO mock
+[1A[2K[4/13] [functional] › tests/e2e/functional.spec.ts:50:7 › Functional tests › Admin dashboard loads with data
+[1A[2K[5/13] [functional] › tests/e2e/functional.spec.ts:60:7 › Functional tests › Sidebar navigation works
+[1A[2K[6/13] [functional] › tests/e2e/functional.spec.ts:75:7 › Functional tests › Projects page loads
+[1A[2K[7/13] [functional] › tests/e2e/functional.spec.ts:84:7 › Functional tests › Tree view page loads
+[1A[2K[8/13] [functional] › tests/e2e/functional.spec.ts:93:7 › Functional tests › Analytics page loads
+[1A[2K[9/13] [functional] › tests/e2e/functional.spec.ts:102:7 › Functional tests › Users page loads
+[1A[2K[10/13] [functional] › tests/e2e/functional.spec.ts:111:7 › Functional tests › Obfuscation page loads
+[1A[2K[11/13] [functional] › tests/e2e/functional.spec.ts:120:7 › Functional tests › Invitations page loads
+[1A[2K[12/13] [functional] › tests/e2e/functional.spec.ts:129:7 › Functional tests › No console errors on dashboard
+[1A[2K[13/13] [functional] › tests/e2e/functional.spec.ts:147:7 › Functional tests › API health check
+[1A[2K  1 failed
+    [functional] › tests/e2e/functional.spec.ts:25:7 › Functional tests › Client login with valid credentials 
+  12 passed (54.1s)

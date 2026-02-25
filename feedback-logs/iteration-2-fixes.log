@@ -1,0 +1,11 @@
+All 13 tasks are complete. Here's a summary of what was done in this session (continuing from the previous context):
+
+**Completed fixes:**
+
+1. **Obfuscation page** — Added PORTÉE and OCCURRENCES columns, restyled project selector as a pill badge with green dot, added "Appliquer globalement" toggle, added count badges to tabs
+2. **Command palette** — Added dynamic count badges to category tabs, action shortcuts displayed as `<kbd>` badges, added "Tab Catégorie" hint and "EnvSim" branding to footer, added Tab key support for cycling categories
+3. **Project cards** — Added hover lift effect (`hover:-translate-y-0.5 hover:shadow-md transition-all`)
+
+**svelte-check results:** 3 errors (all pre-existing in `editor/[id]` and `live-edit/[id]` — not from our changes), 6 a11y warnings (pre-existing). No new issues introduced.
+
+**Fix summary** written to `feedback-logs/iteration-2-fix-summary.md` — covers all 29 issues: 26 fixed, 3 skipped (test artifact + no mockups available).

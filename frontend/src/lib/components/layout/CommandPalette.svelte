@@ -38,9 +38,17 @@
 		{ id: 'action', label: 'Actions' },
 	];
 
+	let tabCounts = $derived(() => {
+		const counts: Record<string, number> = { all: results.length };
+		for (const r of results) {
+			counts[r.type] = (counts[r.type] || 0) + 1;
+		}
+		return counts;
+	});
+
 	const quickActions: SearchResult[] = [
-		{ id: 'action-new-project', type: 'action', title: 'Créer un projet', subtitle: '⌘P', href: '/admin/projects?action=create', icon: Plus },
-		{ id: 'action-new-capture', type: 'action', title: 'Nouvelle capture', subtitle: '⌘N', href: '/admin/tree', icon: Camera },
+		{ id: 'action-new-project', type: 'action', title: 'Créer un projet', subtitle: '', href: '/admin/projects?action=create', icon: Plus },
+		{ id: 'action-new-capture', type: 'action', title: 'Nouvelle capture', subtitle: '', href: '/admin/tree', icon: Camera },
 		{ id: 'action-dashboard', type: 'action', title: 'Aller au Dashboard', subtitle: '', href: '/admin', icon: Zap },
 		{ id: 'action-analytics', type: 'action', title: 'Voir les Analytics', subtitle: '', href: '/admin/analytics', icon: Zap },
 		{ id: 'action-users', type: 'action', title: 'Gérer les utilisateurs', subtitle: '', href: '/admin/users', icon: Users },
@@ -52,6 +60,19 @@
 		if (activeTab === 'all') return results;
 		return results.filter((r) => r.type === activeTab);
 	});
+
+	function getToolBadgeColor(toolName: string): string {
+		const colors: Record<string, string> = {
+			'Salesforce': '#00A1E0',
+			'SAP SuccessFactors': '#0070F2',
+			'Workday': '#F5A623',
+			'ServiceNow': '#81B5A1',
+			'HubSpot': '#FF7A59',
+			'Zendesk': '#03363D',
+			'Oracle': '#C74634',
+		};
+		return colors[toolName] ?? '#6B7280';
+	}
 
 	function getIconForType(type: string) {
 		switch (type) {
@@ -115,6 +136,8 @@
 		try {
 			const projectsRes = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
 			const ql = q.toLowerCase();
+
+			// Search projects
 			for (const p of projectsRes.data) {
 				if (p.name.toLowerCase().includes(ql) || p.toolName.toLowerCase().includes(ql) || p.subdomain.toLowerCase().includes(ql)) {
 					allResults.push({
@@ -127,6 +150,31 @@
 				}
 			}
 
+			// Search pages across all project versions
+			for (const p of projectsRes.data) {
+				try {
+					const projectDetail = await get<{ data: { versions: Array<{ id: string; status: string }> } }>(`/projects/${p.id}`);
+					const activeVersion = projectDetail.data.versions?.find(v => v.status === 'active') ?? projectDetail.data.versions?.[0];
+					if (activeVersion) {
+						const pagesRes = await get<{ data: Array<{ id: string; title: string; urlPath: string }> }>(`/versions/${activeVersion.id}/pages`);
+						for (const page of pagesRes.data) {
+							if (page.title.toLowerCase().includes(ql) || page.urlPath.toLowerCase().includes(ql)) {
+								allResults.push({
+									id: `page-${page.id}`,
+									type: 'page',
+									title: page.title || page.urlPath,
+									subtitle: p.toolName,
+									href: `/admin/tree?version=${activeVersion.id}`,
+								});
+							}
+						}
+					}
+				} catch {
+					// Skip projects with no pages
+				}
+			}
+
+			// Search users
 			const usersRes = await get<{ data: Array<{ id: string; name: string; email: string; role: string }> }>('/users');
 			for (const u of usersRes.data) {
 				if (u.name.toLowerCase().includes(ql) || u.email.toLowerCase().includes(ql)) {
@@ -140,6 +188,7 @@
 				}
 			}
 
+			// Search actions
 			for (const action of quickActions) {
 				if (action.title.toLowerCase().includes(ql)) {
 					allResults.push(action);
@@ -175,6 +224,15 @@
 		} else if (e.key === 'Enter' && list[selectedIndex]) {
 			e.preventDefault();
 			handleSelect(list[selectedIndex]);
+		} else if (e.key === 'Tab') {
+			e.preventDefault();
+			const tabIds = tabs.map(t => t.id);
+			const currentIdx = tabIds.indexOf(activeTab);
+			const nextIdx = e.shiftKey
+				? (currentIdx - 1 + tabIds.length) % tabIds.length
+				: (currentIdx + 1) % tabIds.length;
+			activeTab = tabIds[nextIdx];
+			selectedIndex = 0;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
 			open = false;
@@ -229,11 +287,17 @@
 			<!-- Category tabs -->
 			<div class="flex gap-1 border-b border-border px-4 py-2">
 				{#each tabs as tab}
+					{@const count = tabCounts()[tab.id] || 0}
 					<button
-						class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors {activeTab === tab.id ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
+						class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors {activeTab === tab.id ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
 						onclick={() => { activeTab = tab.id; selectedIndex = 0; }}
 					>
 						{tab.label}
+						{#if count > 0}
+							<span class="ml-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold {activeTab === tab.id ? 'bg-white/20' : 'bg-accent text-muted-foreground'}">
+								{count}
+							</span>
+						{/if}
 					</button>
 				{/each}
 			</div>
@@ -264,8 +328,13 @@
 							>
 								<Icon class="h-4 w-4 shrink-0 text-muted" />
 								<div class="min-w-0 flex-1 text-left">
-									<p class="truncate font-medium">{result.title}</p>
-									{#if result.subtitle}
+									<div class="flex items-center gap-2">
+										<p class="truncate font-medium">{result.title}</p>
+										{#if result.type === 'page' && result.subtitle}
+											<span class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white" style="background-color: {getToolBadgeColor(result.subtitle)}">{result.subtitle}</span>
+										{/if}
+									</div>
+									{#if result.subtitle && result.type !== 'action' && result.type !== 'page'}
 										<p class="truncate text-xs text-muted-foreground">{result.subtitle}</p>
 									{/if}
 								</div>
@@ -280,7 +349,9 @@
 			<div class="flex items-center gap-4 border-t border-border px-4 py-2 text-[10px] text-muted">
 				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">↑↓</kbd> Naviguer</span>
 				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">↵</kbd> Ouvrir</span>
+				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">Tab</kbd> Catégorie</span>
 				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">Esc</kbd> Fermer</span>
+				<span class="ml-auto font-medium text-muted-foreground">EnvSim</span>
 			</div>
 		</div>
 	</div>

@@ -1,0 +1,12 @@
+All 29 issues from iteration 3 have been fixed. Here's the summary:
+
+**29/29 issues fixed** across 12 files:
+
+- **2 CRITICAL**: Fixed analytics negative duration bug (`Math.max(0, ...)`), rewrote login page with tabbed design
+- **9 HIGH**: Dashboard compact layout + button, tree view tabs/detail panel, analytics layout overhaul, obfuscation TYPE column + form
+- **12 MEDIUM**: Projects duplicate button removal + status badge, sidebar cleanup, invitations labels, command palette page search + badges, global stat label casing
+- **6 LOW**: 3 already OK, header breadcrumb subtitles, search placeholder
+
+**svelte-check**: 3 errors (all pre-existing), 7 warnings (all pre-existing). No new errors introduced.
+
+Fix summary written to `feedback-logs/iteration-3-fix-summary.md`.

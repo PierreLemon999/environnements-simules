@@ -336,6 +336,7 @@
 				<TabsList class="w-full">
 					<TabsTrigger value="site" class="flex-1 text-xs">Par site</TabsTrigger>
 					<TabsTrigger value="guide" class="flex-1 text-xs">Par guide</TabsTrigger>
+					<TabsTrigger value="map" class="flex-1 text-xs">Carte du site</TabsTrigger>
 				</TabsList>
 			</Tabs>
 
@@ -397,7 +398,44 @@
 
 		<!-- Tree content -->
 		<div class="flex-1 overflow-y-auto px-1 py-2">
-			{#if loading || treeLoading}
+			{#if treeTab === 'map'}
+				<!-- Carte du site (site map visualization) -->
+				<div class="flex flex-col items-center justify-center py-8 px-4 text-center">
+					{#if loading || treeLoading || !tree}
+						<div class="skeleton h-48 w-full rounded-lg"></div>
+					{:else}
+						<div class="w-full space-y-3">
+							{#each tree.children as section}
+								{@const sectionPages = countPages(section)}
+								<div class="rounded-lg border border-border p-3">
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-2">
+											<div class="h-3 w-3 rounded-full bg-primary/60"></div>
+											<span class="text-sm font-medium text-foreground">{section.name}</span>
+										</div>
+										<span class="text-xs text-muted-foreground">{sectionPages} page{sectionPages !== 1 ? 's' : ''}</span>
+									</div>
+									{#if section.children.length > 0}
+										<div class="mt-2 ml-5 flex flex-wrap gap-1.5">
+											{#each section.children.slice(0, 4) as child}
+												<div class="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+													<span class="h-1.5 w-1.5 rounded-full {child.page ? getHealthDot(child.page.healthStatus) : 'bg-muted'}"></span>
+													{child.name}
+												</div>
+											{/each}
+											{#if section.children.length > 4}
+												<span class="inline-flex items-center px-2 py-0.5 text-[10px] text-primary">
+													... et {section.children.length - 4} autres
+												</span>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{:else if loading || treeLoading}
 				<div class="space-y-1 px-2">
 					{#each Array(8) as _}
 						<div class="flex items-center gap-2 py-1.5">
@@ -436,14 +474,25 @@
 							</span>
 						</button>
 						{#if expandedPaths.has(node.path)}
-							{#each node.children as child}
+							{@const visibleChildren = node.children.slice(0, 20)}
+							{@const hiddenCount = node.children.length - visibleChildren.length}
+							{#each visibleChildren as child}
 								{@render treeNodeSnippet(child, depth + 1)}
 							{/each}
+							{#if hiddenCount > 0}
+								<button
+									class="w-full rounded-md px-2 py-1 text-left text-xs text-primary hover:bg-accent"
+									style="padding-left: {(depth + 1) * 16 + 8}px"
+									onclick={() => {/* Could expand to show all */}}
+								>
+									... et {hiddenCount} autres pages
+								</button>
+							{/if}
 						{/if}
 					{:else if node.page}
 						<!-- Page node -->
 						<button
-							class="group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-accent {selectedPage?.id === node.page.id ? 'bg-accent text-primary' : ''}"
+							class="group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-accent {selectedPage?.id === node.page.id ? 'bg-accent text-primary' : ''} {node.page.healthStatus === 'error' ? 'border-l-2 border-l-destructive' : ''}"
 							style="padding-left: {depth * 16 + 8}px"
 							onclick={() => selectPage(node.page!)}
 						>
@@ -452,6 +501,9 @@
 							<span class="truncate {selectedPage?.id === node.page.id ? 'font-medium text-primary' : 'text-foreground'}">
 								{node.page.title || node.name}
 							</span>
+							{#if node.page.captureMode === 'guided'}
+								<span class="ml-auto shrink-0 rounded border border-dashed border-muted px-1 py-0.5 text-[9px] text-muted-foreground">Modale</span>
+							{/if}
 						</button>
 						<!-- Also render children if any -->
 						{#if node.children.length > 0}
@@ -488,6 +540,20 @@
 				{/each}
 			{/if}
 		</div>
+
+		<!-- Selected page breadcrumb path -->
+		{#if selectedPage}
+			<div class="border-t border-border px-3 py-1.5 overflow-x-auto">
+				<div class="flex items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap">
+					{#each selectedPage.urlPath.split('/').filter(Boolean) as segment, i}
+						{#if i > 0}
+							<span class="text-muted">/</span>
+						{/if}
+						<span class={i === selectedPage.urlPath.split('/').filter(Boolean).length - 1 ? 'font-medium text-foreground' : ''}>{segment}</span>
+					{/each}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Tree footer -->
 		<div class="border-t border-border px-3 py-2">
@@ -581,7 +647,7 @@
 							<div class="flex items-center justify-between">
 								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
 									<HardDrive class="h-3.5 w-3.5" />
-									Taille du fichier
+									Taille
 								</dt>
 								<dd class="text-sm text-foreground">{formatFileSize(selectedPage.fileSize)}</dd>
 							</div>
@@ -589,7 +655,7 @@
 							<div class="flex items-center justify-between">
 								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
 									<Calendar class="h-3.5 w-3.5" />
-									Date de capture
+									Capture le
 								</dt>
 								<dd class="text-sm text-foreground">{formatDate(selectedPage.createdAt)}</dd>
 							</div>
@@ -597,15 +663,23 @@
 							<div class="flex items-center justify-between">
 								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
 									<Camera class="h-3.5 w-3.5" />
-									Mode de capture
+									Mode
 								</dt>
 								<dd class="text-sm text-foreground">{getCaptureLabel(selectedPage.captureMode)}</dd>
 							</div>
 							<Separator />
 							<div class="flex items-center justify-between">
 								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+									<Link2 class="h-3.5 w-3.5" />
+									Liens sortants
+								</dt>
+								<dd class="text-sm text-foreground">—</dd>
+							</div>
+							<Separator />
+							<div class="flex items-center justify-between">
+								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
 									<AlertCircle class="h-3.5 w-3.5" />
-									Statut
+									Santé
 								</dt>
 								<dd>
 									<Badge variant={selectedPage.healthStatus === 'ok' ? 'success' : selectedPage.healthStatus === 'warning' ? 'warning' : 'destructive'}>
@@ -618,26 +692,36 @@
 					</CardContent>
 				</Card>
 
-				<!-- Obfuscation rules -->
-				<Card>
-					<CardContent class="p-5">
-						<h3 class="mb-4 text-sm font-semibold text-foreground">Règles d'obfuscation actives</h3>
-						{#if obfuscationRules.filter((r) => r.isActive).length === 0}
-							<p class="text-sm text-muted-foreground">Aucune règle active pour ce projet.</p>
-						{:else}
-							<div class="flex flex-wrap gap-2">
-								{#each obfuscationRules.filter((r) => r.isActive) as rule}
-									<div class="inline-flex items-center gap-1.5 rounded-md border border-border bg-accent px-2.5 py-1 text-xs">
-										<Shield class="h-3 w-3 text-muted-foreground" />
-										<span class="text-muted-foreground">{rule.searchValue}</span>
-										<span class="text-muted">→</span>
-										<span class="font-medium text-foreground">{rule.replaceValue}</span>
-									</div>
-								{/each}
-							</div>
-						{/if}
-					</CardContent>
-				</Card>
+				<div class="space-y-6">
+					<!-- Obfuscation rules -->
+					<Card>
+						<CardContent class="p-5">
+							<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Obfuscation active</h3>
+							{#if obfuscationRules.filter((r) => r.isActive).length === 0}
+								<p class="text-sm text-muted-foreground">Aucune règle active pour ce projet.</p>
+							{:else}
+								<div class="flex flex-wrap gap-2">
+									{#each obfuscationRules.filter((r) => r.isActive) as rule}
+										<div class="inline-flex items-center gap-1.5 rounded-md border border-border bg-accent px-2.5 py-1 text-xs">
+											<Shield class="h-3 w-3 text-muted-foreground" />
+											<span class="text-muted-foreground">{rule.searchValue}</span>
+											<span class="text-muted">→</span>
+											<span class="font-medium text-foreground">{rule.replaceValue}</span>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</CardContent>
+					</Card>
+
+					<!-- Guides associés -->
+					<Card>
+						<CardContent class="p-5">
+							<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Guides associés</h3>
+							<p class="text-sm text-muted-foreground">Aucun guide associé à cette page.</p>
+						</CardContent>
+					</Card>
+				</div>
 			</div>
 		{:else}
 			<!-- Empty state -->

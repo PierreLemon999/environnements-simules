@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { get } from '$lib/api';
 	import { Button } from '$components/ui/button';
-	import { Input } from '$components/ui/input';
-	import { Badge } from '$components/ui/badge';
 	import {
 		Search,
 		Bell,
@@ -11,6 +10,7 @@
 		Check,
 		ChevronRight,
 		AlertTriangle,
+		HelpCircle,
 	} from 'lucide-svelte';
 
 	let { collapsed = false, onOpenCommandPalette }: { collapsed?: boolean; onOpenCommandPalette?: () => void } = $props();
@@ -21,13 +21,38 @@
 
 	const CURRENT_EXTENSION_VERSION = '0.1.0';
 
+	// Cache for resolved entity names (project names, etc.)
+	let resolvedNames = $state<Record<string, string>>({});
+
 	// Check for extension on mount
 	$effect(() => {
 		checkExtension();
 	});
 
+	// Resolve project names when the URL changes
+	$effect(() => {
+		const pathname = $page.url.pathname;
+		const segments = pathname.split('/').filter(Boolean);
+
+		// If we're on /admin/projects/:id, resolve the project name
+		if (segments.length >= 3 && segments[0] === 'admin' && segments[1] === 'projects') {
+			const projectId = segments[2];
+			if (!resolvedNames[projectId]) {
+				resolveProjectName(projectId);
+			}
+		}
+	});
+
+	async function resolveProjectName(projectId: string) {
+		try {
+			const res = await get<{ data: { name: string } }>(`/projects/${projectId}`);
+			resolvedNames = { ...resolvedNames, [projectId]: res.data.name };
+		} catch {
+			// Keep showing the ID if resolution fails
+		}
+	}
+
 	function checkExtension() {
-		// Try to detect extension via DOM element or message
 		const extensionEl = document.getElementById('es-extension-installed');
 		if (extensionEl) {
 			const version = extensionEl.getAttribute('data-version') || '';
@@ -36,7 +61,6 @@
 			return;
 		}
 
-		// Alternative: try postMessage approach
 		const timeout = setTimeout(() => {
 			extensionStatus = 'not-installed';
 		}, 1500);
@@ -54,12 +78,30 @@
 		window.postMessage({ type: 'ES_EXTENSION_PING' }, '*');
 	}
 
+	// Determine if we're on the projects page (to show Nouveau projet button)
+	let isOnProjectsPage = $derived(
+		$page.url.pathname === '/admin/projects'
+	);
+
+	// Subtitle descriptions for each page
+	const pageSubtitles: Record<string, string> = {
+		admin: 'Vue d\'ensemble',
+		projects: 'Gestion des projets',
+		tree: 'Exploration des pages',
+		analytics: 'Suivi de l\'activité',
+		invitations: 'Gestion des invitations',
+		users: 'Gestion des utilisateurs',
+		obfuscation: 'Règles de masquage',
+		'update-requests': 'Suivi des demandes',
+		settings: 'Configuration',
+	};
+
 	// Build breadcrumb from current path
 	let breadcrumbs = $derived(() => {
 		const pathname = $page.url.pathname;
 		const segments = pathname.split('/').filter(Boolean);
 		const labels: Record<string, string> = {
-			admin: 'Administration',
+			admin: 'Dashboard',
 			projects: 'Projets',
 			tree: 'Arborescence',
 			analytics: 'Analytics',
@@ -69,11 +111,26 @@
 			'update-requests': 'Demandes MAJ',
 			settings: 'Paramètres',
 		};
-		return segments.map((segment, i) => ({
-			label: labels[segment] ?? segment,
-			href: '/' + segments.slice(0, i + 1).join('/'),
-			isLast: i === segments.length - 1,
-		}));
+
+		const crumbs: Array<{ label: string; href: string; isLast: boolean }> = [];
+
+		for (let i = 0; i < segments.length; i++) {
+			const segment = segments[i];
+			const label = resolvedNames[segment] ?? labels[segment] ?? segment;
+			const href = '/' + segments.slice(0, i + 1).join('/');
+			const isLast = i === segments.length - 1;
+
+			crumbs.push({ label, href, isLast: false });
+
+			// For the last named page segment, add a descriptive subtitle as final breadcrumb
+			if (isLast && pageSubtitles[segment]) {
+				crumbs.push({ label: pageSubtitles[segment], href, isLast: true });
+			} else if (isLast) {
+				crumbs[crumbs.length - 1].isLast = true;
+			}
+		}
+
+		return crumbs;
 	});
 </script>
 
@@ -101,7 +158,7 @@
 		onclick={() => onOpenCommandPalette?.()}
 	>
 		<Search class="h-3.5 w-3.5" />
-		<span>Rechercher...</span>
+		<span>Rechercher pages, projets, utilisateurs...</span>
 		<kbd class="ml-auto rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted">
 			⌘K
 		</kbd>
@@ -113,6 +170,13 @@
 		title="Notifications"
 	>
 		<Bell class="h-4 w-4" />
+	</button>
+
+	<button
+		class="relative rounded-md p-2 text-muted transition-colors hover:bg-accent hover:text-foreground"
+		title="Aide"
+	>
+		<HelpCircle class="h-4 w-4" />
 	</button>
 
 	{#if extensionStatus === 'installed'}
@@ -132,8 +196,10 @@
 		</Button>
 	{/if}
 
-	<Button size="sm" class="gap-1.5">
-		<Plus class="h-3.5 w-3.5" />
-		Nouveau projet
-	</Button>
+	{#if isOnProjectsPage}
+		<Button size="sm" class="gap-1.5" onclick={() => { window.dispatchEvent(new CustomEvent('open-create-project')); }}>
+			<Plus class="h-3.5 w-3.5" />
+			Nouveau projet
+		</Button>
+	{/if}
 </header>

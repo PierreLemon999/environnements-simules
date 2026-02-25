@@ -1,0 +1,21 @@
+All 19 issues have been fixed. Here's the summary:
+
+**3 files modified:**
+
+1. **`frontend/src/routes/admin/+layout.ts`** — CRITICAL fix: Made the auth guard `async` and added `await loadFromStorage()` before checking authentication. This fixes the race condition where all admin pages redirected to login.
+
+2. **`frontend/src/routes/login/+page.svelte`** — Complete rewrite fixing all 17 login page issues:
+   - Removed tab UI → single unified card with both login methods
+   - Fixed branding: "ED" logo with gradient + shadow, "Environnements de Démonstration", "Lemon Learning"
+   - Added all missing elements: password toggle, "Se souvenir de moi", "Mot de passe oublié?", "IDENTIFIANTS" label, divider, footer, hint text
+   - Replaced Chrome icon with official multicolor Google "G" SVG
+   - Rich animated background with 4 floating blurred shapes + dot pattern
+   - Proper card styling (16px radius, 44px padding, hover shadow)
+   - Custom inputs with 8px radius + blue focus ring
+   - Styled error banner (red bg/border + icon)
+   - Success overlay with green checkmark + 1s delay before redirect
+   - Staggered fadeUp entrance animations
+
+3. **`tests/e2e/screenshots.spec.ts`** — CRITICAL fix: `loginAsAdmin()` now calls the backend API directly, gets a JWT token, injects it into localStorage, then navigates to `/admin`.
+
+**svelte-check**: 0 new errors introduced (3 pre-existing errors in unrelated files).

@@ -417,7 +417,7 @@
 							<CardContent class="p-4">
 								<div class="flex items-center justify-between">
 									<div>
-										<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total de liens</p>
+										<p class="text-xs font-medium text-muted-foreground">Total de liens</p>
 										<p class="mt-1 text-2xl font-bold text-foreground">{detectedLinks().length}</p>
 									</div>
 									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -430,7 +430,7 @@
 							<CardContent class="p-4">
 								<div class="flex items-center justify-between">
 									<div>
-										<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Liens internes</p>
+										<p class="text-xs font-medium text-muted-foreground">Liens internes</p>
 										<p class="mt-1 text-2xl font-bold text-foreground">{internalLinks.length}</p>
 									</div>
 									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
@@ -443,7 +443,7 @@
 							<CardContent class="p-4">
 								<div class="flex items-center justify-between">
 									<div>
-										<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Liens externes</p>
+										<p class="text-xs font-medium text-muted-foreground">Liens externes</p>
 										<p class="mt-1 text-2xl font-bold text-foreground">{externalLinks.length}</p>
 									</div>
 									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10">

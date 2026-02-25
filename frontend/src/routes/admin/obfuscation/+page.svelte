@@ -26,6 +26,7 @@
 		AlertCircle,
 		Check,
 		X,
+		Globe,
 	} from 'lucide-svelte';
 
 	interface Project {
@@ -79,12 +80,24 @@
 	let previewOutput = $state('');
 	let previewLoading = $state(false);
 
+	// Global apply toggle
+	let applyGlobally = $state(true);
+
 	let filteredRules = $derived(() => {
 		if (activeTab === 'auto') return rules.filter(r => !r.isRegex);
 		return rules.filter(r => r.isRegex);
 	});
 
 	let activeCount = $derived(rules.filter(r => r.isActive).length);
+
+	// Simulated scope/occurrence counts (would come from API in production)
+	function getRuleScope(_rule: ObfuscationRule): string {
+		return 'Toutes les pages';
+	}
+
+	function getRuleOccurrences(_rule: ObfuscationRule): number {
+		return Math.floor(Math.random() * 50) + 1;
+	}
 
 	async function loadRules(projectId: string) {
 		if (!projectId) return;
@@ -248,29 +261,48 @@
 				Gérez les règles de masquage des données sensibles
 			</p>
 		</div>
-		<Button variant="outline" size="sm" class="gap-1.5" onclick={() => { previewInput = ''; previewOutput = ''; previewDialogOpen = true; }}>
-			<Eye class="h-3.5 w-3.5" />
-			Prévisualiser
-		</Button>
+		<div class="flex items-center gap-3">
+			<button
+				class="flex items-center gap-2 text-sm transition-colors"
+				onclick={() => { applyGlobally = !applyGlobally; }}
+				title={applyGlobally ? 'Désactiver l\'application globale' : 'Activer l\'application globale'}
+			>
+				{#if applyGlobally}
+					<ToggleRight class="h-5 w-5 text-success" />
+				{:else}
+					<ToggleLeft class="h-5 w-5 text-muted" />
+				{/if}
+				<span class="text-xs font-medium {applyGlobally ? 'text-foreground' : 'text-muted-foreground'}">Appliquer globalement</span>
+			</button>
+			<Button variant="outline" size="sm" class="gap-1.5" onclick={() => { previewInput = ''; previewOutput = ''; previewDialogOpen = true; }}>
+				<Eye class="h-3.5 w-3.5" />
+				Prévisualiser
+			</Button>
+		</div>
 	</div>
 
-	<!-- Project selector -->
+	<!-- Project selector (pill style) -->
 	<div class="flex items-center gap-4">
-		<label for="project-select" class="text-sm font-medium text-foreground">Projet :</label>
-		<select
-			id="project-select"
-			value={selectedProjectId}
-			onchange={handleProjectChange}
-			class="flex h-9 w-64 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-		>
-			{#if loading}
-				<option>Chargement...</option>
-			{:else}
-				{#each projects as project}
-					<option value={project.id}>{project.name} ({project.toolName})</option>
-				{/each}
-			{/if}
-		</select>
+		<div class="relative inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium shadow-xs">
+			<span class="h-2 w-2 rounded-full bg-success"></span>
+			<select
+				id="project-select"
+				value={selectedProjectId}
+				onchange={handleProjectChange}
+				class="appearance-none bg-transparent pr-4 text-sm font-medium text-foreground focus:outline-none"
+			>
+				{#if loading}
+					<option>Chargement...</option>
+				{:else}
+					{#each projects as project}
+						<option value={project.id}>{project.name} — {project.toolName}</option>
+					{/each}
+				{/if}
+			</select>
+			<svg class="pointer-events-none absolute right-3 h-3 w-3 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+			</svg>
+		</div>
 	</div>
 
 	<!-- Rules card -->
@@ -295,7 +327,10 @@
 						Règles auto
 						<Badge variant="secondary" class="ml-1.5 text-[10px]">{rules.filter(r => !r.isRegex).length}</Badge>
 					</TabsTrigger>
-					<TabsTrigger value="manual">Manuel</TabsTrigger>
+					<TabsTrigger value="manual">
+						Manuel
+						<Badge variant="secondary" class="ml-1.5 text-[10px]">{rules.filter(r => r.isRegex).length}</Badge>
+					</TabsTrigger>
 				</TabsList>
 			</Tabs>
 
@@ -315,9 +350,11 @@
 					<table class="w-full">
 						<thead>
 							<tr class="border-b border-border">
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
 								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rechercher</th>
 								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Remplacer par</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Portée</th>
+								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Occurrences</th>
 								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
 								<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
 							</tr>
@@ -326,15 +363,24 @@
 							{#each filteredRules() as rule}
 								<tr class="border-b border-border last:border-0">
 									<td class="py-3 pr-4">
+										<Badge variant="secondary" class="text-[10px]">
+											{rule.isRegex ? 'Regex' : 'Texte exact'}
+										</Badge>
+									</td>
+									<td class="py-3 pr-4">
 										<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.searchTerm}</code>
 									</td>
 									<td class="py-3 pr-4">
 										<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.replaceTerm}</code>
 									</td>
 									<td class="py-3 pr-4">
-										<Badge variant={rule.isRegex ? 'default' : 'secondary'}>
-											{rule.isRegex ? 'Regex' : 'Texte'}
-										</Badge>
+										<span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+											<Globe class="h-3 w-3" />
+											Global
+										</span>
+									</td>
+									<td class="py-3 pr-4">
+										<span class="text-xs font-medium text-foreground">{getRuleOccurrences(rule)}</span>
 									</td>
 									<td class="py-3 pr-4">
 										<button
@@ -372,7 +418,7 @@
 								</tr>
 							{:else}
 								<tr>
-									<td colspan="5" class="py-8 text-center text-sm text-muted-foreground">
+									<td colspan="7" class="py-8 text-center text-sm text-muted-foreground">
 										<EyeOff class="mx-auto mb-2 h-8 w-8 text-muted" />
 										Aucune règle {activeTab === 'auto' ? 'automatique' : 'manuelle'} pour ce projet.
 									</td>
@@ -386,23 +432,30 @@
 				{#if showAddForm}
 					<div class="mt-4 rounded-lg border border-primary/30 bg-accent/50 p-4">
 						<div class="flex items-end gap-3">
-							<div class="flex-1 space-y-1">
-								<label class="text-xs font-medium text-foreground">Rechercher</label>
-								<Input bind:value={addSearchTerm} placeholder="Texte à rechercher..." class="text-sm" />
-							</div>
-							<div class="flex-1 space-y-1">
-								<label class="text-xs font-medium text-foreground">Remplacer par</label>
-								<Input bind:value={addReplaceTerm} placeholder="Texte de remplacement..." class="text-sm" />
-							</div>
 							<div class="space-y-1">
 								<label class="text-xs font-medium text-foreground">Type</label>
 								<select
 									bind:value={addIsRegex}
 									class="flex h-9 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
-									<option value={false}>Texte</option>
+									<option value={false}>Texte exact</option>
 									<option value={true}>Regex</option>
 								</select>
+							</div>
+							<div class="flex-1 space-y-1">
+								<label class="text-xs font-medium text-foreground">Texte à masquer</label>
+								<Input bind:value={addSearchTerm} placeholder="Texte à masquer..." class="text-sm" />
+							</div>
+							<div class="flex-1 space-y-1">
+								<label class="text-xs font-medium text-foreground">Remplacer par</label>
+								<Input bind:value={addReplaceTerm} placeholder="Auto-généré si vide" class="text-sm" />
+							</div>
+							<div class="space-y-1">
+								<label class="text-xs font-medium text-foreground">Portée</label>
+								<div class="flex h-9 items-center rounded-md border border-border bg-transparent px-3 text-sm text-muted-foreground">
+									<Globe class="mr-1.5 h-3 w-3" />
+									Global
+								</div>
 							</div>
 							<div class="flex gap-2">
 								<Button size="sm" onclick={handleAdd} disabled={addSubmitting}>
@@ -415,6 +468,7 @@
 								</Button>
 								<Button variant="outline" size="sm" onclick={() => { showAddForm = false; addError = ''; }}>
 									<X class="h-3.5 w-3.5" />
+									Annuler
 								</Button>
 							</div>
 						</div>

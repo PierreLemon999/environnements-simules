@@ -1,0 +1,25 @@
+Report written to `feedback-logs/iteration-2-issues.md`.
+
+**Summary of findings:**
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 1 |
+| HIGH | 12 |
+| MEDIUM | 10 |
+| LOW | 6 |
+| **TOTAL** | **29** |
+
+**Key findings:**
+
+- **CRITICAL**: Dashboard shows `-483m -59s` negative duration — data formatting bug
+- **HIGH (login)**: Screenshots 02/03 still show the OLD tab-based login UI (the new unified design in screenshot 01 looks correct)
+- **HIGH (dashboard)**: Layout fundamentally differs from mockup — has a project list table that shouldn't be there, and the activity log is too simple compared to the mockup's detailed table
+- **HIGH (sidebar)**: Missing badge counts (Projets 7, Analytics 24, etc.), missing tool page counts, and missing "Composants" nav item
+- **HIGH (project detail)**: UUID shown in breadcrumb instead of project name
+- **HIGH (tree view)**: Missing "Carte du site" (site map) tab, simpler tree structure than mockup
+- **HIGH (analytics)**: Different layout from mockup, missing date range picker
+- **MEDIUM**: Various styling differences (obfuscation columns, command palette counts, invitations button label, login background tint)
+- **LOW**: Polish items (hover effects, collapsed sidebar cleanup, online status dot)
+
+The login page rewrite (screenshot 01) looks very good and close to the mockup. The major remaining work is on the dashboard layout, sidebar enrichment, and tree/analytics pages.

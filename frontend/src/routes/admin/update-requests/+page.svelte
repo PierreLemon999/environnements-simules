@@ -154,7 +154,7 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">En attente</p>
+						<p class="text-xs font-medium text-muted-foreground">En attente</p>
 						<p class="mt-1 text-2xl font-bold text-warning">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>
@@ -174,7 +174,7 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">En cours</p>
+						<p class="text-xs font-medium text-muted-foreground">En cours</p>
 						<p class="mt-1 text-2xl font-bold text-primary">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>
@@ -194,7 +194,7 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Terminées</p>
+						<p class="text-xs font-medium text-muted-foreground">Terminées</p>
 						<p class="mt-1 text-2xl font-bold text-success">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>

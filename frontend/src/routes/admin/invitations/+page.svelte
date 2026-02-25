@@ -275,7 +275,7 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Invitations envoyées</p>
+						<p class="text-xs font-medium text-muted-foreground">Invitations envoyées</p>
 						<p class="mt-1 text-2xl font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>
@@ -301,7 +301,7 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Clients actifs</p>
+						<p class="text-xs font-medium text-muted-foreground">Clients actifs</p>
 						<p class="mt-1 text-2xl font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>

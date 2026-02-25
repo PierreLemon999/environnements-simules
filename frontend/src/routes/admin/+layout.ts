@@ -1,13 +1,14 @@
 import { browser } from '$app/environment';
 import { get as getStore } from 'svelte/store';
-import { isAuthenticated, user } from '$lib/stores/auth';
+import { isAuthenticated, user, loadFromStorage } from '$lib/stores/auth';
 import { redirect } from '@sveltejs/kit';
 import type { LayoutLoad } from './$types';
 
 export const ssr = false;
 
-export const load: LayoutLoad = () => {
+export const load: LayoutLoad = async () => {
 	if (browser) {
+		await loadFromStorage();
 		const authed = getStore(isAuthenticated);
 		const currentUser = getStore(user);
 

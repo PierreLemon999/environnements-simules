@@ -221,7 +221,15 @@
 		}
 	}
 
+	import { onDestroy } from 'svelte';
+
+	function handleCreateProjectEvent() {
+		openCreateDialog();
+	}
+
 	onMount(async () => {
+		window.addEventListener('open-create-project', handleCreateProjectEvent);
+
 		try {
 			const res = await get<{ data: Project[] }>('/projects');
 			projects = res.data;
@@ -230,6 +238,10 @@
 		} finally {
 			loading = false;
 		}
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('open-create-project', handleCreateProjectEvent);
 	});
 </script>
 
@@ -246,10 +258,6 @@
 				Gérez vos environnements simulés
 			</p>
 		</div>
-		<Button size="sm" class="gap-1.5" onclick={openCreateDialog}>
-			<Plus class="h-3.5 w-3.5" />
-			Nouveau projet
-		</Button>
 	</div>
 
 	<!-- Filters -->
@@ -317,7 +325,7 @@
 	{:else}
 		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{#each filteredProjects() as project}
-				<Card class="group relative transition-shadow hover:shadow-md">
+				<Card class="group relative transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
 					<CardContent class="p-5">
 						<!-- Actions dropdown -->
 						<div class="absolute right-3 top-3">
@@ -351,7 +359,10 @@
 									{project.toolName.slice(0, 2).toUpperCase()}
 								</div>
 								<div class="min-w-0 flex-1">
-									<p class="font-medium text-foreground group-hover:text-primary">{project.name}</p>
+									<div class="flex items-center gap-2">
+										<p class="font-medium text-foreground group-hover:text-primary">{project.name}</p>
+										<Badge variant="success" class="text-[10px]">Actif</Badge>
+									</div>
 									<p class="text-xs text-muted-foreground">{project.toolName}</p>
 								</div>
 							</div>
