@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { login, loginWithGoogle } from '$lib/stores/auth';
-	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-svelte';
+	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, Info } from 'lucide-svelte';
 
-	let activeTab = $state<'client' | 'admin'>('client');
 	let email = $state('');
 	let password = $state('');
+	let rememberMe = $state(false);
 	let error = $state('');
 	let loading = $state(false);
+	let googleLoading = $state(false);
 	let showPassword = $state(false);
 	let success = $state(false);
 	let redirectTarget = $state('');
 
-	async function handleClientLogin(e: Event) {
+	async function handleLogin(e: Event) {
 		e.preventDefault();
 		if (!email || !password) {
 			error = 'Veuillez remplir tous les champs.';
@@ -25,7 +26,7 @@
 		try {
 			const user = await login(email, password);
 			success = true;
-			redirectTarget = user.role === 'client' ? '/view' : '/admin';
+			redirectTarget = user.role === 'admin' ? '/admin' : '/view';
 			setTimeout(() => goto(redirectTarget), 1000);
 		} catch (err: unknown) {
 			if (err && typeof err === 'object' && 'message' in err) {
@@ -39,7 +40,7 @@
 	}
 
 	async function handleGoogleLogin() {
-		loading = true;
+		googleLoading = true;
 		error = '';
 
 		try {
@@ -60,7 +61,7 @@
 				error = 'Une erreur est survenue lors de la connexion Google.';
 			}
 		} finally {
-			loading = false;
+			googleLoading = false;
 		}
 	}
 </script>
@@ -95,118 +96,127 @@
 					<p class="brand-subtitle">Plateforme de démonstrations Lemon Learning</p>
 				</div>
 
-				<!-- Tabs -->
-				<div class="tabs">
-					<button
-						class="tab {activeTab === 'client' ? 'tab-active' : ''}"
-						onclick={() => { activeTab = 'client'; error = ''; }}
-					>
-						Accès client
-					</button>
-					<button
-						class="tab {activeTab === 'admin' ? 'tab-active' : ''}"
-						onclick={() => { activeTab = 'admin'; error = ''; }}
-					>
-						Administration
-					</button>
+				<!-- Section header -->
+				<div class="section-header">
+					<div class="section-label">
+						<Lock size={14} />
+						<span>Identifiants</span>
+					</div>
+					<div class="section-hint">
+						<Info size={12} />
+						<span>Accès pour les équipes et les clients avec leurs identifiants</span>
+					</div>
 				</div>
 
-				{#if activeTab === 'client'}
-					<!-- Client login form -->
-					<form onsubmit={handleClientLogin} class="login-form">
-						<div class="form-group">
-							<label for="email" class="form-label">Email</label>
-							<div class="input-wrapper">
-								<Mail size={16} class="input-icon" />
-								<input
-									id="email"
-									type="email"
-									placeholder="vous@entreprise.com"
-									bind:value={email}
-									disabled={loading}
-									class="form-input"
-								/>
-							</div>
+				<!-- Unified login form -->
+				<form onsubmit={handleLogin} class="login-form">
+					<div class="form-group">
+						<label for="email" class="form-label">Email</label>
+						<div class="input-wrapper">
+							<Mail size={16} class="input-icon" />
+							<input
+								id="email"
+								type="email"
+								placeholder="vous@entreprise.com"
+								bind:value={email}
+								disabled={loading || googleLoading}
+								class="form-input"
+							/>
 						</div>
-
-						<div class="form-group">
-							<label for="password" class="form-label">Mot de passe</label>
-							<div class="input-wrapper">
-								<Lock size={16} class="input-icon" />
-								<input
-									id="password"
-									type={showPassword ? 'text' : 'password'}
-									placeholder="Votre mot de passe"
-									bind:value={password}
-									disabled={loading}
-									class="form-input has-toggle"
-								/>
-								<button
-									type="button"
-									class="password-toggle"
-									onclick={() => showPassword = !showPassword}
-									tabindex={-1}
-									aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-								>
-									{#if showPassword}
-										<EyeOff size={16} />
-									{:else}
-										<Eye size={16} />
-									{/if}
-								</button>
-							</div>
-						</div>
-
-						{#if error}
-							<div class="error-banner">
-								<XCircle size={16} />
-								<span>{error}</span>
-							</div>
-						{/if}
-
-						<button type="submit" class="btn-primary" disabled={loading}>
-							{#if loading}
-								<Loader2 size={16} class="animate-spin" />
-							{:else}
-								<LogIn size={16} />
-							{/if}
-							Se connecter
-						</button>
-					</form>
-				{:else}
-					<!-- Admin Google SSO -->
-					<div class="admin-section">
-						<p class="admin-description">
-							Connectez-vous avec votre compte Google Lemon Learning pour accéder à l'administration.
-						</p>
-
-						{#if error}
-							<div class="error-banner">
-								<XCircle size={16} />
-								<span>{error}</span>
-							</div>
-						{/if}
-
-						<button
-							class="btn-google"
-							onclick={handleGoogleLogin}
-							disabled={loading}
-						>
-							{#if loading}
-								<Loader2 size={16} class="animate-spin" />
-							{:else}
-								<svg width="18" height="18" viewBox="0 0 48 48">
-									<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-									<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-									<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-									<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-								</svg>
-							{/if}
-							Continuer avec Google
-						</button>
-						<p class="admin-hint">(admin uniquement)</p>
 					</div>
-				{/if}
+
+					<div class="form-group">
+						<label for="password" class="form-label">Mot de passe</label>
+						<div class="input-wrapper">
+							<Lock size={16} class="input-icon" />
+							<input
+								id="password"
+								type={showPassword ? 'text' : 'password'}
+								placeholder="Votre mot de passe"
+								bind:value={password}
+								disabled={loading || googleLoading}
+								class="form-input has-toggle"
+							/>
+							<button
+								type="button"
+								class="password-toggle"
+								onclick={() => showPassword = !showPassword}
+								tabindex={-1}
+								aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+							>
+								{#if showPassword}
+									<EyeOff size={16} />
+								{:else}
+									<Eye size={16} />
+								{/if}
+							</button>
+						</div>
+					</div>
+
+					<!-- Remember me + Forgot password -->
+					<div class="form-options">
+						<label class="remember-me">
+							<input
+								type="checkbox"
+								bind:checked={rememberMe}
+								disabled={loading || googleLoading}
+							/>
+							<span>Se souvenir de moi</span>
+						</label>
+						<a href="/forgot-password" class="forgot-password">Mot de passe oublié ?</a>
+					</div>
+
+					{#if error}
+						<div class="error-banner">
+							<XCircle size={16} />
+							<span>{error}</span>
+						</div>
+					{/if}
+
+					<button type="submit" class="btn-primary" disabled={loading || googleLoading}>
+						{#if loading}
+							<Loader2 size={16} class="animate-spin" />
+						{:else}
+							<LogIn size={16} />
+						{/if}
+						Se connecter
+					</button>
+				</form>
+
+				<!-- Divider -->
+				<div class="divider">
+					<div class="divider-line"></div>
+					<span class="divider-text">ou se connecter avec</span>
+					<div class="divider-line"></div>
+				</div>
+
+				<!-- Google SSO -->
+				<div class="google-section">
+					<button
+						class="btn-google"
+						onclick={handleGoogleLogin}
+						disabled={loading || googleLoading}
+					>
+						{#if googleLoading}
+							<Loader2 size={16} class="animate-spin" />
+						{:else}
+							<svg width="18" height="18" viewBox="0 0 48 48">
+								<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+								<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+								<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+								<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+							</svg>
+						{/if}
+						Continuer avec Google
+					</button>
+					<p class="google-hint">(admin uniquement)</p>
+				</div>
+			</div>
+
+			<!-- Footer -->
+			<div class="login-footer fade-up" style="animation-delay: 200ms">
+				<p class="footer-brand">Propulsé par Lemon Learning</p>
+				<p class="footer-legal">&copy; 2026 Environnements Simulés &middot; Confidentialité &middot; Conditions</p>
 			</div>
 		{/if}
 	</div>
@@ -290,6 +300,7 @@
 		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
 	}
 
+	/* Brand */
 	.brand {
 		text-align: center;
 		margin-bottom: 28px;
@@ -312,7 +323,7 @@
 	}
 
 	.brand-title {
-		font-size: 21px;
+		font-size: 20px;
 		font-weight: 700;
 		color: var(--color-foreground);
 		letter-spacing: -0.01em;
@@ -324,40 +335,37 @@
 		color: var(--color-muted-foreground);
 	}
 
-	/* Tabs */
-	.tabs {
+	/* Section header */
+	.section-header {
+		margin-bottom: 20px;
+	}
+
+	.section-label {
 		display: flex;
-		gap: 0;
-		margin-bottom: 24px;
-		border: 1px solid var(--color-border);
-		border-radius: 10px;
-		padding: 3px;
-		background: var(--color-accent, #f9fafb);
-	}
-
-	.tab {
-		flex: 1;
-		padding: 8px 16px;
-		border: none;
-		border-radius: 8px;
-		background: transparent;
-		font-size: 14px;
-		font-weight: 500;
-		font-family: inherit;
-		color: var(--color-muted-foreground);
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.tab:hover:not(.tab-active) {
-		color: var(--color-foreground);
-	}
-
-	.tab-active {
-		background: white;
-		color: var(--color-foreground);
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
 		font-weight: 600;
+		color: var(--color-foreground);
+		margin-bottom: 4px;
+	}
+
+	.section-label :global(svg) {
+		color: var(--color-muted-foreground);
+	}
+
+	.section-hint {
+		display: flex;
+		align-items: flex-start;
+		gap: 5px;
+		font-size: 12px;
+		color: var(--color-muted);
+		line-height: 1.4;
+	}
+
+	.section-hint :global(svg) {
+		flex-shrink: 0;
+		margin-top: 1px;
 	}
 
 	/* Form */
@@ -446,6 +454,45 @@
 		background: var(--color-input);
 	}
 
+	/* Form options (remember me + forgot password) */
+	.form-options {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-top: -4px;
+	}
+
+	.remember-me {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		color: var(--color-muted-foreground);
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.remember-me input[type="checkbox"] {
+		width: 15px;
+		height: 15px;
+		border-radius: 4px;
+		accent-color: var(--color-primary);
+		cursor: pointer;
+	}
+
+	.forgot-password {
+		font-size: 13px;
+		color: var(--color-primary);
+		text-decoration: none;
+		font-weight: 500;
+		transition: color 0.2s;
+	}
+
+	.forgot-password:hover {
+		color: var(--color-primary-hover, #1d4ed8);
+		text-decoration: underline;
+	}
+
 	/* Error banner */
 	.error-banner {
 		display: flex;
@@ -492,21 +539,34 @@
 		cursor: not-allowed;
 	}
 
-	/* Admin section */
-	.admin-section {
+	/* Divider */
+	.divider {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin: 24px 0;
+	}
+
+	.divider-line {
+		flex: 1;
+		height: 1px;
+		background: var(--color-border);
+	}
+
+	.divider-text {
+		font-size: 12px;
+		color: var(--color-muted);
+		white-space: nowrap;
+	}
+
+	/* Google section */
+	.google-section {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		align-items: center;
+		gap: 8px;
 	}
 
-	.admin-description {
-		font-size: 14px;
-		line-height: 1.5;
-		color: var(--color-muted-foreground);
-		text-align: center;
-	}
-
-	/* Google button */
 	.btn-google {
 		display: inline-flex;
 		align-items: center;
@@ -536,9 +596,27 @@
 		cursor: not-allowed;
 	}
 
-	.admin-hint {
-		text-align: center;
+	.google-hint {
 		font-size: 12px;
+		color: var(--color-muted);
+		text-align: center;
+	}
+
+	/* Footer */
+	.login-footer {
+		text-align: center;
+		margin-top: 24px;
+	}
+
+	.footer-brand {
+		font-size: 13px;
+		color: var(--color-muted-foreground);
+		font-weight: 500;
+		margin-bottom: 4px;
+	}
+
+	.footer-legal {
+		font-size: 11px;
 		color: var(--color-muted);
 	}
 
@@ -574,5 +652,6 @@
 
 	@media (max-width: 480px) {
 		.login-card { padding: 32px 24px 28px; }
+		.form-options { flex-direction: column; align-items: flex-start; gap: 8px; }
 	}
 </style>

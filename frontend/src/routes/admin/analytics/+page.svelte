@@ -112,6 +112,9 @@
 	let sessionDetailLoading = $state(false);
 	let detailPanelOpen = $state(false);
 
+	// Bar chart period state
+	let barChartPeriod = $state(7);
+
 	// Unified filtered sessions based on search
 	let filteredSessions = $derived(
 		sessions.filter((s) => {
@@ -150,6 +153,25 @@
 			return name.includes(q) || email.includes(q);
 		})
 	);
+
+	// Unique user counts by type
+	let uniqueClientUserCount = $derived((() => {
+		const userIds = new Set<string>();
+		for (const s of clientSessions) {
+			const id = s.userId ?? s.assignmentId ?? s.id;
+			userIds.add(id);
+		}
+		return userIds.size;
+	})());
+
+	let uniqueAdminUserCount = $derived((() => {
+		const userIds = new Set<string>();
+		for (const s of adminSessions) {
+			const id = s.userId ?? s.id;
+			userIds.add(id);
+		}
+		return userIds.size;
+	})());
 
 	// Formatting helpers
 	function formatDate(dateStr: string): string {
@@ -245,13 +267,10 @@
 
 	function getClientDisplayName(session: Session | SessionDetail): string {
 		if (session.user?.name) return session.user.name;
-		// Check assignment metadata for company info
-		const assignment = (session as any).assignment;
+		const assignment = session.assignment;
 		if (assignment?.clientName) return assignment.clientName;
 		if (assignment?.companyName) return assignment.companyName;
-		if (assignment?.metadata?.companyName) return assignment.metadata.companyName;
 		if (assignment?.clientEmail) {
-			// Extract company name from email domain
 			const domain = assignment.clientEmail.split('@')[1];
 			if (domain) {
 				const company = domain.split('.')[0];
@@ -263,9 +282,57 @@
 
 	function getClientDisplaySubtitle(session: Session | SessionDetail): string {
 		if (session.user?.email) return session.user.email;
-		const assignment = (session as any).assignment;
+		const assignment = session.assignment;
 		if (assignment?.clientEmail) return assignment.clientEmail;
 		return 'Lien partagé';
+	}
+
+	// Get company name for a session — derive from assignment email or user email domain
+	function getCompanyName(session: Session): string {
+		const assignment = session.assignment;
+		if (assignment?.companyName) return assignment.companyName;
+		if (assignment?.clientEmail) {
+			const domain = assignment.clientEmail.split('@')[1];
+			if (domain) {
+				const company = domain.split('.')[0];
+				return company.charAt(0).toUpperCase() + company.slice(1);
+			}
+		}
+		// Fallback: extract from user email domain
+		if (session.user?.email) {
+			const domain = session.user.email.split('@')[1];
+			if (domain) {
+				const company = domain.split('.')[0];
+				return company.charAt(0).toUpperCase() + company.slice(1);
+			}
+		}
+		return '—';
+	}
+
+	// Get unique visit count for a user across all sessions
+	function getUniqueVisitCount(session: Session, sessionList: Session[]): number {
+		const userId = session.userId ?? (session as any).assignment?.clientEmail ?? session.id;
+		return sessionList.filter(s => {
+			const sId = s.userId ?? (s as any).assignment?.clientEmail ?? s.id;
+			return sId === userId;
+		}).length;
+	}
+
+	// Max visits for progress bar normalization
+	function getMaxVisits(sessionList: Session[]): number {
+		const visitCounts = new Map<string, number>();
+		for (const s of sessionList) {
+			const userId = s.userId ?? (s as any).assignment?.clientEmail ?? s.id;
+			visitCounts.set(userId, (visitCounts.get(userId) ?? 0) + 1);
+		}
+		return Math.max(...visitCounts.values(), 1);
+	}
+
+	// Tool dot color palette
+	const toolColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+
+	function getToolColor(index: number): string {
+		return toolColors[index % toolColors.length];
 	}
 
 	function getEventIcon(eventType: string) {
@@ -288,10 +355,9 @@
 		}
 	}
 
-	// Generate sparkline data points from sessions (last 7 days)
-	function getSparklineData(): number[] {
+	// Generate sparkline data points from sessions (configurable days)
+	function getSparklineData(days: number = 7): number[] {
 		const now = new Date();
-		const days = 7;
 		const counts = Array(days).fill(0);
 		for (const s of sessions) {
 			const d = new Date(s.startedAt);
@@ -301,6 +367,55 @@
 			}
 		}
 		return counts;
+	}
+
+	// Sparkline data for unique users per day
+	function getUniqueUsersSparkline(days: number = 7): number[] {
+		const now = new Date();
+		const daySets: Set<string>[] = Array.from({ length: days }, () => new Set());
+		for (const s of sessions) {
+			const d = new Date(s.startedAt);
+			const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+			if (diffDays >= 0 && diffDays < days) {
+				const userId = s.userId ?? s.assignmentId ?? s.id;
+				daySets[days - 1 - diffDays].add(userId);
+			}
+		}
+		return daySets.map(set => set.size);
+	}
+
+	// Sparkline data for average session duration per day
+	function getAvgDurationSparkline(days: number = 7): number[] {
+		const now = new Date();
+		const dayTotals: number[] = Array(days).fill(0);
+		const dayCounts: number[] = Array(days).fill(0);
+		for (const s of sessions) {
+			if (!s.endedAt) continue;
+			const d = new Date(s.startedAt);
+			const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+			if (diffDays >= 0 && diffDays < days) {
+				const durSec = getSessionDurationSeconds(s);
+				dayTotals[days - 1 - diffDays] += durSec;
+				dayCounts[days - 1 - diffDays]++;
+			}
+		}
+		return dayTotals.map((total, i) => dayCounts[i] > 0 ? total / dayCounts[i] : 0);
+	}
+
+	// Day labels for bar chart based on period
+	function getDayLabels(days: number): string[] {
+		const labels: string[] = [];
+		const now = new Date();
+		for (let i = days - 1; i >= 0; i--) {
+			const d = new Date(now);
+			d.setDate(d.getDate() - i);
+			if (days <= 7) {
+				labels.push(['D', 'L', 'M', 'M', 'J', 'V', 'S'][d.getDay()]);
+			} else {
+				labels.push(`${d.getDate()}/${d.getMonth() + 1}`);
+			}
+		}
+		return labels;
 	}
 
 	function sparklinePath(data: number[]): string {
@@ -519,8 +634,7 @@
 								</div>
 								{#if !loading && overview}
 									<span class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-										<Eye class="h-3 w-3" />
-										{overview.totalPageViews} pages vues
+										{uniqueClientUserCount} clients · {uniqueAdminUserCount} admins & commerciaux
 									</span>
 								{/if}
 							</div>
@@ -528,6 +642,21 @@
 								<Users class="h-5 w-5 text-purple-600" />
 							</div>
 						</div>
+						{#if !loading}
+							{@const usersData = getUniqueUsersSparkline()}
+							<div class="mt-3">
+								<svg viewBox="0 0 200 30" class="h-8 w-full" preserveAspectRatio="none">
+									<defs>
+										<linearGradient id="areaGradientPurple" x1="0" y1="0" x2="0" y2="1">
+											<stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.2" />
+											<stop offset="100%" stop-color="#8B5CF6" stop-opacity="0" />
+										</linearGradient>
+									</defs>
+									<path d={areaPath(usersData)} fill="url(#areaGradientPurple)" />
+									<path d={sparklinePath(usersData)} fill="none" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</div>
+						{/if}
 					</CardContent>
 				</Card>
 
@@ -554,13 +683,28 @@
 								<Clock class="h-5 w-5 text-amber-600" />
 							</div>
 						</div>
+						{#if !loading}
+							{@const durationData = getAvgDurationSparkline()}
+							<div class="mt-3">
+								<svg viewBox="0 0 200 30" class="h-8 w-full" preserveAspectRatio="none">
+									<defs>
+										<linearGradient id="areaGradientAmber" x1="0" y1="0" x2="0" y2="1">
+											<stop offset="0%" stop-color="#F59E0B" stop-opacity="0.2" />
+											<stop offset="100%" stop-color="#F59E0B" stop-opacity="0" />
+										</linearGradient>
+									</defs>
+									<path d={areaPath(durationData)} fill="url(#areaGradientAmber)" />
+									<path d={sparklinePath(durationData)} fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</div>
+						{/if}
 					</CardContent>
 				</Card>
 			</div>
 
 			<!-- Two side-by-side session tables -->
 			<div class="grid gap-4 lg:grid-cols-2">
-				<!-- Admin sessions -->
+				<!-- Admin sessions table -->
 				<Card>
 					<CardHeader class="pb-3">
 						<div class="flex items-center justify-between">
@@ -578,40 +722,77 @@
 							<Input bind:value={adminSearchQuery} placeholder="Rechercher..." class="h-7 pl-8 text-xs" />
 						</div>
 					</CardHeader>
-					<CardContent>
+					<CardContent class="px-0 pb-0">
 						{#if loading}
-							<div class="space-y-2">
+							<div class="space-y-2 px-6 pb-4">
 								{#each Array(3) as _}<div class="skeleton h-10 w-full rounded"></div>{/each}
 							</div>
 						{:else if filteredAdminSessions.length === 0}
 							<p class="py-4 text-center text-xs text-muted-foreground">Aucune session admin.</p>
 						{:else}
-							<div class="space-y-0">
-								{#each filteredAdminSessions.slice(0, 10) as session}
-									{@const displayName = session.user?.name ?? 'Admin'}
-									<button
-										class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
-										onclick={() => openSessionDetail(session)}
-									>
-										<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
-											{getInitials(displayName)}
-										</div>
-										<div class="min-w-0 flex-1">
-											<p class="truncate text-xs font-medium text-foreground">{displayName}</p>
-											<p class="truncate text-[10px] text-muted-foreground">{session.user?.email ?? ''}</p>
-										</div>
-										<div class="shrink-0 text-right">
-											<p class="text-[10px] text-muted-foreground">{getSessionDuration(session)}</p>
-											<p class="text-[9px] text-muted">{formatRelativeTime(session.startedAt)}</p>
-										</div>
-									</button>
-								{/each}
+							<div class="overflow-x-auto">
+								<table class="w-full">
+									<thead>
+										<tr class="border-b border-border">
+											<th class="pb-2 pl-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Utilisateur</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rôle</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Durée</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Visites</th>
+											<th class="pb-2 pr-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Date</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each filteredAdminSessions.slice(0, 10) as session}
+											{@const displayName = session.user?.name ?? 'Admin'}
+											{@const visitCount = getUniqueVisitCount(session, adminSessions)}
+											{@const maxVisits = getMaxVisits(adminSessions)}
+											{@const visitPct = Math.round((visitCount / maxVisits) * 100)}
+											<tr
+												class="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent"
+												onclick={() => openSessionDetail(session)}
+											>
+												<td class="py-2.5 pl-6 pr-2">
+													<div class="flex items-center gap-2">
+														<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-medium text-primary">
+															{getInitials(displayName)}
+														</div>
+														<div class="min-w-0">
+															<p class="truncate text-xs font-medium text-foreground">{displayName}</p>
+															<p class="truncate text-[10px] text-muted-foreground">{session.user?.email ?? ''}</p>
+														</div>
+													</div>
+												</td>
+												<td class="py-2.5 pr-2">
+													<span class="text-[10px] text-muted-foreground">Admin</span>
+												</td>
+												<td class="py-2.5 pr-2">
+													<span class="text-xs text-foreground">{getSessionDuration(session)}</span>
+												</td>
+												<td class="py-2.5 pr-2">
+													<span class="text-xs text-foreground">{session.eventCount}</span>
+												</td>
+												<td class="py-2.5 pr-2">
+													<div class="flex items-center gap-1.5">
+														<div class="h-1.5 w-12 overflow-hidden rounded-full bg-border">
+															<div class="h-full rounded-full bg-primary" style="width: {visitPct}%"></div>
+														</div>
+														<span class="text-[10px] text-muted-foreground">{visitCount}</span>
+													</div>
+												</td>
+												<td class="py-2.5 pr-6">
+													<span class="text-[10px] text-muted-foreground">{formatRelativeTime(session.startedAt)}</span>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
 							</div>
 						{/if}
 					</CardContent>
 				</Card>
 
-				<!-- Client sessions -->
+				<!-- Client sessions table -->
 				<Card>
 					<CardHeader class="pb-3">
 						<div class="flex items-center justify-between">
@@ -629,35 +810,73 @@
 							<Input bind:value={clientSearchQuery} placeholder="Rechercher..." class="h-7 pl-8 text-xs" />
 						</div>
 					</CardHeader>
-					<CardContent>
+					<CardContent class="px-0 pb-0">
 						{#if loading}
-							<div class="space-y-2">
+							<div class="space-y-2 px-6 pb-4">
 								{#each Array(3) as _}<div class="skeleton h-10 w-full rounded"></div>{/each}
 							</div>
 						{:else if filteredClientSessions.length === 0}
 							<p class="py-4 text-center text-xs text-muted-foreground">Aucune session client.</p>
 						{:else}
-							<div class="space-y-0">
-								{#each filteredClientSessions.slice(0, 10) as session}
-									{@const displayName = getClientDisplayName(session)}
-									{@const displaySubtitle = getClientDisplaySubtitle(session)}
-									<button
-										class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
-										onclick={() => openSessionDetail(session)}
-									>
-										<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[10px] font-medium text-warning">
-											{#if displayName !== 'Visiteur anonyme'}{getInitials(displayName)}{:else}?{/if}
-										</div>
-										<div class="min-w-0 flex-1">
-											<p class="truncate text-xs font-medium text-foreground">{displayName}</p>
-											<p class="truncate text-[10px] text-muted-foreground">{displaySubtitle}</p>
-										</div>
-										<div class="shrink-0 text-right">
-											<p class="text-[10px] text-muted-foreground">{getSessionDuration(session)}</p>
-											<p class="text-[9px] text-muted">{formatRelativeTime(session.startedAt)}</p>
-										</div>
-									</button>
-								{/each}
+							<div class="overflow-x-auto">
+								<table class="w-full">
+									<thead>
+										<tr class="border-b border-border">
+											<th class="pb-2 pl-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Utilisateur</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Entreprise</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Durée</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Visites</th>
+											<th class="pb-2 pr-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Date</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each filteredClientSessions.slice(0, 10) as session}
+											{@const displayName = getClientDisplayName(session)}
+											{@const displaySubtitle = getClientDisplaySubtitle(session)}
+											{@const company = getCompanyName(session)}
+											{@const visitCount = getUniqueVisitCount(session, clientSessions)}
+											{@const maxVisits = getMaxVisits(clientSessions)}
+											{@const visitPct = Math.round((visitCount / maxVisits) * 100)}
+											<tr
+												class="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent"
+												onclick={() => openSessionDetail(session)}
+											>
+												<td class="py-2.5 pl-6 pr-2">
+													<div class="flex items-center gap-2">
+														<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[9px] font-medium text-warning">
+															{#if displayName !== 'Visiteur anonyme'}{getInitials(displayName)}{:else}?{/if}
+														</div>
+														<div class="min-w-0">
+															<p class="truncate text-xs font-medium text-foreground">{displayName}</p>
+															<p class="truncate text-[10px] text-muted-foreground">{displaySubtitle}</p>
+														</div>
+													</div>
+												</td>
+												<td class="py-2.5 pr-2">
+													<span class="text-[10px] text-muted-foreground">{company}</span>
+												</td>
+												<td class="py-2.5 pr-2">
+													<span class="text-xs text-foreground">{getSessionDuration(session)}</span>
+												</td>
+												<td class="py-2.5 pr-2">
+													<span class="text-xs text-foreground">{session.eventCount}</span>
+												</td>
+												<td class="py-2.5 pr-2">
+													<div class="flex items-center gap-1.5">
+														<div class="h-1.5 w-12 overflow-hidden rounded-full bg-border">
+															<div class="h-full rounded-full bg-primary" style="width: {visitPct}%"></div>
+														</div>
+														<span class="text-[10px] text-muted-foreground">{visitCount}</span>
+													</div>
+												</td>
+												<td class="py-2.5 pr-6">
+													<span class="text-[10px] text-muted-foreground">{formatRelativeTime(session.startedAt)}</span>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
 							</div>
 						{/if}
 					</CardContent>
@@ -670,6 +889,17 @@
 					<div class="mb-4 flex items-center justify-between">
 						<h3 class="text-sm font-semibold text-foreground">Sessions par jour</h3>
 						<div class="flex items-center gap-3">
+							<!-- Period selector tabs -->
+							<div class="flex items-center rounded-md border border-border">
+								{#each [{ label: '7j', value: 7 }, { label: '14j', value: 14 }, { label: '30j', value: 30 }] as period}
+									<button
+										class="px-2.5 py-1 text-[10px] font-medium transition-colors first:rounded-l-md last:rounded-r-md {barChartPeriod === period.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}"
+										onclick={() => { barChartPeriod = period.value; }}
+									>
+										{period.label}
+									</button>
+								{/each}
+							</div>
 							<div class="flex items-center gap-2 text-[10px]">
 								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-primary"></span> Admin</span>
 								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-warning"></span> Client</span>
@@ -677,11 +907,12 @@
 						</div>
 					</div>
 					{#if !loading}
-						{@const days = 7}
+						{@const days = barChartPeriod}
+						{@const dayLabels = getDayLabels(days)}
 						{@const adminCounts = (() => { const c = Array(days).fill(0); const now = new Date(); for (const s of adminSessions) { const d = Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 86400000); if (d >= 0 && d < days) c[days - 1 - d]++; } return c; })()}
 						{@const clientCounts = (() => { const c = Array(days).fill(0); const now = new Date(); for (const s of clientSessions) { const d = Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 86400000); if (d >= 0 && d < days) c[days - 1 - d]++; } return c; })()}
 						{@const maxBar = Math.max(...adminCounts.map((a, i) => a + clientCounts[i]), 1)}
-						<div class="flex items-end gap-2 h-32">
+						<div class="flex items-end gap-1 h-32">
 							{#each Array(days) as _, i}
 								{@const aH = (adminCounts[i] / maxBar) * 100}
 								{@const cH = (clientCounts[i] / maxBar) * 100}
@@ -699,7 +930,7 @@
 											{/if}
 										</div>
 									</div>
-									<span class="text-[9px] text-muted">{['L','M','M','J','V','S','D'][i]}</span>
+									<span class="text-[9px] text-muted {days > 14 ? 'hidden sm:inline' : ''}">{dayLabels[i]}</span>
 								</div>
 							{/each}
 						</div>
@@ -731,7 +962,7 @@
 							</div>
 							<Button variant="outline" size="sm" class="gap-1.5" onclick={exportCSV}>
 								<Download class="h-3.5 w-3.5" />
-								Exporter CSV
+								CSV
 							</Button>
 						</div>
 					</div>

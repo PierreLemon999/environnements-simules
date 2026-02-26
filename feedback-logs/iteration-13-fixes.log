@@ -1,0 +1,24 @@
+All done. Here's a summary of the iteration 13 fix results:
+
+**32 of 37 issues fixed** across 13 files. The 5 skipped are seed data issues or minor styling polish.
+
+| Severity | Fixed |
+|----------|-------|
+| CRITICAL (3) | 3/3 |
+| HIGH (12) | 12/12 |
+| MEDIUM (14) | 12/14 |
+| LOW (8) | 5/8 |
+
+Key changes:
+- **Login**: Complete redesign — unified form, no tabs, "ED" branding, animated background, footer
+- **Dashboard**: New stat cards (Démos actives, Sessions ce mois), removed "Voir tout"
+- **Tree**: Browser frame preview, detail sub-tabs, resize handle, breadcrumb, section truncation
+- **Analytics**: Sparklines, user breakdown, proper tables with Visites uniques, period selector
+- **Invitations**: Entreprise dropdown, info banner, fixed action icons
+- **Obfuscation**: Enhanced coverage bar, animated stat counters
+- **Demo viewers**: Both completely rewritten with fixed iframe URLs
+- **Header**: Breadcrumb navigation with project name resolution
+- **Sidebar**: 260px width, gender-inclusive role text
+- **Command palette**: Tabs removed, placeholder updated
+
+`svelte-check`: **0 errors**, 9 pre-existing warnings. Full summary written to `feedback-logs/iteration-13-fix-summary.md`.

@@ -8,6 +8,7 @@ import {
   versions,
   users,
   pages,
+  demoAssignments,
 } from '../db/schema.js';
 import { eq, sql, and, gte, lte, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,10 +69,33 @@ router.get('/sessions', authenticate, async (req: Request, res: Response) => {
               .get()
           : null;
 
+        // Fetch assignment data if session has an assignmentId
+        let assignment = null;
+        if (session.assignmentId) {
+          const assignmentRow = await db
+            .select()
+            .from(demoAssignments)
+            .where(eq(demoAssignments.id, session.assignmentId))
+            .get();
+          if (assignmentRow) {
+            // Get the assigned user to derive client info
+            const assignedUser = await db
+              .select({ id: users.id, name: users.name, email: users.email })
+              .from(users)
+              .where(eq(users.id, assignmentRow.userId))
+              .get();
+            assignment = {
+              clientName: assignedUser?.name ?? null,
+              clientEmail: assignedUser?.email ?? '',
+            };
+          }
+        }
+
         return {
           ...session,
           eventCount: eventCount?.count ?? 0,
           user,
+          assignment,
         };
       })
     );
@@ -133,10 +157,32 @@ router.get('/sessions/:id', authenticate, async (req: Request, res: Response) =>
           .get()
       : null;
 
+    // Fetch assignment data
+    let assignment = null;
+    if (session.assignmentId) {
+      const assignmentRow = await db
+        .select()
+        .from(demoAssignments)
+        .where(eq(demoAssignments.id, session.assignmentId))
+        .get();
+      if (assignmentRow) {
+        const assignedUser = await db
+          .select({ id: users.id, name: users.name, email: users.email })
+          .from(users)
+          .where(eq(users.id, assignmentRow.userId))
+          .get();
+        assignment = {
+          clientName: assignedUser?.name ?? null,
+          clientEmail: assignedUser?.email ?? '',
+        };
+      }
+    }
+
     res.json({
       data: {
         ...session,
         user,
+        assignment,
         events: enrichedEvents,
       },
     });

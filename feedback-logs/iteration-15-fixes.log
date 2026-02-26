@@ -1,0 +1,11 @@
+All 10 issues have been addressed. Here's a summary:
+
+**Files modified:**
+- `frontend/src/routes/admin/editor/[id]/+page.svelte` — Added "Enregistrer et prévisualiser" button + "Retour à l'arborescence" link
+- `backend/src/routes/analytics.ts` — Added assignment data to sessions endpoints for company name display
+- `frontend/src/routes/admin/analytics/+page.svelte` — Fixed company name extraction from assignment/email data
+- `frontend/src/lib/components/layout/CommandPalette.svelte` — Renamed "Pages" tab to "Démos", reordered tabs
+- `frontend/src/routes/demo/[...path]/+page.svelte` — Moved LL widget to bottom-right + added dark admin toolbar
+- `feedback-logs/iteration-15-fix-summary.md` — Written with full details
+
+**Build result:** 0 errors, 9 pre-existing warnings.

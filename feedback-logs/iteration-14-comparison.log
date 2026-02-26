@@ -1,0 +1,36 @@
+Audit complete. Here's the summary:
+
+**Report written to**: `feedback-logs/iteration-14-issues.md`
+
+## Results
+
+| Severity | Count |
+|----------|-------|
+| **CRITICAL** | 3 |
+| **HIGH** | 7 |
+| **MEDIUM** | 8 |
+| **LOW** | 5 |
+| **TOTAL** | **23** |
+
+### CRITICAL issues (3):
+1. **Editor page fails to load** — screenshot 15 shows Dashboard instead of the editor, meaning the editor page crashes/redirects
+2. **Demo Viewer shows raw 404** — unstyled error "Project with subdomain 'test' not found" instead of demo content
+3. **Commercial Viewer shows raw 404** — same unstyled 404 error
+
+### HIGH issues (7):
+- Two conflicting login page designs (tab-based vs single-form)
+- Command palette only shows 5 static actions, not search results with categories (mockup shows page/project search with badges)
+- Demo/View error pages have zero styling (raw HTML)
+- Floating "LL" widget renders on error states
+- Editor redirect-on-error instead of graceful error state
+
+### Pages that match mockups well (OK):
+- Dashboard (expanded + collapsed)
+- Projects list, Project Detail
+- Tree View, Analytics
+- Invitations (also resolved the unresolved "exiger la création d'un compte" feedback)
+- Users, Obfuscation, Update Requests
+- Sidebar, Header
+
+### Key positive finding:
+The **Invitations** page now includes the "Exiger la création d'un compte" checkbox, resolving one of the 3 previously unresolved mockup feedback items.

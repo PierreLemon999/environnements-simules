@@ -3,26 +3,33 @@ import path from 'path';
 
 const SCREENSHOT_DIR = path.join(__dirname, '..', 'screenshots');
 
+// Helper: get an admin JWT token from the backend
+async function getAdminToken(request: any): Promise<string | null> {
+  try {
+    const response = await request.post('http://localhost:3001/api/auth/google', {
+      data: {
+        googleToken: 'mock-google-token',
+        email: 'marie.laurent@lemonlearning.com',
+        name: 'Marie Laurent',
+        googleId: 'google-marie-001'
+      }
+    });
+    const body = await response.json();
+    return body.data?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Helper: login as admin by calling the backend API directly and injecting the token
 async function loginAsAdmin(page) {
-  // Call backend API directly to get a valid JWT token
-  const response = await page.request.post('http://localhost:3001/api/auth/google', {
-    data: {
-      googleToken: 'mock-google-token',
-      email: 'marie.laurent@lemonlearning.com',
-      name: 'Marie Laurent',
-      googleId: 'google-marie-001'
-    }
-  });
-
-  const body = await response.json();
-  const token = body.data?.token;
+  const token = await getAdminToken(page.request);
 
   if (!token) {
     // Fallback: navigate to login page and let it handle
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
-    return;
+    return null;
   }
 
   // Navigate to login first to set the origin
@@ -38,6 +45,8 @@ async function loginAsAdmin(page) {
   await page.goto('/admin');
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(500);
+
+  return token;
 }
 
 // Helper: login as client
@@ -52,6 +61,14 @@ async function loginAsClient(page) {
   // Submit
   await page.locator('button[type="submit"], button:has-text("Se connecter")').first().click();
   await page.waitForTimeout(1500);
+}
+
+// Helper: make an authenticated API call
+async function apiGet(request: any, path: string, token: string) {
+  const response = await request.get(`http://localhost:3001/api${path}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  return response.json();
 }
 
 test.describe('Screenshot all pages', () => {
@@ -205,54 +222,67 @@ test.describe('Screenshot all pages', () => {
   });
 
   test('15 - Page editor', async ({ page }) => {
-    await loginAsAdmin(page);
-    // Get a page ID from the API to navigate to the editor
-    const pagesResponse = await page.request.get('http://localhost:3001/api/projects');
-    const projectsBody = await pagesResponse.json();
-    const firstProject = projectsBody.data?.[0];
-    if (firstProject) {
-      const detailRes = await page.request.get(`http://localhost:3001/api/projects/${firstProject.id}`);
-      const detailBody = await detailRes.json();
-      const activeVersion = detailBody.data?.versions?.find((v: any) => v.status === 'active') ?? detailBody.data?.versions?.[0];
-      if (activeVersion) {
-        const pagesRes = await page.request.get(`http://localhost:3001/api/versions/${activeVersion.id}/pages`);
-        const pagesBody = await pagesRes.json();
-        const firstPage = pagesBody.data?.[0];
-        if (firstPage) {
-          await page.goto(`/admin/editor/${firstPage.id}`);
-          await page.waitForLoadState('networkidle');
-          await page.waitForTimeout(1000);
+    const token = await loginAsAdmin(page);
+    if (!token) {
+      await page.screenshot({ path: `${SCREENSHOT_DIR}/15-editor.png`, fullPage: true });
+      return;
+    }
+    // Get a page ID from the API using authenticated requests
+    try {
+      const projectsBody = await apiGet(page.request, '/projects', token);
+      const firstProject = projectsBody.data?.[0];
+      if (firstProject) {
+        const detailBody = await apiGet(page.request, `/projects/${firstProject.id}`, token);
+        const activeVersion = detailBody.data?.versions?.find((v: any) => v.status === 'active') ?? detailBody.data?.versions?.[0];
+        if (activeVersion) {
+          const pagesBody = await apiGet(page.request, `/versions/${activeVersion.id}/pages`, token);
+          const firstPage = pagesBody.data?.[0];
+          if (firstPage) {
+            await page.goto(`/admin/editor/${firstPage.id}`);
+            await page.waitForLoadState('networkidle');
+            await page.waitForTimeout(1500);
+          }
         }
       }
+    } catch (err) {
+      console.error('Failed to get page ID for editor test:', err);
     }
     await page.screenshot({ path: `${SCREENSHOT_DIR}/15-editor.png`, fullPage: true });
   });
 
   test('16 - Demo viewer', async ({ page }) => {
-    // Demo viewer is public — use the first project's subdomain
-    const pagesResponse = await page.request.get('http://localhost:3001/api/projects');
-    const projectsBody = await pagesResponse.json();
-    const firstProject = projectsBody.data?.[0];
-    if (firstProject?.subdomain) {
-      await page.goto(`/demo/${firstProject.subdomain}`);
-    } else {
-      await page.goto('/demo/test');
+    // Demo viewer is public — but we need auth to get the subdomain from API
+    const token = await getAdminToken(page.request);
+    let subdomain = 'salesforce'; // fallback to known seed subdomain
+    if (token) {
+      try {
+        const projectsBody = await apiGet(page.request, '/projects', token);
+        const firstProject = projectsBody.data?.[0];
+        if (firstProject?.subdomain) {
+          subdomain = firstProject.subdomain;
+        }
+      } catch {}
     }
+    await page.goto(`/demo/${subdomain}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/16-demo-viewer.png`, fullPage: true });
   });
 
   test('17 - Commercial viewer', async ({ page }) => {
-    // View/commercial viewer is public
-    const pagesResponse = await page.request.get('http://localhost:3001/api/projects');
-    const projectsBody = await pagesResponse.json();
-    const firstProject = projectsBody.data?.[0];
-    if (firstProject?.subdomain) {
-      await page.goto(`/view/${firstProject.subdomain}`);
-    } else {
-      await page.goto('/view/test');
+    // View/commercial viewer is public — but we need auth to get the subdomain from API
+    const token = await getAdminToken(page.request);
+    let subdomain = 'salesforce'; // fallback to known seed subdomain
+    if (token) {
+      try {
+        const projectsBody = await apiGet(page.request, '/projects', token);
+        const firstProject = projectsBody.data?.[0];
+        if (firstProject?.subdomain) {
+          subdomain = firstProject.subdomain;
+        }
+      } catch {}
     }
+    await page.goto(`/view/${subdomain}`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(1000);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/17-commercial-viewer.png`, fullPage: true });

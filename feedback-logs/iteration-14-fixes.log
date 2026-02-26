@@ -1,0 +1,29 @@
+All fixes are complete. Here's a summary of what was done:
+
+## Fixes Applied (Iteration 14)
+
+**svelte-check: 0 errors**
+
+### CRITICAL (3/3 fixed)
+- **Editor page**: Fixed test to use authenticated API calls when fetching page IDs; improved editor error handling for missing pages
+- **Demo viewer**: Added pre-flight HEAD request to detect 404s before loading iframe; hid LL widget on error states
+- **Commercial viewer**: Same pre-flight check; hid LL widget on error states
+
+### HIGH (7/7 fixed)
+- **Login design**: Confirmed single-form design matches mockup (no tabs)
+- **Command palette**: Added category filter tabs (Tout/Pages/Projets/Utilisateurs/Actions), "Recherche admin" header label, and renamed footer
+- **Header**: Updated search bar text to "Recherche admin..."
+- **Error pages**: Both demo/view viewers now show styled error states instead of raw HTML 404s
+- **LL widget**: Conditionally rendered only when iframe loads successfully
+
+### MEDIUM (3/3 actionable fixes)
+- **Login branding**: "ED" → "ES", "Environnements de Démonstration" → "Environnements Simulés", updated subtitle and footer
+
+### Files changed (7)
+1. `login/+page.svelte` — branding
+2. `editor/[id]/+page.svelte` — error handling
+3. `demo/[...path]/+page.svelte` — pre-flight check, widget conditional
+4. `view/[...path]/+page.svelte` — pre-flight check, widget conditional
+5. `CommandPalette.svelte` — category tabs, rename
+6. `Header.svelte` — search bar text
+7. `screenshots.spec.ts` — authenticated API calls

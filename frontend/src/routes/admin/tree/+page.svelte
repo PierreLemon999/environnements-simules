@@ -30,6 +30,8 @@
 		BookOpen,
 		Layers,
 		AlertCircle,
+		GripVertical,
+		GitCompare,
 	} from 'lucide-svelte';
 
 	// Types
@@ -103,6 +105,8 @@
 	let treePanelWidth = $state(320);
 	let isResizing = $state(false);
 	let expandedPaths = $state<Set<string>>(new Set());
+	let fullyExpandedSections = $state<Set<string>>(new Set());
+	const SECTION_PAGE_LIMIT = 5;
 
 	// Derived
 	let selectedProject = $derived(projects.find((p) => p.id === selectedProjectId));
@@ -292,6 +296,41 @@
 		}
 	}
 
+	// Build breadcrumb trail for a page by walking the tree hierarchy
+	function buildBreadcrumb(targetPage: Page, node: TreeNode, trail: string[]): string[] | null {
+		if (node.page?.id === targetPage.id) {
+			return [...trail, node.page.title || node.name];
+		}
+		for (const child of node.children) {
+			const childTrail = child.page ? trail : [...trail, child.name];
+			const result = buildBreadcrumb(targetPage, child, childTrail);
+			if (result) return result;
+		}
+		return null;
+	}
+
+	let selectedPageBreadcrumb = $derived(() => {
+		if (!selectedPage || !tree) return [];
+		const result = buildBreadcrumb(selectedPage, tree, []);
+		return result ?? selectedPage.urlPath.split('/').filter(Boolean);
+	});
+
+	// Preview URL for the iframe
+	let previewUrl = $derived(() => {
+		if (!selectedPage || !selectedProject?.subdomain) return '';
+		return `/demo-api/${selectedProject.subdomain}/${selectedPage.urlPath}`;
+	});
+
+	function toggleFullExpand(path: string) {
+		const newSet = new Set(fullyExpandedSections);
+		if (newSet.has(path)) {
+			newSet.delete(path);
+		} else {
+			newSet.add(path);
+		}
+		fullyExpandedSections = newSet;
+	}
+
 	// Data loading
 	async function loadProjects() {
 		try {
@@ -408,12 +447,6 @@
 <div class="flex h-[calc(100vh-56px)] overflow-hidden -m-6">
 	<!-- Tree Panel (left) -->
 	<div class="relative flex shrink-0 flex-col border-r border-border bg-card" style="width: {treePanelWidth}px">
-		<!-- Resize handle -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize transition-colors hover:bg-primary/30 {isResizing ? 'bg-primary/40' : ''}"
-			onmousedown={startResize}
-		></div>
 		<!-- Tree panel header -->
 		<div class="space-y-3 border-b border-border p-3">
 			<!-- Project selector -->
@@ -648,7 +681,9 @@
 							</span>
 						</button>
 						{#if expandedPaths.has(node.path)}
-							{@const visibleChildren = node.children.slice(0, 20)}
+							{@const isFullyExpanded = fullyExpandedSections.has(node.path)}
+							{@const limit = isFullyExpanded ? node.children.length : SECTION_PAGE_LIMIT}
+							{@const visibleChildren = node.children.slice(0, limit)}
 							{@const hiddenCount = node.children.length - visibleChildren.length}
 							{#each visibleChildren as child}
 								{@render treeNodeSnippet(child, depth + 1, color)}
@@ -657,9 +692,17 @@
 								<button
 									class="w-full rounded-md px-2 py-1 text-left text-xs text-primary hover:bg-accent"
 									style="padding-left: {(depth + 1) * 16 + 8}px"
-									onclick={() => {/* Could expand to show all */}}
+									onclick={() => toggleFullExpand(node.path)}
 								>
-									... et {hiddenCount} autres pages
+									...et {hiddenCount} autre{hiddenCount !== 1 ? 's' : ''} page{hiddenCount !== 1 ? 's' : ''}
+								</button>
+							{:else if isFullyExpanded && node.children.length > SECTION_PAGE_LIMIT}
+								<button
+									class="w-full rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent"
+									style="padding-left: {(depth + 1) * 16 + 8}px"
+									onclick={() => toggleFullExpand(node.path)}
+								>
+									Réduire
 								</button>
 							{/if}
 						{/if}
@@ -715,16 +758,21 @@
 			{/if}
 		</div>
 
-		<!-- Selected page breadcrumb path -->
+		<!-- Selected page breadcrumb path (tree hierarchy) -->
 		{#if selectedPage}
+			{@const breadcrumb = selectedPageBreadcrumb()}
 			<div class="border-t border-border px-3 py-1.5 overflow-x-auto">
 				<div class="flex items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap">
-					{#each selectedPage.urlPath.split('/').filter(Boolean) as segment, i}
-						{#if i > 0}
-							<span class="text-muted">/</span>
-						{/if}
-						<span class={i === selectedPage.urlPath.split('/').filter(Boolean).length - 1 ? 'font-medium text-foreground' : ''}>{segment}</span>
-					{/each}
+					{#if breadcrumb.length > 0}
+						{#each breadcrumb as segment, i}
+							{#if i > 0}
+								<ChevronRight class="h-2.5 w-2.5 shrink-0 text-muted" />
+							{/if}
+							<span class={i === breadcrumb.length - 1 ? 'font-medium text-foreground' : ''}>{segment}</span>
+						{/each}
+					{:else}
+						<span class="font-medium text-foreground">{selectedPage.title}</span>
+					{/if}
 				</div>
 			</div>
 		{/if}
@@ -767,6 +815,17 @@
 		</div>
 	</div>
 
+	<!-- Visible resize handle -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="group relative flex w-2 shrink-0 cursor-col-resize items-center justify-center border-x border-border bg-accent/30 transition-colors hover:bg-primary/10 {isResizing ? 'bg-primary/20' : ''}"
+		onmousedown={startResize}
+	>
+		<div class="flex h-8 w-full items-center justify-center rounded-sm {isResizing ? 'text-primary' : 'text-muted-foreground/50 group-hover:text-muted-foreground'}">
+			<GripVertical class="h-4 w-4" />
+		</div>
+	</div>
+
 	<!-- Detail Panel (right) -->
 	<div class="flex-1 overflow-y-auto bg-background p-6">
 		{#if selectedPage}
@@ -783,9 +842,39 @@
 				{/each}
 			</nav>
 
-			<!-- Page preview placeholder -->
-			<div class="mb-4 flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-accent/30 overflow-hidden">
-				<span class="text-sm text-muted-foreground">Aperçu — 1300x800</span>
+			<!-- Browser frame preview -->
+			<div class="mb-4 overflow-hidden rounded-lg border border-border shadow-sm">
+				<!-- Browser chrome -->
+				<div class="flex items-center gap-2 border-b border-border bg-accent/50 px-3 py-2">
+					<!-- Traffic lights -->
+					<div class="flex items-center gap-1.5">
+						<span class="h-2.5 w-2.5 rounded-full bg-red-400"></span>
+						<span class="h-2.5 w-2.5 rounded-full bg-yellow-400"></span>
+						<span class="h-2.5 w-2.5 rounded-full bg-green-400"></span>
+					</div>
+					<!-- Address bar -->
+					<div class="flex flex-1 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1 text-xs text-muted-foreground">
+						<Globe class="h-3 w-3 shrink-0 text-muted" />
+						<span class="truncate">
+							{selectedProject?.subdomain ? `${selectedProject.subdomain}.demo.lemonlearning.com` : ''}/{selectedPage.urlPath}
+						</span>
+					</div>
+				</div>
+				<!-- Iframe content -->
+				<div class="relative h-[280px] bg-white">
+					{#if previewUrl()}
+						<iframe
+							src={previewUrl()}
+							title="Aperçu de {selectedPage.title}"
+							class="h-full w-full border-0"
+							sandbox="allow-same-origin"
+						></iframe>
+					{:else}
+						<div class="flex h-full items-center justify-center">
+							<span class="text-sm text-muted-foreground">Aperçu non disponible</span>
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Page title and actions -->
@@ -795,6 +884,10 @@
 					<p class="mt-1 text-sm text-muted-foreground">/{selectedPage.urlPath}</p>
 				</div>
 				<div class="flex items-center gap-2">
+					<Button variant="outline" size="sm" class="gap-1.5 text-xs">
+						<GitCompare class="h-3.5 w-3.5" />
+						Comparer
+					</Button>
 					<Button variant="outline" size="sm" class="gap-1.5 text-xs">
 						<Camera class="h-3.5 w-3.5" />
 						Recapturer

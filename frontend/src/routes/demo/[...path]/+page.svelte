@@ -2,22 +2,19 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { get } from '$lib/api';
-	import { user } from '$lib/stores/auth';
-	import { Button } from '$components/ui/button';
-	import { Badge } from '$components/ui/badge';
 	import {
 		Share2,
 		Copy,
 		ExternalLink,
 		Settings,
-		FileText,
 		Users,
-		Clock,
-		ChevronDown,
+		Search,
 		Check,
 		Loader2,
 		X,
 		Lock,
+		AlertTriangle,
+		ChevronUp,
 	} from 'lucide-svelte';
 
 	// Types
@@ -45,7 +42,7 @@
 	let fullPath = $derived($page.params.path ?? '');
 	let pathSegments = $derived(fullPath.split('/'));
 	let subdomain = $derived(pathSegments[0] ?? '');
-	let pagePath = $derived(pathSegments.slice(1).join('/') || '');
+	let pagePath = $derived(pathSegments.slice(1).join('/'));
 
 	// State
 	let currentProject: Project | null = $state(null);
@@ -54,7 +51,12 @@
 	let loading = $state(true);
 	let iframeUrl = $state('');
 	let iframeError = $state(false);
+	let iframeLoaded = $state(false);
 	let copiedUrl = $state(false);
+
+	// Floating card state
+	let cardOpen = $state(false);
+	let searchQuery = $state('');
 
 	// Share dialog
 	let shareDialogOpen = $state(false);
@@ -63,14 +65,10 @@
 	let shareGeneratedUrl = $state('');
 	let shareCopied = $state(false);
 
-	// Dropdowns
-	let projectDropdownOpen = $state(false);
-	let pageDropdownOpen = $state(false);
-
 	// Stats from project
 	let totalPages = $derived(currentPages.length);
 
-	// Demo URL construction — use proxy path instead of hardcoded localhost
+	// Demo URL construction — use proxy path; ensure trailing slash for root page
 	let demoApiUrl = $derived(
 		subdomain ? `/demo-api/${subdomain}/${pagePath}` : ''
 	);
@@ -83,14 +81,28 @@
 		return match?.title ?? (pagePath || 'Accueil');
 	});
 
+	// Filtered pages for search
+	let filteredPages = $derived(() => {
+		if (!searchQuery.trim()) return currentPages;
+		const q = searchQuery.toLowerCase();
+		return currentPages.filter(
+			(p) =>
+				p.title.toLowerCase().includes(q) ||
+				p.urlPath.toLowerCase().includes(q)
+		);
+	});
+
 	function copyUrl() {
 		const url = window.location.href;
 		navigator.clipboard.writeText(url);
 		copiedUrl = true;
-		setTimeout(() => { copiedUrl = false; }, 2000);
+		setTimeout(() => {
+			copiedUrl = false;
+		}, 2000);
 	}
 
 	function openShareDialog() {
+		cardOpen = false;
 		shareDialogOpen = true;
 		shareGeneratedUrl = window.location.href;
 		shareCopied = false;
@@ -99,7 +111,9 @@
 	function copyShareLink() {
 		navigator.clipboard.writeText(shareGeneratedUrl);
 		shareCopied = true;
-		setTimeout(() => { shareCopied = false; }, 2000);
+		setTimeout(() => {
+			shareCopied = false;
+		}, 2000);
 	}
 
 	function openAsClient() {
@@ -108,30 +122,75 @@
 
 	function navigateToPage(pageUrlPath: string) {
 		window.location.href = `/demo/${subdomain}/${pageUrlPath}`;
-		pageDropdownOpen = false;
+	}
+
+	function handleIframeLoad() {
+		iframeLoaded = true;
+		iframeError = false;
+	}
+
+	function handleIframeError() {
+		iframeError = true;
+		iframeLoaded = false;
+		loading = false;
 	}
 
 	onMount(async () => {
 		try {
-			const res = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
+			// Pre-check that the demo URL responds OK before loading iframe
+			if (demoApiUrl) {
+				try {
+					const checkRes = await fetch(demoApiUrl, { method: 'HEAD' });
+					if (checkRes.ok) {
+						iframeUrl = demoApiUrl;
+					} else {
+						iframeError = true;
+						loading = false;
+					}
+				} catch {
+					// HEAD may not be supported, try loading iframe anyway
+					iframeUrl = demoApiUrl;
+				}
+			} else {
+				iframeError = true;
+				loading = false;
+			}
+
+			// Fetch project metadata in background (non-blocking for iframe)
+			const res = await get<{
+				data: Array<{
+					id: string;
+					name: string;
+					toolName: string;
+					subdomain: string;
+				}>;
+			}>('/projects');
 
 			const match = res.data.find((p) => p.subdomain === subdomain);
 			if (match) {
-				const detail = await get<{ data: Project }>(`/projects/${match.id}`);
+				const detail = await get<{ data: Project }>(
+					`/projects/${match.id}`
+				);
 				currentProject = detail.data;
 
-				const activeVersion = currentProject.versions?.find((v) => v.status === 'active');
-				selectedVersionId = activeVersion?.id ?? currentProject.versions?.[0]?.id ?? '';
+				const activeVersion = currentProject.versions?.find(
+					(v) => v.status === 'active'
+				);
+				selectedVersionId =
+					activeVersion?.id ??
+					currentProject.versions?.[0]?.id ??
+					'';
 
 				if (selectedVersionId) {
-					const pagesRes = await get<{ data: PageInfo[] }>(`/versions/${selectedVersionId}/pages`);
+					const pagesRes = await get<{ data: PageInfo[] }>(
+						`/versions/${selectedVersionId}/pages`
+					);
 					currentPages = pagesRes.data;
 				}
 			}
-
-			iframeUrl = demoApiUrl;
 		} catch (err) {
 			console.error('Demo viewer init error:', err);
+			// Don't set iframeError — the iframe may still work even if metadata fails
 		} finally {
 			loading = false;
 		}
@@ -139,217 +198,348 @@
 </script>
 
 <svelte:head>
-	<title>Démo {currentProject?.toolName ?? ''} — Environnements Simulés</title>
+	<title
+		>Démo {currentProject?.toolName ?? ''} — Environnements Simulés</title
+	>
 </svelte:head>
 
-<div class="flex h-screen flex-col bg-[#1a1a2e]">
-	<!-- Dark top header -->
-	<header class="flex h-12 shrink-0 items-center gap-4 border-b border-white/10 bg-[#16162a] px-4">
-		<div class="flex items-center gap-2">
-			<div class="flex h-7 w-7 items-center justify-center rounded-md bg-[#f5a623] text-xs font-bold text-white">
-				LL
+<!-- Full-screen container -->
+<div class="relative flex h-screen w-screen flex-col overflow-hidden bg-white">
+	<!-- Admin toolbar at top (R010 mockup) -->
+	{#if currentProject && iframeLoaded && !iframeError}
+		<div class="z-20 flex shrink-0 items-center justify-between bg-[#1a1a2e] px-4 py-2">
+			<div class="flex items-center gap-3">
+				<div class="flex h-6 w-6 items-center justify-center rounded-md bg-[#f5a623] text-[10px] font-bold text-white">
+					LL
+				</div>
+				<span class="text-sm font-semibold text-white">Démo {currentProject.toolName}</span>
+				{#if currentProject.versions?.length > 0}
+					{@const activeVersion = currentProject.versions.find(v => v.status === 'active') ?? currentProject.versions[0]}
+					<span class="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/70">
+						{activeVersion.name}
+					</span>
+				{/if}
+				<span class="text-xs text-white/40">{totalPages} page{totalPages !== 1 ? 's' : ''}</span>
 			</div>
-			<span class="text-sm font-semibold text-white">Demo</span>
-		</div>
-
-		<div class="h-5 w-px bg-white/20"></div>
-
-		<span class="text-sm text-white/80">
-			{#if currentProject}
-				Démo {currentProject.toolName}
-			{:else}
-				Chargement...
-			{/if}
-		</span>
-
-		<div class="h-5 w-px bg-white/20"></div>
-
-		<span class="text-sm text-white/60">{currentPageTitle()}</span>
-
-		<div class="flex-1"></div>
-
-		{#if $user}
-			<span class="text-xs text-white/40">{$user.name}</span>
-		{/if}
-	</header>
-
-	<!-- Action toolbar -->
-	<div class="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#1e1e3a] px-4 py-2">
-		<!-- Project dropdown -->
-		<div class="relative">
-			<button
-				class="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10"
-				onclick={() => { projectDropdownOpen = !projectDropdownOpen; pageDropdownOpen = false; }}
-			>
-				{currentProject?.name ?? 'Projet'}
-				<ChevronDown class="h-3 w-3" />
-			</button>
-		</div>
-
-		<!-- Page dropdown -->
-		<div class="relative">
-			<button
-				class="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-white/80 transition-colors hover:bg-white/10"
-				onclick={() => { pageDropdownOpen = !pageDropdownOpen; projectDropdownOpen = false; }}
-			>
-				{currentPageTitle()}
-				<ChevronDown class="h-3 w-3" />
-			</button>
-			{#if pageDropdownOpen}
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<div
-					class="absolute left-0 top-full z-50 mt-1 max-h-64 w-72 overflow-y-auto rounded-lg border border-white/20 bg-[#1e1e3a] py-1 shadow-lg"
-					onkeydown={() => {}}
+			<div class="flex items-center gap-2">
+				<button
+					class="flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/20"
+					onclick={openShareDialog}
 				>
-					{#each currentPages as pg}
-						<button
-							class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white/80 transition-colors hover:bg-white/10"
-							onclick={() => navigateToPage(pg.urlPath)}
+					<Share2 class="h-3.5 w-3.5" />
+					Partager le lien
+				</button>
+				<button
+					class="flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/20"
+					onclick={copyUrl}
+				>
+					{#if copiedUrl}
+						<Check class="h-3.5 w-3.5" />
+						Copié !
+					{:else}
+						<Copy class="h-3.5 w-3.5" />
+						Copier l'URL
+					{/if}
+				</button>
+				<button
+					class="flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/20"
+					onclick={openAsClient}
+				>
+					<ExternalLink class="h-3.5 w-3.5" />
+					Ouvrir en tant que client
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Demo iframe — fills remaining viewport -->
+	{#if iframeError && !iframeUrl}
+		<div class="flex h-full items-center justify-center bg-gray-50">
+			<div class="text-center">
+				<AlertTriangle class="mx-auto h-10 w-10 text-gray-300" />
+				<p class="mt-3 text-sm font-medium text-gray-700">
+					Erreur de chargement
+				</p>
+				<p class="mt-1 max-w-sm text-sm text-gray-400">
+					La démo n'a pas pu être chargée. Vérifiez que le projet
+					existe et que le backend est démarré.
+				</p>
+				<button
+					class="mt-4 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+					onclick={() => window.location.reload()}
+				>
+					Réessayer
+				</button>
+			</div>
+		</div>
+	{:else if iframeUrl}
+		{#if loading || !iframeLoaded}
+			<div
+				class="absolute inset-0 z-10 flex items-center justify-center bg-white"
+			>
+				<div class="text-center">
+					<Loader2
+						class="mx-auto h-8 w-8 animate-spin text-blue-500"
+					/>
+					<p class="mt-3 text-sm text-gray-400">
+						Chargement de la démo...
+					</p>
+				</div>
+			</div>
+		{/if}
+
+		{#if iframeError}
+			<div
+				class="absolute inset-0 z-10 flex items-center justify-center bg-gray-50"
+			>
+				<div class="text-center">
+					<AlertTriangle class="mx-auto h-10 w-10 text-gray-300" />
+					<p class="mt-3 text-sm font-medium text-gray-700">
+						Impossible de charger la démo
+					</p>
+					<p class="mt-1 max-w-sm text-sm text-gray-400">
+						Le contenu n'a pas pu être affiché. Vérifiez que le
+						backend est démarré et que la page existe.
+					</p>
+					<button
+						class="mt-4 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
+						onclick={() => window.location.reload()}
+					>
+						Réessayer
+					</button>
+				</div>
+			</div>
+		{/if}
+
+		<iframe
+			src={iframeUrl}
+			class="min-h-0 flex-1 w-full border-0"
+			title="Aperçu de la démo"
+			sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+			onload={handleIframeLoad}
+			onerror={handleIframeError}
+		></iframe>
+	{:else}
+		<div class="flex h-full items-center justify-center bg-gray-50">
+			<div class="text-center">
+				<Loader2
+					class="mx-auto h-8 w-8 animate-spin text-blue-500"
+				/>
+				<p class="mt-3 text-sm text-gray-400">
+					Chargement de la démo...
+				</p>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Floating "LL" badge at bottom-right — only when loaded successfully -->
+	{#if iframeLoaded && !iframeError}
+	<div class="fixed bottom-5 right-5 z-50">
+		{#if !cardOpen}
+			<button
+				class="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5a623] text-sm font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+				onclick={() => {
+					cardOpen = true;
+				}}
+				title="Lemon Learning"
+			>
+				LL
+			</button>
+		{/if}
+	</div>
+
+	<!-- Floating card (expanded) -->
+	{#if cardOpen}
+		<div class="fixed bottom-20 right-5 z-50">
+			<div
+				class="w-[560px] max-w-[90vw] rounded-xl bg-[#1a1a2e] shadow-2xl"
+			>
+				<!-- Card header -->
+				<div
+					class="flex items-center justify-between border-b border-white/10 px-4 py-2.5"
+				>
+					<div class="flex items-center gap-2">
+						<div
+							class="flex h-6 w-6 items-center justify-center rounded-md bg-[#f5a623] text-[10px] font-bold text-white"
 						>
-							<FileText class="h-3.5 w-3.5 text-white/40" />
-							<div class="min-w-0 flex-1">
-								<span class="block truncate">{pg.title}</span>
-								<span class="block truncate text-xs text-white/40">/{pg.urlPath}</span>
-							</div>
-						</button>
-					{/each}
-					{#if currentPages.length === 0}
-						<p class="px-3 py-4 text-center text-xs text-white/40">Aucune page</p>
+							LL
+						</div>
+						<div>
+							<span class="text-sm font-semibold text-white"
+								>{currentProject?.toolName ?? 'Démo'}</span
+							>
+							{#if currentProject}
+								<span class="ml-2 text-xs text-white/40"
+									>{currentPageTitle()}</span
+								>
+							{/if}
+						</div>
+					</div>
+					<button
+						class="rounded-md p-1 text-white/40 transition-colors hover:text-white"
+						onclick={() => {
+							cardOpen = false;
+						}}
+					>
+						<X class="h-4 w-4" />
+					</button>
+				</div>
+
+				<!-- Search field -->
+				<div class="border-b border-white/10 px-4 py-2.5">
+					<div class="relative">
+						<Search
+							class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30"
+						/>
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Rechercher une page..."
+							class="w-full rounded-md border border-white/10 bg-white/5 py-1.5 pl-8 pr-3 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-white/20 focus:bg-white/10"
+						/>
+					</div>
+					{#if searchQuery.trim() && filteredPages().length > 0}
+						<div
+							class="mt-2 max-h-40 overflow-y-auto rounded-md border border-white/10 bg-white/5"
+						>
+							{#each filteredPages() as pg}
+								<button
+									class="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-white/70 transition-colors hover:bg-white/10"
+									onclick={() => navigateToPage(pg.urlPath)}
+								>
+									<span class="truncate">{pg.title}</span>
+									<span
+										class="ml-auto shrink-0 text-[10px] text-white/30"
+										>/{pg.urlPath}</span
+									>
+								</button>
+							{/each}
+						</div>
+					{:else if searchQuery.trim()}
+						<p class="mt-2 text-center text-xs text-white/30">
+							Aucun résultat
+						</p>
 					{/if}
 				</div>
-			{/if}
+
+				<!-- Action grid -->
+				<div class="grid grid-cols-4 gap-1 px-4 py-3">
+					<button
+						class="flex flex-col items-center gap-1.5 rounded-lg p-2.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+						onclick={openShareDialog}
+					>
+						<Share2 class="h-4 w-4" />
+						<span class="text-[10px] font-medium">Partager</span>
+					</button>
+
+					<button
+						class="flex flex-col items-center gap-1.5 rounded-lg p-2.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+						onclick={copyUrl}
+					>
+						{#if copiedUrl}
+							<Check class="h-4 w-4 text-emerald-400" />
+							<span
+								class="text-[10px] font-medium text-emerald-400"
+								>Copié !</span
+							>
+						{:else}
+							<Copy class="h-4 w-4" />
+							<span class="text-[10px] font-medium"
+								>Copier l'URL</span
+							>
+						{/if}
+					</button>
+
+					<button
+						class="flex flex-col items-center gap-1.5 rounded-lg p-2.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+						onclick={openAsClient}
+					>
+						<ExternalLink class="h-4 w-4" />
+						<span class="text-[10px] font-medium">Vue client</span>
+					</button>
+
+					<button
+						class="flex flex-col items-center gap-1.5 rounded-lg p-2.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+					>
+						<Settings class="h-4 w-4" />
+						<span class="text-[10px] font-medium">Paramètres</span>
+					</button>
+				</div>
+
+				<!-- Bottom info bar -->
+				<div
+					class="flex items-center justify-between border-t border-white/10 px-4 py-2"
+				>
+					<div class="flex items-center gap-1.5 text-white/40">
+						<Users class="h-3 w-3" />
+						<span class="text-[10px]">3 en ligne</span>
+					</div>
+					<div class="text-[10px] text-white/30">
+						{#if currentProject}
+							{currentProject.name} — {totalPages} page{totalPages !==
+							1
+								? 's'
+								: ''}
+						{/if}
+					</div>
+				</div>
+			</div>
 		</div>
 
-		<!-- Version badge -->
-		{#if currentProject?.versions}
-			{@const version = currentProject.versions.find((v) => v.id === selectedVersionId)}
-			{#if version}
-				<Badge variant={version.status === 'active' ? 'success' : version.status === 'test' ? 'warning' : 'default'} class="text-[10px]">
-					{version.name} — {version.status === 'active' ? 'Production' : version.status === 'test' ? 'Test' : 'Déprécié'}
-				</Badge>
-			{/if}
-		{/if}
-
-		<div class="flex-1"></div>
-
-		<!-- Stats row (Issue 31) -->
-		<div class="hidden items-center gap-4 text-xs text-white/50 sm:flex">
-			<span class="inline-flex items-center gap-1.5">
-				<FileText class="h-3 w-3" />
-				{totalPages} Page{totalPages !== 1 ? 's' : ''} capturée{totalPages !== 1 ? 's' : ''}
-			</span>
-			<span class="inline-flex items-center gap-1.5">
-				<Users class="h-3 w-3" />
-				3 Clients connectés
-			</span>
-			<span class="inline-flex items-center gap-1.5">
-				<Clock class="h-3 w-3" />
-				il y a 2 min
-			</span>
-		</div>
-
-		<div class="h-5 w-px bg-white/20"></div>
-
-		<!-- Styled action buttons (Issue 32) -->
-		<button
-			class="flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
-			onclick={openShareDialog}
-		>
-			<Share2 class="h-3.5 w-3.5" />
-			<span class="hidden sm:inline">Partager le lien</span>
-		</button>
-
-		<button
-			class="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10"
-			onclick={copyUrl}
-		>
-			{#if copiedUrl}
-				<Check class="h-3.5 w-3.5 text-green-400" />
-				<span class="hidden text-green-400 sm:inline">Copié</span>
-			{:else}
-				<Copy class="h-3.5 w-3.5" />
-				<span class="hidden sm:inline">Copier l'URL</span>
-			{/if}
-		</button>
-
-		<button
-			class="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10"
-			onclick={openAsClient}
-		>
-			<ExternalLink class="h-3.5 w-3.5" />
-			<span class="hidden sm:inline">Ouvrir en tant que client</span>
-		</button>
-
-		<button
-			class="flex items-center gap-1.5 rounded-md border border-white/20 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-white/80 transition-colors hover:bg-white/10"
-		>
-			<Settings class="h-3.5 w-3.5" />
-			<span class="hidden sm:inline">Paramètres</span>
-		</button>
-	</div>
-
-	<!-- Demo iframe -->
-	<div class="flex-1 bg-white">
-		{#if loading}
-			<div class="flex h-full items-center justify-center bg-background">
-				<div class="text-center">
-					<Loader2 class="mx-auto h-8 w-8 animate-spin text-primary" />
-					<p class="mt-3 text-sm text-muted-foreground">Chargement de la démo...</p>
-				</div>
-			</div>
-		{:else if iframeError}
-			<div class="flex h-full items-center justify-center bg-background">
-				<div class="text-center">
-					<FileText class="mx-auto h-10 w-10 text-muted" />
-					<p class="mt-3 text-sm font-medium text-foreground">Erreur de chargement</p>
-					<p class="mt-1 text-sm text-muted-foreground">La démo n'a pas pu être chargée. Vérifiez que le backend est démarré.</p>
-				</div>
-			</div>
-		{:else if iframeUrl}
-			<iframe
-				src={iframeUrl}
-				class="h-full w-full border-0"
-				title="Aperçu de la démo"
-				sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-			></iframe>
-		{:else}
-			<div class="flex h-full items-center justify-center bg-background">
-				<div class="text-center">
-					<FileText class="mx-auto h-10 w-10 text-muted" />
-					<p class="mt-3 text-sm font-medium text-foreground">Page introuvable</p>
-					<p class="mt-1 text-sm text-muted-foreground">La démo demandée n'existe pas ou n'est pas disponible.</p>
-				</div>
-			</div>
-		{/if}
-	</div>
+		<!-- Backdrop to close card -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="fixed inset-0 z-40"
+			onclick={() => {
+				cardOpen = false;
+			}}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') cardOpen = false;
+			}}
+		></div>
+	{/if}
+	{/if}
 </div>
 
-<!-- Share dialog (Issue 33) -->
+<!-- Share dialog -->
 {#if shareDialogOpen}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-		onmousedown={() => { shareDialogOpen = false; }}
-		onkeydown={(e) => { if (e.key === 'Escape') shareDialogOpen = false; }}
+		onmousedown={() => {
+			shareDialogOpen = false;
+		}}
+		onkeydown={(e) => {
+			if (e.key === 'Escape') shareDialogOpen = false;
+		}}
 	>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg"
+			class="w-full max-w-md rounded-xl border border-gray-200 bg-white p-6 shadow-lg"
 			onmousedown={(e) => e.stopPropagation()}
 		>
 			<div class="mb-4 flex items-center justify-between">
-				<h3 class="text-base font-semibold text-foreground">Partager le lien</h3>
-				<button class="rounded-md p-1 text-muted hover:text-foreground" onclick={() => { shareDialogOpen = false; }}>
+				<h3 class="text-base font-semibold text-gray-900">
+					Partager le lien
+				</h3>
+				<button
+					class="rounded-md p-1 text-gray-400 hover:text-gray-600"
+					onclick={() => {
+						shareDialogOpen = false;
+					}}
+				>
 					<X class="h-4 w-4" />
 				</button>
 			</div>
 
 			<div class="space-y-4">
 				<div class="space-y-1.5">
-					<label class="text-xs font-medium text-foreground">Durée de validité</label>
+					<label class="text-xs font-medium text-gray-700"
+						>Durée de validité</label
+					>
 					<select
 						bind:value={shareLinkDuration}
-						class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						class="flex h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
 					>
 						<option value={7}>7 jours</option>
 						<option value={30}>1 mois</option>
@@ -361,36 +551,50 @@
 				</div>
 
 				<div class="space-y-1.5">
-					<label class="text-xs font-medium text-foreground">
-						Mot de passe <span class="text-muted-foreground">(optionnel)</span>
+					<label class="text-xs font-medium text-gray-700">
+						Mot de passe <span class="text-gray-400"
+							>(optionnel)</span
+						>
 					</label>
 					<div class="relative">
-						<Lock class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+						<Lock
+							class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400"
+						/>
 						<input
 							type="password"
 							bind:value={shareLinkPassword}
 							placeholder="Laisser vide pour aucun"
-							class="flex h-9 w-full rounded-md border border-border bg-transparent pl-8 pr-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+							class="flex h-9 w-full rounded-md border border-gray-200 bg-white pl-8 pr-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-500"
 						/>
 					</div>
 				</div>
 
-				<div class="rounded-lg border border-border bg-accent/50 p-3">
-					<p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Lien généré</p>
+				<div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+					<p
+						class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400"
+					>
+						Lien généré
+					</p>
 					<div class="flex items-center gap-2">
-						<code class="flex-1 truncate font-mono text-xs text-foreground">{shareGeneratedUrl}</code>
-						<button onclick={copyShareLink} class="shrink-0 rounded p-1.5 hover:bg-background">
+						<code
+							class="flex-1 truncate font-mono text-xs text-gray-700"
+							>{shareGeneratedUrl}</code
+						>
+						<button
+							onclick={copyShareLink}
+							class="shrink-0 rounded p-1.5 hover:bg-white"
+						>
 							{#if shareCopied}
 								<Check class="h-3.5 w-3.5 text-emerald-500" />
 							{:else}
-								<Copy class="h-3.5 w-3.5 text-muted-foreground" />
+								<Copy class="h-3.5 w-3.5 text-gray-400" />
 							{/if}
 						</button>
 					</div>
 				</div>
 
 				<button
-					class="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+					class="flex w-full items-center justify-center gap-1.5 rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600"
 					onclick={copyShareLink}
 				>
 					{#if shareCopied}
@@ -406,4 +610,11 @@
 	</div>
 {/if}
 
-<svelte:window onclick={() => { projectDropdownOpen = false; pageDropdownOpen = false; }} />
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape') {
+			cardOpen = false;
+			shareDialogOpen = false;
+		}
+	}}
+/>

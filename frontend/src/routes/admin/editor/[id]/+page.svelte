@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { get, patch, put } from '$lib/api';
+	import { get, patch } from '$lib/api';
 	import { toast } from '$lib/stores/toast';
 	import { Card, CardContent } from '$components/ui/card';
 	import { Button } from '$components/ui/button';
@@ -176,6 +176,10 @@
 
 	// Load page HTML content
 	async function loadPageContent(id: string) {
+		if (!id) {
+			currentPage = null;
+			return;
+		}
 		try {
 			// Fetch page metadata
 			const pageRes = await get<{ data: PageData }>(`/pages/${id}`);
@@ -187,8 +191,9 @@
 			originalContent = htmlContent;
 		} catch (err) {
 			console.error('Load page content error:', err);
-			htmlContent = '<!-- Erreur de chargement -->';
-			originalContent = htmlContent;
+			currentPage = null;
+			htmlContent = '';
+			originalContent = '';
 		}
 	}
 
@@ -382,6 +387,11 @@
 			<!-- Editor toolbar -->
 			<div class="flex items-center justify-between border-b border-border bg-card px-4 py-2">
 				<div class="flex items-center gap-3">
+					<a href="/admin/tree" class="text-xs text-primary hover:underline flex items-center gap-1">
+						<ArrowLeft class="h-3 w-3" />
+						Retour à l'arborescence
+					</a>
+					<span class="text-muted">|</span>
 					<h2 class="text-sm font-semibold text-foreground">{currentPage.title}</h2>
 					<span class="text-xs text-muted-foreground">/{currentPage.urlPath}</span>
 					{#if isDirty}
@@ -424,6 +434,13 @@
 					}}>
 						<Eye class="h-3.5 w-3.5" />
 						Aperçu
+					</Button>
+					<Button variant="outline" size="sm" class="gap-1.5" onclick={async () => {
+						await saveContent();
+						window.open(`/demo/${projects.find(p => p.id === selectedProjectId)?.subdomain ?? ''}/${currentPage!.urlPath}`, '_blank');
+					}} disabled={!isDirty || saving}>
+						<Eye class="h-3.5 w-3.5" />
+						Enregistrer et prévisualiser
 					</Button>
 					<Button size="sm" class="gap-1.5" onclick={saveContent} disabled={!isDirty || saving}>
 						{#if saving}

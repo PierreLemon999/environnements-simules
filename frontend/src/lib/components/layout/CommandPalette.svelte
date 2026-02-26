@@ -22,31 +22,24 @@
 		meta?: string;
 	}
 
+	type CategoryFilter = 'all' | 'page' | 'project' | 'user' | 'action';
+
 	let open = $state(false);
 	let query = $state('');
-	let activeTab = $state('all');
 	let results: SearchResult[] = $state([]);
 	let loading = $state(false);
 	let selectedIndex = $state(0);
+	let activeFilter: CategoryFilter = $state('all');
 	let inputRef: HTMLInputElement | undefined = $state();
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-	const tabs = [
-		{ id: 'all', label: 'Tous' },
-		{ id: 'page', label: 'Pages' },
-		{ id: 'project', label: 'Projets' },
-		{ id: 'demo', label: 'Démos' },
-		{ id: 'user', label: 'Utilisateurs' },
-		{ id: 'capture', label: 'Captures' },
+	const categoryTabs: { key: CategoryFilter; label: string }[] = [
+		{ key: 'all', label: 'Tout' },
+		{ key: 'project', label: 'Projets' },
+		{ key: 'page', label: 'Démos' },
+		{ key: 'user', label: 'Utilisateurs' },
+		{ key: 'action', label: 'Actions' },
 	];
-
-	let tabCounts = $derived(() => {
-		const counts: Record<string, number> = { all: results.length };
-		for (const r of results) {
-			counts[r.type] = (counts[r.type] || 0) + 1;
-		}
-		return counts;
-	});
 
 	const quickActions: SearchResult[] = [
 		{ id: 'action-new-project', type: 'action', title: 'Créer un projet', subtitle: 'Initialiser un nouveau projet d\'environnement simulé', href: '/admin/projects?action=create', icon: Plus },
@@ -59,8 +52,8 @@
 	];
 
 	let filteredResults = $derived(() => {
-		if (activeTab === 'all') return results;
-		return results.filter((r) => r.type === activeTab);
+		if (activeFilter === 'all') return results;
+		return results.filter((r) => r.type === activeFilter);
 	});
 
 	function formatRelativeTime(dateStr: string): string {
@@ -144,11 +137,16 @@
 		open = !open;
 		if (open) {
 			query = '';
+			activeFilter = 'all';
 			results = [...quickActions];
-			activeTab = 'all';
 			selectedIndex = 0;
 			setTimeout(() => inputRef?.focus(), 10);
 		}
+	}
+
+	function setFilter(filter: CategoryFilter) {
+		activeFilter = filter;
+		selectedIndex = 0;
 	}
 
 	async function search(q: string) {
@@ -253,15 +251,6 @@
 		} else if (e.key === 'Enter' && list[selectedIndex]) {
 			e.preventDefault();
 			handleSelect(list[selectedIndex]);
-		} else if (e.key === 'Tab') {
-			e.preventDefault();
-			const tabIds = tabs.map(t => t.id);
-			const currentIdx = tabIds.indexOf(activeTab);
-			const nextIdx = e.shiftKey
-				? (currentIdx - 1 + tabIds.length) % tabIds.length
-				: (currentIdx + 1) % tabIds.length;
-			activeTab = tabIds[nextIdx];
-			selectedIndex = 0;
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
 			open = false;
@@ -296,6 +285,14 @@
 			class="mx-auto mt-[15vh] w-full max-w-xl overflow-hidden rounded-xl border border-border bg-card shadow-lg"
 			onmousedown={handleModalMousedown}
 		>
+			<!-- Header -->
+			<div class="flex items-center justify-between border-b border-border px-4 py-2">
+				<span class="text-[10px] font-semibold uppercase tracking-wider text-muted">Recherche admin</span>
+				<kbd class="rounded border border-border bg-input px-1.5 py-0.5 font-mono text-[10px] text-muted">
+					ESC
+				</kbd>
+			</div>
+
 			<!-- Search input -->
 			<div class="flex items-center gap-3 border-b border-border px-4 py-3">
 				<Search class="h-4 w-4 shrink-0 text-muted" />
@@ -305,34 +302,19 @@
 					oninput={handleInput}
 					onkeydown={handleKeydown}
 					type="text"
-					placeholder="Recherche admin — pages, projets, utilisateurs..."
+					placeholder="Rechercher une page, un projet, une action..."
 					class="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
 				/>
-				<kbd class="rounded border border-border bg-input px-1.5 py-0.5 font-mono text-[10px] text-muted">
-					ESC
-				</kbd>
 			</div>
 
-			<!-- Category tabs -->
-			<div class="flex gap-1 border-b border-border px-4 py-2">
-				{#each tabs as tab}
-					{@const count = tabCounts()[tab.id] || 0}
+			<!-- Category filter tabs -->
+			<div class="flex items-center gap-1 border-b border-border px-3 py-1.5">
+				{#each categoryTabs as tab}
 					<button
-						class="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors {activeTab === tab.id ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
-						onclick={() => { activeTab = tab.id; selectedIndex = 0; }}
+						class="rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors {activeFilter === tab.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
+						onclick={() => setFilter(tab.key)}
 					>
 						{tab.label}
-						{#if count > 0}
-							{#if activeTab === tab.id}
-								<span class="ml-0.5 rounded-full bg-white/30 px-1.5 py-0.5 text-[9px] font-semibold">
-									{count}
-								</span>
-							{:else}
-								<span class="ml-0.5 text-[9px] text-muted">
-									{count}
-								</span>
-							{/if}
-						{/if}
 					</button>
 				{/each}
 			</div>
@@ -348,12 +330,10 @@
 				{:else}
 					{@const grouped = groupResults(filteredResults())}
 					{#each Object.entries(grouped) as [type, items]}
-						{#if activeTab === 'all'}
-							<p class="mb-1 mt-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted first:mt-0">
-								{getLabelForType(type)}s
-								<span class="ml-1 font-normal normal-case text-muted">{items.length} résultat{items.length !== 1 ? 's' : ''}</span>
-							</p>
-						{/if}
+						<p class="mb-1 mt-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted first:mt-0">
+							{getLabelForType(type)}s
+							<span class="ml-1 font-normal normal-case text-muted">{items.length} résultat{items.length !== 1 ? 's' : ''}</span>
+						</p>
 						{#each items as result, ri}
 							{@const globalIdx = getGlobalIndex(grouped, type, ri)}
 							{@const Icon = result.icon ?? getIconForType(result.type)}
@@ -402,14 +382,10 @@
 					ouvrir
 				</span>
 				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">Tab</kbd>
-					catégorie
-				</span>
-				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
 					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">ESC</kbd>
 					fermer
 				</span>
-				<span class="ml-auto text-[10px] font-medium text-muted">EnvSim</span>
+				<span class="ml-auto text-[10px] font-medium text-muted">Recherche admin</span>
 			</div>
 		</div>
 	</div>

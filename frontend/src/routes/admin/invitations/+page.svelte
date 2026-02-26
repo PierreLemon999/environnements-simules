@@ -37,8 +37,7 @@
 		ChevronLeft,
 		ChevronRight,
 		BarChart3,
-		RefreshCw,
-		X,
+		Info,
 		Lock,
 		Globe,
 		ArrowUpRight,
@@ -106,6 +105,21 @@
 	let linkRequireAccount = $state(false);
 	let linkGenerated = $state('');
 	let linkGenerating = $state(false);
+	let linkGeneratedCompany = $state('');
+	let linkGeneratedExpiry = $state('');
+	let linkCompanyMode = $state<'select' | 'create'>('select');
+	let linkCompanyCustom = $state('');
+
+	// Extract unique companies from existing assignments
+	let existingCompanies = $derived(() => {
+		const companies = new Set<string>();
+		for (const a of assignments) {
+			if (a.user.company && a.user.company.trim()) {
+				companies.add(a.user.company.trim());
+			}
+		}
+		return [...companies].sort((a, b) => a.localeCompare(b));
+	});
 
 	// Credentials display (inline in form card)
 	let showCredentials = $state(false);
@@ -352,6 +366,8 @@
 
 	function resetLinkForm() {
 		linkCompany = '';
+		linkCompanyCustom = '';
+		linkCompanyMode = 'select';
 		linkProjectId = projects[0]?.id ?? '';
 		linkVersionId = '';
 		linkExpiryDays = 90;
@@ -394,7 +410,8 @@
 	}
 
 	async function handleGenerateLink() {
-		if (!linkVersionId || !linkCompany.trim()) {
+		const companyName = linkCompanyMode === 'create' ? linkCompanyCustom.trim() : linkCompany.trim();
+		if (!linkVersionId || !companyName) {
 			formError = 'Entreprise et version sont requis.';
 			return;
 		}
@@ -404,13 +421,18 @@
 
 		try {
 			const res = await post<{ data: NewAssignment }>(`/versions/${linkVersionId}/assignments`, {
-				email: `${linkCompany.trim().toLowerCase().replace(/\s+/g, '-')}@link.demo`,
-				name: linkCompany.trim(),
+				email: `${companyName.toLowerCase().replace(/\s+/g, '-')}@link.demo`,
+				name: companyName,
 				expiresInDays: linkExpiryDays,
 			});
 
 			const baseUrl = window.location.origin;
 			linkGenerated = `${baseUrl}/demo/${res.data.accessToken}`;
+			// Store the company name and expiry for the info banner
+			linkGeneratedCompany = companyName;
+			const expiryDate = new Date();
+			expiryDate.setDate(expiryDate.getDate() + linkExpiryDays);
+			linkGeneratedExpiry = expiryDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 			toast.success('Lien généré avec succès');
 
 			await loadAllAssignments();
@@ -764,7 +786,7 @@
 													onclick={() => handleResend(assignment)}
 													title="Renvoyer"
 												>
-													<RefreshCw class="h-3.5 w-3.5" />
+													<Send class="h-3.5 w-3.5" />
 												</button>
 												<button
 													class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
@@ -782,7 +804,7 @@
 													onclick={() => openDeleteDialog(assignment)}
 													title="Révoquer"
 												>
-													<X class="h-3.5 w-3.5" />
+													<Trash2 class="h-3.5 w-3.5" />
 												</button>
 											</div>
 										</td>
@@ -1055,6 +1077,16 @@
 									</div>
 								</div>
 
+								<!-- Info banner about company association -->
+								{#if linkGeneratedCompany}
+									<div class="flex items-start gap-2.5 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-800 dark:bg-blue-950/30">
+										<Info class="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
+										<p class="text-xs leading-relaxed text-blue-700 dark:text-blue-300">
+											Ce lien est lié à <strong>{linkGeneratedCompany}</strong> — Toute personne utilisant ce lien sera automatiquement associée à cette entreprise.{#if linkGeneratedExpiry} Expire le {linkGeneratedExpiry}.{/if}
+										</p>
+									</div>
+								{/if}
+
 								<div class="rounded-lg border-2 border-dashed border-border p-4">
 									<p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Lien de partage</p>
 									<div class="flex items-center gap-2 rounded-md bg-accent/50 p-2">
@@ -1071,7 +1103,7 @@
 
 								<Button
 									class="w-full"
-									onclick={() => { linkGenerated = ''; resetLinkForm(); }}
+									onclick={() => { linkGenerated = ''; linkGeneratedCompany = ''; linkGeneratedExpiry = ''; resetLinkForm(); }}
 								>
 									Générer un autre lien
 								</Button>
@@ -1080,7 +1112,44 @@
 							<form class="space-y-3" onsubmit={(e) => { e.preventDefault(); handleGenerateLink(); }}>
 								<div class="space-y-1.5">
 									<label for="link-company" class="text-xs font-medium text-foreground">Entreprise</label>
-									<Input id="link-company" bind:value={linkCompany} placeholder="Acme Corp" class="h-8 text-sm" />
+									{#if linkCompanyMode === 'select'}
+										<select
+											id="link-company"
+											bind:value={linkCompany}
+											onchange={(e) => {
+												if ((e.target as HTMLSelectElement).value === '__create__') {
+													linkCompanyMode = 'create';
+													linkCompany = '';
+													linkCompanyCustom = '';
+												}
+											}}
+											class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<option value="" disabled>Sélectionner une entreprise</option>
+											{#each existingCompanies() as company}
+												<option value={company}>{company}</option>
+											{/each}
+											<option value="__create__">+ Créer une entreprise</option>
+										</select>
+									{:else}
+										<div class="flex items-center gap-2">
+											<Input
+												id="link-company-custom"
+												bind:value={linkCompanyCustom}
+												placeholder="Nom de l'entreprise"
+												class="h-8 text-sm"
+											/>
+											<button
+												type="button"
+												class="shrink-0 rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+												onclick={() => { linkCompanyMode = 'select'; linkCompanyCustom = ''; }}
+												title="Revenir à la liste"
+											>
+												<ChevronLeft class="h-4 w-4" />
+											</button>
+										</div>
+										<p class="text-[10px] text-muted-foreground">Nouvelle entreprise — sera créée automatiquement</p>
+									{/if}
 								</div>
 								<div class="space-y-1.5">
 									<label for="link-project" class="text-xs font-medium text-foreground">Projet</label>

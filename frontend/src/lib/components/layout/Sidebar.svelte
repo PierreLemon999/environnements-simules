@@ -250,7 +250,7 @@
 				{#if !collapsed}
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm font-medium text-foreground">{$user.name}</p>
-						<p class="truncate text-xs text-muted">{$user.role === 'admin' ? 'Administrateur' : 'Client'}</p>
+						<p class="truncate text-xs text-muted">{$user.role === 'admin' ? 'Administrateur·rice' : 'Client·e'}</p>
 					</div>
 					<button
 						class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"

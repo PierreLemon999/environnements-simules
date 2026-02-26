@@ -8,8 +8,9 @@
 		FolderKanban,
 		FileText,
 		ArrowUpRight,
+		Play,
+		Activity,
 		Eye,
-		Clock,
 		Search,
 		Filter,
 		Download,
@@ -66,6 +67,47 @@
 	let guideSessions = $derived(sessions.filter(s => s.eventCount > 3));
 	let sessionCount = $derived(sessions.length);
 	let guideCount = $derived(guideSessions.length);
+
+	// Demos actives — derive from unique users who have sessions (as a proxy for active assignments)
+	let activeDemoCount = $derived(() => {
+		const uniqueAssignments = new Set(sessions.filter(s => s.assignmentId).map(s => s.assignmentId));
+		const uniqueAnonymous = sessions.filter(s => !s.assignmentId).length;
+		// Total active demos = unique assignments + count of projects (each project has at least one demo)
+		return Math.max(uniqueAssignments.size, projects.length);
+	});
+	let clientDemoCount = $derived(() => {
+		const clientSessions = sessions.filter(s => s.user && s.user.email && !s.user.email.endsWith('@lemonlearning.com'));
+		const uniqueClients = new Set(clientSessions.map(s => s.userId));
+		return uniqueClients.size;
+	});
+	let internalDemoCount = $derived(() => {
+		const internalSessions = sessions.filter(s => s.user && s.user.email && s.user.email.endsWith('@lemonlearning.com'));
+		const uniqueInternal = new Set(internalSessions.map(s => s.userId));
+		return uniqueInternal.size;
+	});
+	let testDemoCount = $derived(() => {
+		const testSessions = sessions.filter(s => !s.user || !s.userId);
+		return testSessions.length > 0 ? 1 : 0;
+	});
+
+	// Sessions ce mois — count sessions started in the current calendar month
+	let sessionsThisMonth = $derived(() => {
+		const now = new Date();
+		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+		return sessions.filter(s => s.startedAt >= startOfMonth).length;
+	});
+	let sessionsLastMonth = $derived(() => {
+		const now = new Date();
+		const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+		const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+		return sessions.filter(s => s.startedAt >= startOfLastMonth && s.startedAt < startOfThisMonth).length;
+	});
+	let sessionChangePercent = $derived(() => {
+		const last = sessionsLastMonth();
+		const current = sessionsThisMonth();
+		if (last === 0) return current > 0 ? 100 : 0;
+		return Math.round(((current - last) / last) * 100);
+	});
 
 	let filteredSessions = $derived(() => {
 		let result = activityFilter === 'guides' ? guideSessions : sessions;
@@ -230,50 +272,60 @@
 			</CardContent>
 		</Card>
 
-		<!-- Pages consultées -->
+		<!-- Démos actives -->
 		<Card class="border-border">
 			<CardContent class="p-3.5">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-[13px] font-medium text-muted-foreground">Pages consultées</p>
+						<p class="text-[13px] font-medium text-muted-foreground">Démos actives</p>
 						<p class="mt-0.5 text-[22px] font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-7 w-10"></span>
 							{:else}
-								{overview?.totalPageViews ?? 0}
+								{activeDemoCount()}
 							{/if}
 						</p>
-						{#if !loading && overview}
-							<span class="text-[11px] text-muted-foreground">{overview.last7Days.sessions} sessions cette semaine</span>
+						{#if !loading}
+							<span class="text-[11px] text-muted-foreground">{clientDemoCount()} clients · {internalDemoCount()} internes · {testDemoCount()} tests</span>
 						{/if}
 					</div>
 					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-purple-50">
-						<Eye class="h-4 w-4 text-purple-600" />
+						<Play class="h-4 w-4 text-purple-600" />
 					</div>
 				</div>
 			</CardContent>
 		</Card>
 
-		<!-- Temps passé -->
+		<!-- Sessions ce mois -->
 		<Card class="border-border">
 			<CardContent class="p-3.5">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-[13px] font-medium text-muted-foreground">Temps passé</p>
+						<p class="text-[13px] font-medium text-muted-foreground">Sessions ce mois</p>
 						<p class="mt-0.5 text-[22px] font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-7 w-10"></span>
 							{:else}
-								{@const avgMin = Math.round((overview?.averageSessionDurationSeconds ?? 0) / 60)}
-								{avgMin < 60 ? `${avgMin}min` : `${Math.floor(avgMin / 60)}h${avgMin % 60}m`}
+								{sessionsThisMonth()}
 							{/if}
 						</p>
-						{#if !loading && overview}
-							<span class="text-[11px] text-muted-foreground">durée moyenne par session</span>
+						{#if !loading}
+							{@const avgMin = Math.round((overview?.averageSessionDurationSeconds ?? 0) / 60)}
+							{@const changePercent = sessionChangePercent()}
+							<span class="text-[11px] text-muted-foreground">
+								{#if changePercent > 0}
+									<span class="text-success">+{changePercent}%</span>
+								{:else if changePercent < 0}
+									<span class="text-destructive">{changePercent}%</span>
+								{:else}
+									<span>=</span>
+								{/if}
+								vs mois dernier · {overview?.totalPageViews ?? 0} pages consultées · {avgMin}min temps moyen
+							</span>
 						{/if}
 					</div>
 					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-amber-50">
-						<Clock class="h-4 w-4 text-amber-600" />
+						<Activity class="h-4 w-4 text-amber-600" />
 					</div>
 				</div>
 			</CardContent>
@@ -286,9 +338,6 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-4">
 					<CardTitle class="text-base">Journal d'activité des clients</CardTitle>
-					<a href="/admin/analytics" class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-						Voir tout <ArrowUpRight class="h-3 w-3" />
-					</a>
 				</div>
 				<!-- Tabs inline-right -->
 				<div class="flex items-center gap-1 rounded-lg border border-border bg-card p-0.5">

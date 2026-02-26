@@ -1,0 +1,26 @@
+The audit is complete. Here's the summary:
+
+## Iteration 13 — Quality Audit Results
+
+**37 total issues** found across all pages:
+
+| Severity | Count | Key Issues |
+|----------|-------|------------|
+| **CRITICAL** | 3 | Editor page renders dashboard instead of editor; Both demo viewers (commercial + prospect) are broken — no content loads |
+| **HIGH** | 12 | Login page uses tabs instead of unified form; Dashboard has wrong stat cards; Tree view missing detail panel; Analytics tables missing key columns; Command palette has tabs that shouldn't exist; Commercial viewer toolbar design is completely different from mockup |
+| **MEDIUM** | 14 | Missing breadcrumbs throughout; Obfuscation still has scope column; Invitation table missing columns; Various text/layout mismatches |
+| **LOW** | 8 | Sidebar width, placeholder text, seed data sparsity, footer missing on login |
+
+### Pages that look good:
+- **Users page** — OK
+- **Update Requests page** — OK  
+- **Dashboard collapsed sidebar** — OK
+- **Project Detail** — OK (no mockup to compare)
+
+### Most critical fixes needed:
+1. **Editor route** is completely non-functional (shows dashboard)
+2. **Demo serving** is broken for both commercial and prospect viewers
+3. **Login page** needs full redesign (remove tabs, unify form)
+4. **Commercial viewer** toolbar needs complete redesign to floating card
+
+Report written to `feedback-logs/iteration-13-issues.md`.

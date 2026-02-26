@@ -92,16 +92,6 @@
 	});
 
 	let activeCount = $derived(rules.filter(r => r.isActive).length);
-	// Preview stats (simulated)
-	let previewStats = $derived(() => {
-		const active = rules.filter(r => r.isActive).length;
-		const total = rules.length;
-		const coverage = total > 0 ? Math.round((active / total) * 100) : 0;
-		// Count how many fields would be masked (simulated based on active rules)
-		const fieldsMasked = active * 3; // rough estimate
-		return { rulesApplied: active, fieldsMasked, coverage };
-	});
-
 	// Deterministic occurrence count based on rule content (would come from API in production)
 	function getRuleOccurrences(rule: ObfuscationRule): number {
 		// Use a simple hash of the search term for a stable, deterministic value
@@ -111,6 +101,66 @@
 			hash |= 0;
 		}
 		return Math.abs(hash % 47) + 3;
+	}
+
+	// Deterministic affected pages count per rule
+	function getRuleAffectedPages(rule: ObfuscationRule): number {
+		let hash = 0;
+		for (let i = 0; i < rule.searchTerm.length; i++) {
+			hash = ((hash << 3) + hash) + rule.searchTerm.charCodeAt(i);
+			hash |= 0;
+		}
+		return Math.abs(hash % 12) + 1;
+	}
+
+	// Preview stats (simulated)
+	let previewStats = $derived(() => {
+		const active = rules.filter(r => r.isActive).length;
+		const total = rules.length;
+		const coverage = total > 0 ? Math.round((active / total) * 100) : 0;
+		// Sum occurrences across all active rules
+		const totalOccurrences = rules.filter(r => r.isActive).reduce((sum, r) => sum + getRuleOccurrences(r), 0);
+		// Unique affected pages (capped reasonably)
+		const affectedPagesSet = new Set<number>();
+		rules.filter(r => r.isActive).forEach(r => {
+			const count = getRuleAffectedPages(r);
+			for (let i = 0; i < count; i++) affectedPagesSet.add(i);
+		});
+		const affectedPages = affectedPagesSet.size;
+		return { rulesCount: active, occurrencesFound: totalOccurrences, affectedPages, coverage };
+	});
+
+	// Animated counter values
+	let animatedRulesCount = $state(0);
+	let animatedOccurrences = $state(0);
+	let animatedPages = $state(0);
+
+	// Animate counters when stats change
+	$effect(() => {
+		const stats = previewStats();
+		animateValue(animatedRulesCount, stats.rulesCount, (v) => { animatedRulesCount = v; });
+		animateValue(animatedOccurrences, stats.occurrencesFound, (v) => { animatedOccurrences = v; });
+		animateValue(animatedPages, stats.affectedPages, (v) => { animatedPages = v; });
+	});
+
+	function animateValue(from: number, to: number, setter: (v: number) => void) {
+		if (from === to) return;
+		const duration = 400;
+		const startTime = performance.now();
+		const startVal = from;
+
+		function step(currentTime: number) {
+			const elapsed = currentTime - startTime;
+			const progress = Math.min(elapsed / duration, 1);
+			// Ease-out cubic
+			const eased = 1 - Math.pow(1 - progress, 3);
+			const current = Math.round(startVal + (to - startVal) * eased);
+			setter(current);
+			if (progress < 1) {
+				requestAnimationFrame(step);
+			}
+		}
+		requestAnimationFrame(step);
 	}
 
 	async function loadRules(projectId: string) {
@@ -597,19 +647,33 @@
 						</div>
 					</CardHeader>
 					<CardContent class="space-y-4">
-						<!-- Stats row -->
+						<!-- Coverage bar -->
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<span class="text-xs font-medium text-foreground">Couverture d'obfuscation</span>
+								<span class="text-sm font-bold text-primary">{previewStats().coverage}%</span>
+							</div>
+							<div class="h-2.5 overflow-hidden rounded-full bg-border">
+								<div
+									class="h-full rounded-full transition-all duration-500 ease-out {previewStats().coverage >= 80 ? 'bg-emerald-500' : previewStats().coverage >= 50 ? 'bg-primary' : previewStats().coverage > 0 ? 'bg-orange-400' : 'bg-border'}"
+									style="width: {previewStats().coverage}%"
+								></div>
+							</div>
+						</div>
+
+						<!-- Animated stat counters -->
 						<div class="grid grid-cols-3 gap-2">
 							<div class="rounded-lg border border-border p-2.5 text-center">
-								<p class="text-lg font-bold text-foreground">{previewStats().rulesApplied}</p>
-								<p class="text-[10px] text-muted-foreground">Règles appliquées</p>
+								<p class="text-lg font-bold tabular-nums text-foreground transition-all duration-300">{animatedRulesCount}</p>
+								<p class="text-[10px] text-muted-foreground">Règles actives</p>
 							</div>
 							<div class="rounded-lg border border-border p-2.5 text-center">
-								<p class="text-lg font-bold text-foreground">{previewStats().fieldsMasked}</p>
-								<p class="text-[10px] text-muted-foreground">Champs masqués</p>
+								<p class="text-lg font-bold tabular-nums text-foreground transition-all duration-300">{animatedOccurrences}</p>
+								<p class="text-[10px] text-muted-foreground">Occurrences trouvées</p>
 							</div>
 							<div class="rounded-lg border border-border p-2.5 text-center">
-								<p class="text-lg font-bold text-primary">{previewStats().coverage}%</p>
-								<p class="text-[10px] text-muted-foreground">Couverture</p>
+								<p class="text-lg font-bold tabular-nums text-primary transition-all duration-300">{animatedPages}</p>
+								<p class="text-[10px] text-muted-foreground">Pages affectées</p>
 							</div>
 						</div>
 
@@ -657,17 +721,11 @@
 							</div>
 						{/if}
 
-						<!-- Coverage bar -->
-						<div class="space-y-1.5">
+						<!-- Summary coverage footer -->
+						<div class="rounded-lg border border-border bg-accent/30 p-2.5">
 							<div class="flex items-center justify-between text-xs">
-								<span class="text-muted-foreground">Couverture globale</span>
-								<span class="font-medium text-foreground">{previewStats().coverage}%</span>
-							</div>
-							<div class="h-1.5 overflow-hidden rounded-full bg-border">
-								<div
-									class="h-full rounded-full bg-primary transition-all duration-300"
-									style="width: {previewStats().coverage}%"
-								></div>
+								<span class="text-muted-foreground">{previewStats().rulesCount} règle{previewStats().rulesCount !== 1 ? 's' : ''} active{previewStats().rulesCount !== 1 ? 's' : ''} sur {rules.length}</span>
+								<span class="font-medium text-foreground">{previewStats().coverage}% couverture</span>
 							</div>
 						</div>
 					</CardContent>

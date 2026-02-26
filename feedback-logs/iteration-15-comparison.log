@@ -1,0 +1,31 @@
+Report written to `feedback-logs/iteration-15-issues.md`.
+
+**Summary of findings:**
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 0 |
+| HIGH | 2 |
+| MEDIUM | 4 |
+| LOW | 4 |
+| **TOTAL** | **10** |
+
+All 3 CRITICAL issues from iteration 14 are now resolved (editor loads, demo viewers show content, login branding fixed). The remaining issues are:
+
+**HIGH (2):**
+1. Two conflicting login page designs still appear in test screenshots (stale tab-based version alongside the correct single-form version)
+2. Editor screenshot is too small/compressed to fully validate against mockup
+
+**MEDIUM (4):**
+3. Tree view missing collapsible section headers with page counts per the mockup
+4. Analytics company column shows dashes instead of actual company names (R005 unresolved feedback)
+5. Command palette category tab names differ slightly from mockup
+6. Demo viewer "LL" widget positioned at top-center instead of bottom-right
+
+**LOW (4):**
+7. Login background gradient style slightly differs from mockup
+8. Tree view footer breadcrumb format differs
+9. Dashboard has 4 stat cards vs mockup's 2 (enhancement, not regression)
+10. Commercial viewer missing admin toolbar overlay from mockup
+
+The app has improved significantly from iteration 14. No blocking issues remain.

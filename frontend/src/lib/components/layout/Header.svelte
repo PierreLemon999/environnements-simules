@@ -83,9 +83,9 @@
 		$page.url.pathname === '/admin/projects'
 	);
 
-	// Page title map
-	const pageTitles: Record<string, string> = {
-		admin: 'Dashboard',
+	// Route segment to French label map
+	const segmentLabels: Record<string, string> = {
+		admin: 'Accueil',
 		projects: 'Projets',
 		tree: 'Arborescence',
 		analytics: 'Analytics',
@@ -94,48 +94,49 @@
 		obfuscation: 'Obfuscation',
 		'update-requests': 'Demandes MAJ',
 		settings: 'Paramètres',
+		editor: 'Éditeur',
+		components: 'Composants',
 	};
 
-	// Build breadcrumb from current path
+	// Current page title: last known segment label, or resolved entity name
 	let pageTitle = $derived(() => {
 		const pathname = $page.url.pathname;
 		const segments = pathname.split('/').filter(Boolean);
-		// Get the last meaningful segment
+
+		if (segments.length <= 1) return 'Dashboard';
+
+		// For deep pages like /admin/projects/:id, show the resolved name or fallback
+		const lastSegment = segments[segments.length - 1];
+		if (resolvedNames[lastSegment]) return resolvedNames[lastSegment];
+		if (segmentLabels[lastSegment]) return segmentLabels[lastSegment];
+
+		// Fallback: find last known label
 		for (let i = segments.length - 1; i >= 0; i--) {
-			if (pageTitles[segments[i]]) return pageTitles[segments[i]];
+			if (segmentLabels[segments[i]]) return segmentLabels[segments[i]];
 		}
 		return 'Dashboard';
 	});
 
+	// Breadcrumb trail: "Accueil > Section > Sub-page" — the last item is the page title (not in crumbs)
 	let breadcrumbs = $derived(() => {
 		const pathname = $page.url.pathname;
 		const segments = pathname.split('/').filter(Boolean);
-		const labels: Record<string, string> = {
-			admin: 'Accueil',
-			projects: 'Projets',
-			tree: 'Arborescence',
-			analytics: 'Analytics',
-			invitations: 'Invitations',
-			users: 'Utilisateurs',
-			obfuscation: 'Obfuscation',
-			'update-requests': 'Demandes MAJ',
-			settings: 'Paramètres',
-		};
+		// segments[0] = 'admin', segments[1] = section, segments[2+] = sub-pages
 
-		const crumbs: Array<{ label: string; href: string; isLast: boolean }> = [];
+		const crumbs: Array<{ label: string; href: string }> = [];
 
-		// Skip the first segment ('admin') — it's already shown as the page title area
-		// Only build breadcrumbs for sub-pages (e.g. /admin/projects/:id)
-		for (let i = 1; i < segments.length; i++) {
+		// On the dashboard itself (/admin), no breadcrumbs needed
+		if (segments.length <= 1) return crumbs;
+
+		// Always start with "Accueil" linking to /admin
+		crumbs.push({ label: 'Accueil', href: '/admin' });
+
+		// Add intermediate segments (everything except the last, which is the page title)
+		for (let i = 1; i < segments.length - 1; i++) {
 			const segment = segments[i];
-			// Skip direct section pages — they're already shown via pageTitle
-			// Only show sub-navigation (e.g. project detail under Projets)
-			if (i === 1 && pageTitles[segment]) continue;
-			const label = resolvedNames[segment] ?? labels[segment] ?? segment;
+			const label = resolvedNames[segment] ?? segmentLabels[segment] ?? segment;
 			const href = '/' + segments.slice(0, i + 1).join('/');
-			const isLast = i === segments.length - 1;
-
-			crumbs.push({ label, href, isLast });
+			crumbs.push({ label, href });
 		}
 
 		return crumbs;
@@ -146,17 +147,13 @@
 	class="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm transition-all duration-300"
 	style="margin-left: {collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'}"
 >
-	<!-- Page title + Breadcrumb -->
-	<div class="flex items-center gap-2">
+	<!-- Breadcrumb + Page title -->
+	<div class="flex items-center gap-1.5">
+		{#each breadcrumbs() as crumb}
+			<a href={crumb.href} class="text-sm text-muted-foreground transition-colors hover:text-foreground">{crumb.label}</a>
+			<ChevronRight class="h-3.5 w-3.5 text-muted" />
+		{/each}
 		<h1 class="text-lg font-bold text-foreground">{pageTitle()}</h1>
-		<nav class="flex items-center gap-1 text-sm">
-			{#each breadcrumbs() as crumb}
-				{#if !crumb.isLast}
-					<ChevronRight class="h-3.5 w-3.5 text-muted" />
-					<a href={crumb.href} class="text-muted-foreground transition-colors hover:text-foreground">{crumb.label}</a>
-				{/if}
-			{/each}
-		</nav>
 	</div>
 
 	<div class="flex-1"></div>
@@ -167,7 +164,7 @@
 		onclick={() => onOpenCommandPalette?.()}
 	>
 		<Search class="h-3.5 w-3.5" />
-		<span class="flex-1 text-left text-xs">Rechercher pages, projets, utilisateurs...</span>
+		<span class="flex-1 text-left text-xs">Recherche admin...</span>
 		<kbd class="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted">⌘K</kbd>
 	</button>
 
