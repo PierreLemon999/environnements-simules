@@ -18,6 +18,12 @@ export default defineConfig({
 				changeOrigin: true,
 				secure: false,
 				rewrite: (path: string) => path.replace(/^\/demo-api/, '/demo')
+			},
+			// Proxy uploads to backend
+			'/uploads': {
+				target: 'http://localhost:3001',
+				changeOrigin: true,
+				secure: false
 			}
 		}
 	}

@@ -24,7 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.BACKEND_PORT || '3001', 10);
 
 // ── Global Middleware ────────────────────────────────────────────────────────
 
@@ -34,6 +34,8 @@ app.use(
     origin: [
       'http://localhost:5173',
       'http://localhost:3000',
+      'http://localhost:3001',
+      'https://env-ll.com',
       process.env.FRONTEND_URL || '',
     ].filter(Boolean),
     credentials: true,

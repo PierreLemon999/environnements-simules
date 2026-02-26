@@ -322,7 +322,7 @@ router.get('/overview', authenticate, async (req: Request, res: Response) => {
         totalPageViews: totalPageViews?.count ?? 0,
         totalGuideStarts: totalGuideStarts?.count ?? 0,
         totalGuideCompletions: totalGuideCompletions?.count ?? 0,
-        averageSessionDurationSeconds: Math.round(avgDuration?.avg ?? 0),
+        averageSessionDurationSeconds: Math.max(0, Math.round(avgDuration?.avg ?? 0)),
         last7Days: {
           sessions: recentSessions?.count ?? 0,
           uniqueUsers: recentUniqueUsers?.count ?? 0,

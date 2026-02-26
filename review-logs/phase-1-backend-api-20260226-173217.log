@@ -1,0 +1,13 @@
+Phase 1 complete. Here's the summary:
+
+**All 25+ API endpoints tested and operational.** Found and fixed 3 issues:
+
+1. **Negative avg session duration** (analytics overview) — seed data had `endedAt < startedAt`. Fixed both the seed data and added a `Math.max(0, ...)` guard in the analytics route.
+
+2. **Missing `GET /versions/:id/capture-jobs` endpoint** — only individual job lookup existed. Added the list endpoint with interest zone enrichment.
+
+3. **Seed data timing bug** — session timestamps could be inconsistent depending on when the seed runs. Fixed to use deterministic start times.
+
+Auth enforcement is solid: 401 for missing/invalid tokens, 403 for wrong roles, public endpoints correctly bypass auth. All responses follow the `{ data: ... }` / `{ error, code }` convention.
+
+Report written to `review-logs/phase-1-report.md`.

@@ -1,0 +1,1589 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — Environnements Simulés v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f8;
+    --bg-sidebar: #fafaf9;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0,0,0,.03);
+    --bg-active: #eff6ff;
+    --bg-input: #f5f5f4;
+    --border: #e7e5e4;
+    --border-light: #f0eeee;
+    --border-focus: #2563eb;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-white: #fafaf9;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-pale: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --teal: #0d9488;
+    --teal-bg: #f0fdfa;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-md: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.06);
+    --shadow-panel: -4px 0 24px rgba(0,0,0,.1);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.2); }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes barGrow {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+  @keyframes guideBarGrow {
+    from { width: 0; }
+  }
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmerBg {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes sparkDraw {
+    from { stroke-dashoffset: 100; }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes dotPulse {
+    0%, 100% { transform: scale(1); opacity: .7; }
+    50% { transform: scale(1.5); opacity: 1; }
+  }
+  @keyframes rowHighlight {
+    0% { background: rgba(37, 99, 235, .06); }
+    100% { background: transparent; }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; max-height: 0; }
+    to { opacity: 1; max-height: 200px; }
+  }
+
+  /* ===== ICON SIDEBAR (48px) ===== */
+  .sidebar {
+    width: 48px; min-width: 48px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+    z-index: 20;
+  }
+  .sidebar-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+    transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .sidebar-logo:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(37,99,235,.4);
+  }
+  .sidebar-icon {
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .sidebar-icon:hover { background: var(--bg-hover); color: var(--text); }
+  .sidebar-icon.active { background: var(--accent-light); color: var(--accent); }
+  .sidebar-icon svg { width: 18px; height: 18px; }
+  .sidebar-icon .sidebar-tooltip {
+    position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--text); color: var(--text-white);
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+  }
+  .sidebar-icon .sidebar-tooltip::before {
+    content: '';
+    position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+    border: 4px solid transparent; border-right-color: var(--text);
+  }
+  .sidebar-icon:hover .sidebar-tooltip { opacity: 1; }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-badge {
+    position: absolute; top: 2px; right: 2px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); border: 2px solid var(--bg-sidebar);
+  }
+
+  /* ===== MAIN ===== */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
+
+  /* Topbar */
+  .topbar {
+    min-height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; border-bottom: 1px solid var(--border);
+    background: var(--bg-card); flex-wrap: wrap; gap: 8px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 20px; }
+  .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar-tabs { display: flex; gap: 2px; }
+  .topbar-tab {
+    padding: 5px 13px; border-radius: 20px; font-size: 12px;
+    cursor: pointer; color: var(--text-muted); font-weight: 500;
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .topbar-tab.active { background: var(--text); color: var(--text-white); }
+  .topbar-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text-secondary); }
+  .topbar-tab .tab-count {
+    font-size: 9px; font-weight: 600;
+    padding: 1px 5px; border-radius: 10px;
+    margin-left: 4px;
+    background: rgba(255,255,255,.2);
+  }
+  .topbar-tab:not(.active) .tab-count {
+    background: var(--bg-hover);
+    color: var(--text-muted);
+  }
+
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .filter-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer;
+    color: var(--text-secondary); transition: all var(--transition-fast);
+    font-family: var(--font); font-weight: 500;
+  }
+  .filter-btn:hover { border-color: var(--border-focus); background: var(--bg-hover); }
+  .filter-btn svg { width: 14px; height: 14px; }
+  .filter-active-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  }
+  .date-range {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; color: var(--text-secondary);
+    font-family: var(--mono); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+    cursor: pointer; transition: all var(--transition-fast);
+  }
+  .date-range:hover { border-color: var(--border-focus); }
+  .date-range svg { width: 13px; height: 13px; color: var(--text-muted); }
+
+  /* Live indicator */
+  .live-indicator {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 20px;
+    background: var(--green-bg); border: 1px solid var(--green-border);
+    font-size: 11px; font-weight: 600; color: var(--green);
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+
+  /* ===== CONTENT ===== */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ===== STATS ROW ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    transition: all var(--transition-fast);
+    animation: fadeUp .5s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: transparent;
+    transition: background var(--transition);
+  }
+  .stat-card:nth-child(1) { animation-delay: .05s; }
+  .stat-card:nth-child(2) { animation-delay: .1s; }
+  .stat-card:nth-child(3) { animation-delay: .15s; }
+  .stat-card:nth-child(4) { animation-delay: .2s; }
+  .stat-card:nth-child(1):hover::before { background: var(--accent); }
+  .stat-card:nth-child(2):hover::before { background: var(--purple); }
+  .stat-card:nth-child(3):hover::before { background: var(--amber); }
+  .stat-card:nth-child(4):hover::before { background: var(--green); }
+  .stat-card:hover { box-shadow: var(--shadow); border-color: #d4d4d4; transform: translateY(-2px); }
+
+  .stat-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .stat-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-icon svg { width: 18px; height: 18px; }
+  .stat-icon.blue { background: var(--accent-light); color: var(--accent); }
+  .stat-icon.green { background: var(--green-bg); color: var(--green); }
+  .stat-icon.purple { background: var(--purple-bg); color: var(--purple); }
+  .stat-icon.amber { background: var(--amber-bg); color: var(--amber); }
+
+  .stat-value {
+    font-size: 30px; font-weight: 700; letter-spacing: -.5px;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+    animation: countUp .6s ease both;
+  }
+  .stat-card:nth-child(1) .stat-value { animation-delay: .2s; }
+  .stat-card:nth-child(2) .stat-value { animation-delay: .25s; }
+  .stat-card:nth-child(3) .stat-value { animation-delay: .3s; }
+  .stat-card:nth-child(4) .stat-value { animation-delay: .35s; }
+
+  .stat-footer { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .stat-badge.up { background: var(--green-bg); color: var(--green); }
+  .stat-badge.down { background: var(--red-bg); color: var(--red); }
+  .stat-badge svg { width: 11px; height: 11px; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); }
+
+  /* Mini sparkline in stat cards */
+  .stat-sparkline {
+    margin-top: 10px; height: 28px; width: 100%;
+  }
+  .stat-sparkline svg {
+    width: 100%; height: 100%;
+  }
+  .sparkline-path {
+    fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 100;
+    animation: sparkDraw 1.5s ease both;
+  }
+  .sparkline-area {
+    opacity: .08;
+    animation: fadeIn .8s ease .5s both;
+  }
+
+  /* ===== CHARTS GRID ===== */
+  .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    animation: fadeUp .5s ease .25s both;
+    transition: all var(--transition-fast);
+  }
+  .chart-card:hover { box-shadow: var(--shadow-sm); }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-size: 14px; font-weight: 600; letter-spacing: -.1px; }
+  .chart-subtitle { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+  /* Chart period selector */
+  .chart-period {
+    display: flex; gap: 2px;
+  }
+  .chart-period-btn {
+    padding: 3px 8px; border-radius: var(--radius-xs);
+    font-size: 11px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; border: none; background: none;
+    font-family: var(--font); transition: all var(--transition-fast);
+  }
+  .chart-period-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+  .chart-period-btn.active { background: var(--text); color: var(--text-white); }
+
+  /* ===== BAR CHART (CSS-only) ===== */
+  .bar-chart {
+    display: flex; align-items: flex-end; gap: 4px; height: 150px; padding: 0 2px;
+    position: relative;
+  }
+  /* Horizontal grid lines */
+  .bar-chart::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--border-light) 0px,
+      var(--border-light) 1px,
+      transparent 1px,
+      transparent 37.5px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bar-group {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0;
+    height: 100%; justify-content: flex-end;
+    position: relative; z-index: 1;
+  }
+  .bar-stack { display: flex; flex-direction: column-reverse; align-items: stretch; width: 100%; gap: 1px; }
+  .bar {
+    width: 100%; border-radius: 3px 3px 0 0;
+    transform: scaleY(0); transform-origin: bottom;
+    animation: barGrow .6s cubic-bezier(.34,1.56,.64,1) forwards;
+    transition: filter var(--transition-fast), opacity var(--transition-fast);
+    position: relative;
+  }
+  .bar.primary { background: var(--accent); }
+  .bar.secondary { background: var(--accent-pale); border-radius: 0; }
+  .bar-stack .bar.primary { border-radius: 3px 3px 0 0; }
+  .bar-stack .bar.secondary { border-radius: 0 0 3px 3px; }
+
+  /* Bar hover tooltip */
+  .bar-group .bar-tooltip {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--text-white);
+    padding: 4px 8px; border-radius: var(--radius-xs);
+    font-size: 10px; font-weight: 600; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    margin-bottom: 4px; z-index: 10;
+    font-family: var(--mono);
+  }
+  .bar-group .bar-tooltip::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 3px solid transparent; border-top-color: var(--text);
+  }
+  .bar-group:hover .bar-tooltip { opacity: 1; transform: translateX(-50%) translateY(-2px); }
+  .bar-group:hover .bar { filter: brightness(1.1); }
+
+  .bar-group:nth-child(1) .bar { animation-delay: .3s; }
+  .bar-group:nth-child(2) .bar { animation-delay: .32s; }
+  .bar-group:nth-child(3) .bar { animation-delay: .34s; }
+  .bar-group:nth-child(4) .bar { animation-delay: .36s; }
+  .bar-group:nth-child(5) .bar { animation-delay: .38s; }
+  .bar-group:nth-child(6) .bar { animation-delay: .40s; }
+  .bar-group:nth-child(7) .bar { animation-delay: .42s; }
+  .bar-group:nth-child(8) .bar { animation-delay: .44s; }
+  .bar-group:nth-child(9) .bar { animation-delay: .46s; }
+  .bar-group:nth-child(10) .bar { animation-delay: .48s; }
+  .bar-group:nth-child(11) .bar { animation-delay: .50s; }
+  .bar-group:nth-child(12) .bar { animation-delay: .52s; }
+  .bar-group:nth-child(13) .bar { animation-delay: .54s; }
+  .bar-group:nth-child(14) .bar { animation-delay: .56s; }
+
+  .bar-label {
+    font-size: 10px; color: var(--text-muted); margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .bar-label.today { color: var(--accent); font-weight: 600; }
+  .chart-legend {
+    display: flex; gap: 16px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border-light); font-size: 12px; color: var(--text-muted);
+  }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .chart-legend-value { font-family: var(--mono); font-weight: 600; color: var(--text-secondary); }
+
+  /* ===== GUIDE LIST ===== */
+  .guide-list { display: flex; flex-direction: column; }
+  .guide-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-light);
+    transition: all var(--transition-fast);
+    cursor: default;
+  }
+  .guide-item:hover { background: var(--bg-hover); margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: var(--radius-sm); }
+  .guide-item:last-child { border-bottom: none; }
+  .guide-rank {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; flex-shrink: 0;
+    background: var(--bg); color: var(--text-muted);
+  }
+  .guide-item:first-child .guide-rank { background: var(--accent-light); color: var(--accent); }
+  .guide-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .guide-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .guide-trend {
+    font-size: 10px; font-weight: 600; padding: 1px 5px;
+    border-radius: 4px; font-family: var(--mono);
+  }
+  .guide-trend.up { background: var(--green-bg); color: var(--green); }
+  .guide-trend.down { background: var(--red-bg); color: var(--red); }
+  .guide-count { font-family: var(--mono); font-size: 13px; font-weight: 600; min-width: 24px; text-align: right; }
+  .guide-bar-track { width: 72px; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+  .guide-bar-fill {
+    height: 100%; border-radius: 3px;
+    width: 0; animation: guideBarGrow .8s cubic-bezier(.4,0,.2,1) forwards;
+  }
+
+  .guide-item:nth-child(1) .guide-bar-fill { animation-delay: .4s; }
+  .guide-item:nth-child(2) .guide-bar-fill { animation-delay: .48s; }
+  .guide-item:nth-child(3) .guide-bar-fill { animation-delay: .56s; }
+  .guide-item:nth-child(4) .guide-bar-fill { animation-delay: .64s; }
+  .guide-item:nth-child(5) .guide-bar-fill { animation-delay: .72s; }
+
+  /* ===== COMPLETION RATE ===== */
+  .completion-section {
+    margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid var(--border-light);
+  }
+  .completion-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .completion-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+  .completion-value { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--green); }
+  .completion-bar-track {
+    width: 100%; height: 8px; background: var(--bg);
+    border-radius: 4px; overflow: hidden;
+  }
+  .completion-bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--green) 0%, #34d399 100%);
+    width: 0; animation: guideBarGrow 1s cubic-bezier(.4,0,.2,1) .6s forwards;
+  }
+
+  /* ===== TABLE ===== */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-header-left {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+  .section-count {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    background: var(--bg); padding: 2px 8px; border-radius: 10px;
+  }
+
+  .section-actions { display: flex; gap: 6px; }
+
+  .search-input {
+    padding: 6px 12px 6px 30px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--bg-card);
+    font-size: 12px; font-family: var(--font); color: var(--text);
+    transition: all var(--transition-fast); width: 180px;
+    background-image: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+  }
+  .search-input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+    width: 220px;
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  .export-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer;
+    color: var(--text-secondary); font-weight: 500; font-family: var(--font);
+    transition: all var(--transition-fast); box-shadow: var(--shadow-xs);
+  }
+  .export-btn:hover { border-color: #d4d4d4; background: var(--bg-hover); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+  .export-btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); }
+  .export-btn svg { width: 14px; height: 14px; }
+
+  .table-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .5s ease .35s both;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 11px 16px; font-size: 12px; font-weight: 500;
+    color: var(--text-muted); background: var(--bg);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+    cursor: pointer; transition: color var(--transition-fast);
+    user-select: none; position: relative;
+  }
+  thead th:hover { color: var(--text-secondary); }
+  thead th .sort-icon {
+    display: inline-block; margin-left: 3px; opacity: 0;
+    transition: opacity var(--transition-fast);
+    vertical-align: middle;
+  }
+  thead th:hover .sort-icon { opacity: .5; }
+  thead th.sorted .sort-icon { opacity: 1; }
+
+  tbody td {
+    padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition-fast);
+  }
+  tbody tr { cursor: pointer; animation: fadeIn .4s ease both; position: relative; }
+  tbody tr:nth-child(1) { animation-delay: .4s; }
+  tbody tr:nth-child(2) { animation-delay: .44s; }
+  tbody tr:nth-child(3) { animation-delay: .48s; }
+  tbody tr:nth-child(4) { animation-delay: .52s; }
+  tbody tr:nth-child(5) { animation-delay: .56s; }
+  tbody tr:nth-child(6) { animation-delay: .60s; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(37, 99, 235, .02); }
+
+  /* Row expand indicator */
+  tbody tr::after {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); transform: scaleY(0);
+    transition: transform var(--transition-fast);
+    border-radius: 0 2px 2px 0;
+  }
+  tbody tr:hover::after { transform: scaleY(1); }
+
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .user-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; flex-shrink: 0;
+    transition: transform var(--transition-fast);
+  }
+  tbody tr:hover .user-avatar { transform: scale(1.1); }
+  .user-avatar.prospect { background: var(--purple-bg); color: var(--purple); }
+  .user-avatar.commercial { background: var(--accent-light); color: var(--accent); }
+  .user-info { display: flex; flex-direction: column; }
+  .user-name { font-weight: 500; line-height: 1.3; }
+  .user-email { font-size: 11px; color: var(--text-muted); }
+
+  .role-tag {
+    display: inline-flex; align-items: center;
+    font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  }
+  .role-tag.prospect { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .role-tag.commercial { background: var(--accent-light); color: var(--accent); border: 1px solid #bfdbfe; }
+
+  .tool-cell { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .tool-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .duration-cell { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .pages-cell { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); text-align: center; }
+  .guides-cell { font-size: 13px; font-weight: 500; }
+  .date-cell { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  /* Satisfaction score */
+  .score-cell {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .score-bar {
+    width: 40px; height: 4px; border-radius: 2px; background: var(--bg);
+    overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 2px;
+  }
+  .score-bar-fill.high { background: var(--green); }
+  .score-bar-fill.mid { background: var(--amber); }
+  .score-bar-fill.low { background: var(--red); }
+  .score-value {
+    font-family: var(--mono); font-size: 11px; font-weight: 600; min-width: 26px;
+  }
+  .score-value.high { color: var(--green); }
+  .score-value.mid { color: var(--amber); }
+  .score-value.low { color: var(--red); }
+
+  .detail-link {
+    color: var(--accent); font-size: 12px; font-weight: 500; text-decoration: none;
+    transition: all var(--transition-fast);
+    padding: 4px 8px; border-radius: var(--radius-xs);
+  }
+  .detail-link:hover { color: var(--accent-hover); background: var(--accent-light); }
+
+  /* Pagination */
+  .table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-top: 1px solid var(--border-light);
+    font-size: 12px; color: var(--text-muted);
+  }
+  .table-pagination {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .page-btn {
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; border: 1px solid transparent; background: none;
+    font-family: var(--font);
+    transition: all var(--transition-fast);
+  }
+  .page-btn:hover { background: var(--bg-hover); color: var(--text-secondary); border-color: var(--border); }
+  .page-btn.active { background: var(--text); color: var(--text-white); border-color: var(--text); }
+  .page-btn.nav { color: var(--text-muted); }
+  .page-btn.nav:hover { color: var(--text); }
+  .page-btn svg { width: 14px; height: 14px; }
+
+  /* ===== SESSION DETAIL PANEL ===== */
+  .panel-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,.15);
+    backdrop-filter: blur(3px);
+    animation: overlayIn .3s ease both;
+  }
+
+  .session-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 400px; z-index: 60;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-panel);
+    display: flex; flex-direction: column;
+    animation: slideInRight .3s cubic-bezier(.4,0,.2,1) both;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-header-left { display: flex; align-items: center; gap: 10px; }
+  .panel-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+    background: var(--purple-bg); color: var(--purple);
+  }
+  .panel-title { font-size: 15px; font-weight: 600; }
+  .panel-subtitle { font-size: 11px; color: var(--text-muted); }
+  .panel-close {
+    width: 30px; height: 30px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast); border: none; background: none;
+  }
+  .panel-close:hover { background: var(--bg-hover); color: var(--text); }
+  .panel-close svg { width: 16px; height: 16px; }
+
+  .panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+  .panel-info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .panel-info-item {
+    background: var(--bg); border-radius: var(--radius);
+    padding: 12px 14px;
+    transition: all var(--transition-fast);
+  }
+  .panel-info-item:hover {
+    background: #f0f0f0;
+  }
+  .panel-info-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .panel-info-value { font-size: 14px; font-weight: 600; }
+  .panel-info-value.mono { font-family: var(--mono); }
+
+  .panel-section-title {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-section-line {
+    flex: 1; height: 1px; background: var(--border-light);
+  }
+
+  /* ===== TIMELINE ===== */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--border);
+    border-radius: 1px;
+  }
+  .timeline-item {
+    position: relative; padding-bottom: 20px;
+    animation: fadeUp .4s ease both;
+    transition: all var(--transition-fast);
+  }
+  .timeline-item:hover {
+    background: var(--bg-hover);
+    margin: 0 -10px; padding-left: 10px; padding-right: 10px;
+    border-radius: var(--radius-sm);
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item:nth-child(1) { animation-delay: .35s; }
+  .timeline-item:nth-child(2) { animation-delay: .4s; }
+  .timeline-item:nth-child(3) { animation-delay: .45s; }
+  .timeline-item:nth-child(4) { animation-delay: .5s; }
+  .timeline-item:nth-child(5) { animation-delay: .55s; }
+  .timeline-item:nth-child(6) { animation-delay: .6s; }
+
+  .timeline-dot {
+    position: absolute; left: -20px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--bg-card); border: 2px solid var(--border);
+    z-index: 2;
+    transition: all var(--transition-fast);
+  }
+  .timeline-item:hover .timeline-dot { transform: scale(1.2); }
+  .timeline-dot.active { border-color: var(--accent); background: var(--accent-light); }
+  .timeline-dot.guide { border-color: var(--green); background: var(--green-bg); }
+  .timeline-dot.exit { border-color: var(--red); background: var(--red-bg); }
+
+  .timeline-content {}
+  .timeline-page {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 2px;
+  }
+  .timeline-meta { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .timeline-duration { font-family: var(--mono); font-weight: 500; color: var(--text-secondary); }
+
+  .timeline-guide-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 6px; padding: 4px 10px;
+    background: var(--green-bg); color: var(--green);
+    border: 1px solid var(--green-border);
+    border-radius: var(--radius-sm); font-size: 11px; font-weight: 600;
+  }
+  .timeline-guide-tag svg { width: 12px; height: 12px; }
+
+  /* Session score in panel */
+  .panel-score {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px; background: var(--bg); border-radius: var(--radius);
+    margin-bottom: 20px;
+  }
+  .panel-score-ring {
+    width: 48px; height: 48px; position: relative;
+  }
+  .panel-score-ring svg {
+    width: 100%; height: 100%; transform: rotate(-90deg);
+  }
+  .panel-score-ring .ring-bg {
+    fill: none; stroke: var(--border); stroke-width: 4;
+  }
+  .panel-score-ring .ring-fill {
+    fill: none; stroke-width: 4; stroke-linecap: round;
+    stroke-dasharray: 126; stroke-dashoffset: 126;
+    animation: ringFill 1s ease .5s forwards;
+  }
+  @keyframes ringFill {
+    to { stroke-dashoffset: var(--ring-offset, 30); }
+  }
+  .panel-score-value {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+  }
+  .panel-score-details { flex: 1; }
+  .panel-score-label { font-size: 13px; font-weight: 600; }
+  .panel-score-sub { font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR (48px icon rail) ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">ES</div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="sidebar-tooltip">Dashboard</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    <span class="sidebar-tooltip">Projets</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
+    <span class="sidebar-tooltip">Arborescence</span>
+  </div>
+
+  <div class="sidebar-icon active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+    <span class="sidebar-tooltip">Analytics</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <span class="sidebar-tooltip">Utilisateurs</span>
+    <span class="sidebar-badge"></span>
+  </div>
+
+  <div class="sidebar-spacer"></div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span class="sidebar-tooltip">Param&egrave;tres</span>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 class="topbar-title">Analytics</h1>
+      <div class="topbar-tabs">
+        <div class="topbar-tab active">Vue g&eacute;n&eacute;rale <span class="tab-count">84</span></div>
+        <div class="topbar-tab">Par client</div>
+        <div class="topbar-tab">Par outil</div>
+        <div class="topbar-tab">Guides</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        En direct
+      </div>
+      <div class="filter-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Tous les projets
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;margin-left:2px"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="date-range">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        01 f&eacute;v &mdash; 24 f&eacute;v 2026
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+
+    <!-- ===== STATS ROW ===== -->
+    <div class="stats-row">
+      <!-- Sessions totales -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Sessions totales</div>
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">84</div>
+        <div class="stat-footer">
+          <span class="stat-badge up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            +23%
+          </span>
+          <span class="stat-sub">vs mois dernier</span>
+        </div>
+        <div class="stat-sparkline">
+          <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+            <path class="sparkline-area" d="M0 24 L8 20 L17 22 L25 15 L34 18 L42 12 L51 14 L59 8 L68 10 L76 6 L85 9 L93 4 L102 7 L110 3 L120 5 L120 28 L0 28 Z" fill="var(--accent)"/>
+            <path class="sparkline-path" d="M0 24 L8 20 L17 22 L25 15 L34 18 L42 12 L51 14 L59 8 L68 10 L76 6 L85 9 L93 4 L102 7 L110 3 L120 5" stroke="var(--accent)" style="animation-delay:.3s"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Utilisateurs uniques -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Utilisateurs uniques</div>
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">31</div>
+        <div class="stat-footer">
+          <span class="stat-sub">18 prospects &middot; 13 commerciaux</span>
+        </div>
+        <div class="stat-sparkline">
+          <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+            <path class="sparkline-area" d="M0 22 L10 20 L20 18 L30 21 L40 16 L50 14 L60 17 L70 12 L80 13 L90 10 L100 11 L110 8 L120 9 L120 28 L0 28 Z" fill="var(--purple)"/>
+            <path class="sparkline-path" d="M0 22 L10 20 L20 18 L30 21 L40 16 L50 14 L60 17 L70 12 L80 13 L90 10 L100 11 L110 8 L120 9" stroke="var(--purple)" style="animation-delay:.35s"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Temps moyen -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Temps moyen / session</div>
+          <div class="stat-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">8m 42s</div>
+        <div class="stat-footer">
+          <span class="stat-badge up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            +12%
+          </span>
+          <span class="stat-sub">vs mois dernier</span>
+        </div>
+        <div class="stat-sparkline">
+          <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+            <path class="sparkline-area" d="M0 18 L10 16 L20 20 L30 14 L40 17 L50 12 L60 15 L70 10 L80 13 L90 8 L100 12 L110 6 L120 9 L120 28 L0 28 Z" fill="var(--amber)"/>
+            <path class="sparkline-path" d="M0 18 L10 16 L20 20 L30 14 L40 17 L50 12 L60 15 L70 10 L80 13 L90 8 L100 12 L110 6 L120 9" stroke="var(--amber)" style="animation-delay:.4s"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Guides jou&eacute;s -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Guides jou&eacute;s</div>
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">156</div>
+        <div class="stat-footer">
+          <span class="stat-badge up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            +35%
+          </span>
+          <span class="stat-sub">vs mois dernier</span>
+        </div>
+        <div class="stat-sparkline">
+          <svg viewBox="0 0 120 28" preserveAspectRatio="none">
+            <path class="sparkline-area" d="M0 26 L10 22 L20 24 L30 18 L40 20 L50 14 L60 16 L70 10 L80 12 L90 6 L100 8 L110 4 L120 2 L120 28 L0 28 Z" fill="var(--green)"/>
+            <path class="sparkline-path" d="M0 26 L10 22 L20 24 L30 18 L40 20 L50 14 L60 16 L70 10 L80 12 L90 6 L100 8 L110 4 L120 2" stroke="var(--green)" style="animation-delay:.45s"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHARTS GRID ===== -->
+    <div class="charts-grid">
+
+      <!-- BAR CHART: Sessions par jour -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Sessions par jour</div>
+            <div class="chart-subtitle">F&eacute;vrier 2026</div>
+          </div>
+          <div class="chart-period">
+            <button class="chart-period-btn">7j</button>
+            <button class="chart-period-btn active">14j</button>
+            <button class="chart-period-btn">30j</button>
+          </div>
+        </div>
+        <div class="bar-chart">
+          <div class="bar-group">
+            <div class="bar-tooltip">3 + 1</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:24px"></div>
+              <div class="bar secondary" style="height:12px"></div>
+            </div>
+            <div class="bar-label">1</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">5 + 2</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:36px"></div>
+              <div class="bar secondary" style="height:16px"></div>
+            </div>
+            <div class="bar-label">2</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">2 + 1</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:18px"></div>
+              <div class="bar secondary" style="height:10px"></div>
+            </div>
+            <div class="bar-label">3</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">7 + 3</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:50px"></div>
+              <div class="bar secondary" style="height:24px"></div>
+            </div>
+            <div class="bar-label">4</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">4 + 2</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:32px"></div>
+              <div class="bar secondary" style="height:14px"></div>
+            </div>
+            <div class="bar-label">5</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">8 + 3</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:58px"></div>
+              <div class="bar secondary" style="height:22px"></div>
+            </div>
+            <div class="bar-label">6</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">6 + 2</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:44px"></div>
+              <div class="bar secondary" style="height:18px"></div>
+            </div>
+            <div class="bar-label">7</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">3 + 1</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:28px"></div>
+              <div class="bar secondary" style="height:10px"></div>
+            </div>
+            <div class="bar-label">8</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">9 + 4</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:66px"></div>
+              <div class="bar secondary" style="height:28px"></div>
+            </div>
+            <div class="bar-label">9</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">5 + 3</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:40px"></div>
+              <div class="bar secondary" style="height:20px"></div>
+            </div>
+            <div class="bar-label">10</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">10 + 4</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:74px"></div>
+              <div class="bar secondary" style="height:32px"></div>
+            </div>
+            <div class="bar-label">11</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">7 + 3</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:56px"></div>
+              <div class="bar secondary" style="height:24px"></div>
+            </div>
+            <div class="bar-label">12</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">11 + 5</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:82px"></div>
+              <div class="bar secondary" style="height:36px"></div>
+            </div>
+            <div class="bar-label">13</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-tooltip">9 + 4</div>
+            <div class="bar-stack">
+              <div class="bar primary" style="height:68px"></div>
+              <div class="bar secondary" style="height:30px"></div>
+            </div>
+            <div class="bar-label today">14</div>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background:var(--accent)"></div>
+            Prospects
+            <span class="chart-legend-value">51</span>
+          </div>
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background:var(--accent-pale)"></div>
+            Commerciaux
+            <span class="chart-legend-value">33</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP GUIDES -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Top guides jou&eacute;s</div>
+            <div class="chart-subtitle">156 au total</div>
+          </div>
+        </div>
+        <div class="guide-list">
+          <div class="guide-item">
+            <div class="guide-rank">1</div>
+            <div class="guide-dot" style="background:var(--accent)"></div>
+            <div class="guide-name">Cr&eacute;er un contact</div>
+            <div class="guide-trend up">+8</div>
+            <div class="guide-count">42</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:100%;background:var(--accent)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-rank">2</div>
+            <div class="guide-dot" style="background:var(--purple)"></div>
+            <div class="guide-name">G&eacute;rer une opportunit&eacute;</div>
+            <div class="guide-trend up">+5</div>
+            <div class="guide-count">38</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:90%;background:var(--purple)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-rank">3</div>
+            <div class="guide-dot" style="background:var(--green)"></div>
+            <div class="guide-name">Tableau de bord</div>
+            <div class="guide-trend up">+3</div>
+            <div class="guide-count">31</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:74%;background:var(--green)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-rank">4</div>
+            <div class="guide-dot" style="background:var(--amber)"></div>
+            <div class="guide-name">Valider une demande</div>
+            <div class="guide-trend down">-2</div>
+            <div class="guide-count">24</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:57%;background:var(--amber)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-rank">5</div>
+            <div class="guide-dot" style="background:var(--red)"></div>
+            <div class="guide-name">G&eacute;n&eacute;rer un rapport</div>
+            <div class="guide-trend up">+1</div>
+            <div class="guide-count">21</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:50%;background:var(--red)"></div></div>
+          </div>
+        </div>
+
+        <!-- Completion rate -->
+        <div class="completion-section">
+          <div class="completion-header">
+            <span class="completion-label">Taux de compl&eacute;tion</span>
+            <span class="completion-value">78%</span>
+          </div>
+          <div class="completion-bar-track">
+            <div class="completion-bar-fill" style="width:78%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SESSIONS TABLE ===== -->
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-title">Sessions r&eacute;centes</div>
+        <div class="section-count">84 sessions</div>
+      </div>
+      <div class="section-actions">
+        <input type="text" class="search-input" placeholder="Rechercher...">
+        <button class="export-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          Exporter CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>R&ocirc;le</th>
+            <th>Outil</th>
+            <th class="sorted">Dur&eacute;e <span class="sort-icon">&#9660;</span></th>
+            <th style="text-align:center">Pages <span class="sort-icon">&#9660;</span></th>
+            <th>Guides <span class="sort-icon">&#9660;</span></th>
+            <th>Score <span class="sort-icon">&#9660;</span></th>
+            <th>Date <span class="sort-icon">&#9660;</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr onclick="togglePanel()">
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">AC</div>
+                <div class="user-info">
+                  <span class="user-name">A. Chevalier</span>
+                  <span class="user-email">a.chevalier@acme.fr</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration-cell">12m 34s</td>
+            <td class="pages-cell">14</td>
+            <td class="guides-cell">3</td>
+            <td>
+              <div class="score-cell">
+                <div class="score-bar"><div class="score-bar-fill high" style="width:92%"></div></div>
+                <span class="score-value high">92</span>
+              </div>
+            </td>
+            <td class="date-cell">24 f&eacute;v &middot; 14:20</td>
+            <td><a class="detail-link" href="javascript:void(0)">D&eacute;tail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar commercial">ML</div>
+                <div class="user-info">
+                  <span class="user-name">M. Laurent</span>
+                  <span class="user-email">m.laurent@internal.fr</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag commercial">Commercial</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration-cell">8m 12s</td>
+            <td class="pages-cell">9</td>
+            <td class="guides-cell">2</td>
+            <td>
+              <div class="score-cell">
+                <div class="score-bar"><div class="score-bar-fill high" style="width:85%"></div></div>
+                <span class="score-value high">85</span>
+              </div>
+            </td>
+            <td class="date-cell">24 f&eacute;v &middot; 11:05</td>
+            <td><a class="detail-link" href="javascript:void(0)">D&eacute;tail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">PB</div>
+                <div class="user-info">
+                  <span class="user-name">P. Bernard</span>
+                  <span class="user-email">p.bernard@corp.fr</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#0070f2"></span> SAP SF</span></td>
+            <td class="duration-cell">6m 45s</td>
+            <td class="pages-cell">8</td>
+            <td class="guides-cell">1</td>
+            <td>
+              <div class="score-cell">
+                <div class="score-bar"><div class="score-bar-fill mid" style="width:68%"></div></div>
+                <span class="score-value mid">68</span>
+              </div>
+            </td>
+            <td class="date-cell">23 f&eacute;v &middot; 16:30</td>
+            <td><a class="detail-link" href="javascript:void(0)">D&eacute;tail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar commercial">TD</div>
+                <div class="user-info">
+                  <span class="user-name">T. Dupont</span>
+                  <span class="user-email">t.dupont@internal.fr</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag commercial">Commercial</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#81b532"></span> ServiceNow</span></td>
+            <td class="duration-cell">15m 08s</td>
+            <td class="pages-cell">18</td>
+            <td class="guides-cell">4</td>
+            <td>
+              <div class="score-cell">
+                <div class="score-bar"><div class="score-bar-fill high" style="width:96%"></div></div>
+                <span class="score-value high">96</span>
+              </div>
+            </td>
+            <td class="date-cell">23 f&eacute;v &middot; 10:15</td>
+            <td><a class="detail-link" href="javascript:void(0)">D&eacute;tail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">LM</div>
+                <div class="user-info">
+                  <span class="user-name">L. Martin</span>
+                  <span class="user-email">l.martin@startup.fr</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#f5a623"></span> Workday</span></td>
+            <td class="duration-cell">4m 22s</td>
+            <td class="pages-cell">5</td>
+            <td class="guides-cell">1</td>
+            <td>
+              <div class="score-cell">
+                <div class="score-bar"><div class="score-bar-fill low" style="width:42%"></div></div>
+                <span class="score-value low">42</span>
+              </div>
+            </td>
+            <td class="date-cell">22 f&eacute;v &middot; 14:50</td>
+            <td><a class="detail-link" href="javascript:void(0)">D&eacute;tail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">SV</div>
+                <div class="user-info">
+                  <span class="user-name">S. Vidal</span>
+                  <span class="user-email">s.vidal@entreprise.fr</span>
+                </div>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration-cell">9m 56s</td>
+            <td class="pages-cell">11</td>
+            <td class="guides-cell">2</td>
+            <td>
+              <div class="score-cell">
+                <div class="score-bar"><div class="score-bar-fill mid" style="width:74%"></div></div>
+                <span class="score-value mid">74</span>
+              </div>
+            </td>
+            <td class="date-cell">22 f&eacute;v &middot; 09:30</td>
+            <td><a class="detail-link" href="javascript:void(0)">D&eacute;tail &rarr;</a></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="table-footer">
+        <span>Affichage 1-6 sur 84</span>
+        <div class="table-pagination">
+          <button class="page-btn nav" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn" style="font-size:10px">...</button>
+          <button class="page-btn">14</button>
+          <button class="page-btn nav">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ===== SESSION DETAIL PANEL (slide-out) ===== -->
+  <div class="panel-overlay" id="panelOverlay" onclick="togglePanel()"></div>
+  <aside class="session-panel" id="sessionPanel">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-avatar">AC</div>
+        <div>
+          <div class="panel-title">A. Chevalier</div>
+          <div class="panel-subtitle">a.chevalier@acme.fr &middot; Prospect</div>
+        </div>
+      </div>
+      <button class="panel-close" onclick="togglePanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+
+      <!-- Session score -->
+      <div class="panel-score">
+        <div class="panel-score-ring">
+          <svg viewBox="0 0 44 44">
+            <circle class="ring-bg" cx="22" cy="22" r="20"/>
+            <circle class="ring-fill" cx="22" cy="22" r="20" stroke="var(--green)" style="--ring-offset: 26;"/>
+          </svg>
+          <div class="panel-score-value" style="color:var(--green)">92</div>
+        </div>
+        <div class="panel-score-details">
+          <div class="panel-score-label">Score d'engagement</div>
+          <div class="panel-score-sub">Excellent &mdash; navigation approfondie, 3 guides compl&eacute;t&eacute;s</div>
+        </div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="panel-info-grid">
+        <div class="panel-info-item">
+          <div class="panel-info-label">R&ocirc;le</div>
+          <div class="panel-info-value"><span class="role-tag prospect" style="font-size:12px">Prospect</span></div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Outil</div>
+          <div class="panel-info-value" style="display:flex;align-items:center;gap:6px">
+            <span class="tool-dot" style="background:#00a1e0;width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+            Salesforce
+          </div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Dur&eacute;e</div>
+          <div class="panel-info-value mono">12m 34s</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Date</div>
+          <div class="panel-info-value" style="font-size:13px">24 f&eacute;v 2026, 14:20</div>
+        </div>
+      </div>
+
+      <!-- Parcours timeline -->
+      <div class="panel-section-title">
+        Parcours
+        <span class="panel-section-line"></span>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Dashboard</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">1m 12s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:20</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Contacts</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">2m 45s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:21</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Fiche Contact &mdash; J. Dupont</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">3m 08s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:24</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot guide"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Fiche Contact</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">2m 15s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:27</span>
+            </div>
+            <div class="timeline-guide-tag">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Guide &laquo; Cr&eacute;er un contact &raquo;
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Opportunit&eacute;s</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">1m 42s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:29</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot exit"></div>
+          <div class="timeline-content">
+            <div class="timeline-page" style="color:var(--text-muted)">Fin de session</div>
+            <div class="timeline-meta">
+              <span style="color:var(--text-muted);font-size:11px">14:32</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+</div><!-- /main -->
+
+<script>
+  // Panel toggle
+  const panel = document.getElementById('sessionPanel');
+  const overlay = document.getElementById('panelOverlay');
+  let panelOpen = true;
+
+  function togglePanel() {
+    panelOpen = !panelOpen;
+    if (panelOpen) {
+      panel.style.display = 'flex';
+      overlay.style.display = 'block';
+      panel.style.animation = 'slideInRight .3s cubic-bezier(.4,0,.2,1) both';
+      overlay.style.animation = 'overlayIn .3s ease both';
+    } else {
+      panel.style.animation = 'slideOutRight .25s cubic-bezier(.4,0,.2,1) both';
+      overlay.style.animation = 'overlayOut .25s ease both';
+      setTimeout(() => {
+        if (!panelOpen) {
+          panel.style.display = 'none';
+          overlay.style.display = 'none';
+        }
+      }, 260);
+    }
+  }
+
+  // Add exit keyframes
+  const exitStyles = document.createElement('style');
+  exitStyles.textContent = `
+    @keyframes slideOutRight {
+      from { transform: translateX(0); }
+      to { transform: translateX(100%); }
+    }
+    @keyframes overlayOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(exitStyles);
+
+  // Row click highlight
+  document.querySelectorAll('tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      tr.style.animation = 'rowHighlight .6s ease';
+      setTimeout(() => tr.style.animation = '', 600);
+    });
+  });
+</script>
+
+</body>
+</html>

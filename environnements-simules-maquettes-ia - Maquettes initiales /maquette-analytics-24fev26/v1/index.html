@@ -1,0 +1,372 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — Environnements Simulés</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafafa; --bg-sidebar: #f5f5f4; --bg-card: #fff;
+    --border: #e5e5e5; --border-hover: #d4d4d4;
+    --text: #171717; --text-secondary: #737373; --text-muted: #a3a3a3;
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --green: #16a34a; --green-bg: #f0fdf4;
+    --amber: #d97706; --amber-bg: #fffbeb;
+    --red: #dc2626;
+    --purple: #7c3aed; --purple-bg: #f5f3ff;
+    --radius: 8px; --radius-sm: 6px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Collapsed Sidebar */
+  .sidebar {
+    width: 48px; min-width: 48px; background: var(--bg-sidebar);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+  }
+  .sidebar-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); transition: all .15s;
+  }
+  .sidebar-icon:hover { background: rgba(0,0,0,.06); color: var(--text); }
+  .sidebar-icon.active { background: var(--accent-light); color: var(--accent); }
+  .sidebar-icon svg { width: 18px; height: 18px; }
+  .sidebar-logo { width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 11px; margin-bottom: 12px; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; border-bottom: 1px solid var(--border); background: var(--bg-card);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-title { font-size: 16px; font-weight: 600; }
+  .topbar-tabs { display: flex; gap: 2px; }
+  .topbar-tab {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px;
+    cursor: pointer; color: var(--text-muted); font-weight: 500;
+  }
+  .topbar-tab.active { background: var(--text); color: #fff; }
+  .topbar-tab:hover:not(.active) { background: rgba(0,0,0,.04); }
+
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .filter-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer; color: var(--text-secondary);
+  }
+  .filter-btn:hover { border-color: var(--border-hover); }
+  .filter-btn svg { width: 14px; height: 14px; }
+  .date-range {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; }
+  .stat-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .stat-sub .up { color: var(--green); }
+  .stat-sub .down { color: var(--red); }
+
+  /* Charts area */
+  .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+
+  /* Fake bar chart */
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .bar {
+    width: 100%; border-radius: 3px 3px 0 0; background: var(--accent);
+    min-height: 4px; transition: height .3s;
+  }
+  .bar.secondary { background: #bfdbfe; }
+  .bar-label { font-size: 10px; color: var(--text-muted); }
+
+  /* Donut-like list */
+  .guide-list { }
+  .guide-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid #f5f5f5;
+  }
+  .guide-item:last-child { border-bottom: none; }
+  .guide-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .guide-name { flex: 1; font-size: 12px; }
+  .guide-count { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+  .guide-bar-bg { width: 60px; height: 4px; background: #f0f0f0; border-radius: 2px; overflow: hidden; }
+  .guide-bar { height: 100%; border-radius: 2px; }
+
+  /* Sessions table */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 14px; font-weight: 600; }
+
+  .table-wrapper {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 10px 16px; font-size: 12px; font-weight: 500;
+    color: var(--text-muted); background: var(--bg); border-bottom: 1px solid var(--border);
+  }
+  td { padding: 10px 16px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,0,0,.01); cursor: pointer; }
+
+  .user-cell { display: flex; align-items: center; gap: 8px; }
+  .user-avatar {
+    width: 24px; height: 24px; border-radius: 50%; background: #e5e5e5;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; color: var(--text-secondary);
+  }
+  .user-avatar.prospect { background: var(--purple-bg); color: var(--purple); }
+  .user-avatar.commercial { background: var(--accent-light); color: var(--accent); }
+
+  .role-tag {
+    font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 500;
+  }
+  .role-tag.prospect { background: var(--purple-bg); color: var(--purple); }
+  .role-tag.commercial { background: var(--accent-light); color: var(--accent); }
+
+  .duration { font-family: var(--mono); font-size: 12px; }
+  .pages-visited { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); }
+
+  .tool-mini {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--text-secondary);
+  }
+  .tool-mini .dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .detail-link { color: var(--accent); font-size: 12px; text-decoration: none; }
+  .detail-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">ES</div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+  <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09"/></svg></div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Analytics</div>
+      <div class="topbar-tabs">
+        <div class="topbar-tab active">Vue générale</div>
+        <div class="topbar-tab">Par client</div>
+        <div class="topbar-tab">Par outil</div>
+        <div class="topbar-tab">Guides</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="filter-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Tous les projets
+      </div>
+      <div class="date-range">01 fév — 24 fév 2026</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Sessions totales</div>
+        <div class="stat-value">84</div>
+        <div class="stat-sub"><span class="up">+23%</span> vs mois dernier</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Utilisateurs uniques</div>
+        <div class="stat-value">31</div>
+        <div class="stat-sub">18 prospects · 13 commerciaux</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Temps moyen / session</div>
+        <div class="stat-value">8m 42s</div>
+        <div class="stat-sub"><span class="up">+12%</span> vs mois dernier</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Guides joués</div>
+        <div class="stat-value">156</div>
+        <div class="stat-sub"><span class="up">+35%</span> vs mois dernier</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Sessions par jour</div>
+        <div class="bar-chart">
+          <div class="bar-group"><div class="bar" style="height:30px"></div><div class="bar secondary" style="height:15px"></div><div class="bar-label">1</div></div>
+          <div class="bar-group"><div class="bar" style="height:45px"></div><div class="bar secondary" style="height:20px"></div><div class="bar-label">3</div></div>
+          <div class="bar-group"><div class="bar" style="height:25px"></div><div class="bar secondary" style="height:10px"></div><div class="bar-label">5</div></div>
+          <div class="bar-group"><div class="bar" style="height:60px"></div><div class="bar secondary" style="height:30px"></div><div class="bar-label">7</div></div>
+          <div class="bar-group"><div class="bar" style="height:40px"></div><div class="bar secondary" style="height:15px"></div><div class="bar-label">9</div></div>
+          <div class="bar-group"><div class="bar" style="height:70px"></div><div class="bar secondary" style="height:25px"></div><div class="bar-label">11</div></div>
+          <div class="bar-group"><div class="bar" style="height:55px"></div><div class="bar secondary" style="height:20px"></div><div class="bar-label">13</div></div>
+          <div class="bar-group"><div class="bar" style="height:35px"></div><div class="bar secondary" style="height:12px"></div><div class="bar-label">15</div></div>
+          <div class="bar-group"><div class="bar" style="height:80px"></div><div class="bar secondary" style="height:35px"></div><div class="bar-label">17</div></div>
+          <div class="bar-group"><div class="bar" style="height:50px"></div><div class="bar secondary" style="height:22px"></div><div class="bar-label">19</div></div>
+          <div class="bar-group"><div class="bar" style="height:90px"></div><div class="bar secondary" style="height:40px"></div><div class="bar-label">21</div></div>
+          <div class="bar-group"><div class="bar" style="height:100px"></div><div class="bar secondary" style="height:45px"></div><div class="bar-label">23</div></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted)">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--accent)"></span> Prospects</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#bfdbfe"></span> Commerciaux</span>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Top guides joués</div>
+        <div class="guide-list">
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--accent)"></div>
+            <div class="guide-name">Créer un contact</div>
+            <div class="guide-count">42</div>
+            <div class="guide-bar-bg"><div class="guide-bar" style="width:100%;background:var(--accent)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:#7c3aed"></div>
+            <div class="guide-name">Gérer une opportunité</div>
+            <div class="guide-count">38</div>
+            <div class="guide-bar-bg"><div class="guide-bar" style="width:90%;background:#7c3aed"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--green)"></div>
+            <div class="guide-name">Tableau de bord</div>
+            <div class="guide-count">31</div>
+            <div class="guide-bar-bg"><div class="guide-bar" style="width:74%;background:var(--green)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--amber)"></div>
+            <div class="guide-name">Valider une demande</div>
+            <div class="guide-count">24</div>
+            <div class="guide-bar-bg"><div class="guide-bar" style="width:57%;background:var(--amber)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--red)"></div>
+            <div class="guide-name">Générer un rapport</div>
+            <div class="guide-count">21</div>
+            <div class="guide-bar-bg"><div class="guide-bar" style="width:50%;background:var(--red)"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="section-header">
+      <div class="section-title">Sessions récentes</div>
+      <div class="filter-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Exporter CSV
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Rôle</th>
+            <th>Outil</th>
+            <th>Durée</th>
+            <th>Pages</th>
+            <th>Guides joués</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="user-cell"><div class="user-avatar prospect">AC</div> A. Chevalier</div></td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-mini"><span class="dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration">12m 34s</td>
+            <td class="pages-visited">14</td>
+            <td>3</td>
+            <td style="color:var(--text-muted);font-size:12px">24 fév · 14:20</td>
+            <td><a class="detail-link" href="#">Détail →</a></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-avatar commercial">ML</div> M. Laurent</div></td>
+            <td><span class="role-tag commercial">Commercial</span></td>
+            <td><span class="tool-mini"><span class="dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration">8m 12s</td>
+            <td class="pages-visited">9</td>
+            <td>2</td>
+            <td style="color:var(--text-muted);font-size:12px">24 fév · 11:05</td>
+            <td><a class="detail-link" href="#">Détail →</a></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-avatar prospect">PB</div> P. Bernard</div></td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-mini"><span class="dot" style="background:#0070f2"></span> SAP SF</span></td>
+            <td class="duration">6m 45s</td>
+            <td class="pages-visited">8</td>
+            <td>1</td>
+            <td style="color:var(--text-muted);font-size:12px">23 fév · 16:30</td>
+            <td><a class="detail-link" href="#">Détail →</a></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-avatar commercial">TD</div> T. Dupont</div></td>
+            <td><span class="role-tag commercial">Commercial</span></td>
+            <td><span class="tool-mini"><span class="dot" style="background:#81b532"></span> ServiceNow</span></td>
+            <td class="duration">15m 08s</td>
+            <td class="pages-visited">18</td>
+            <td>4</td>
+            <td style="color:var(--text-muted);font-size:12px">23 fév · 10:15</td>
+            <td><a class="detail-link" href="#">Détail →</a></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-avatar prospect">LM</div> L. Martin</div></td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-mini"><span class="dot" style="background:#f5a623"></span> Workday</span></td>
+            <td class="duration">4m 22s</td>
+            <td class="pages-visited">5</td>
+            <td>1</td>
+            <td style="color:var(--text-muted);font-size:12px">22 fév · 14:50</td>
+            <td><a class="detail-link" href="#">Détail →</a></td>
+          </tr>
+          <tr>
+            <td><div class="user-cell"><div class="user-avatar prospect">SV</div> S. Vidal</div></td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-mini"><span class="dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration">9m 56s</td>
+            <td class="pages-visited">11</td>
+            <td>2</td>
+            <td style="color:var(--text-muted);font-size:12px">22 fév · 09:30</td>
+            <td><a class="detail-link" href="#">Détail →</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

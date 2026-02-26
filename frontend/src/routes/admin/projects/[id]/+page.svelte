@@ -171,18 +171,17 @@
 		const p = project;
 		if (p && p.pageCount != null) return p.pageCount;
 		const fromVersions = allVersions.reduce((sum, v) => sum + (v.pageCount ?? 0), 0);
-		return fromVersions > 0 ? fromVersions : 86;
+		return fromVersions;
 	});
 	let totalVersions = $derived(allVersions.length);
 	let activeAssignments = $derived.by(() => {
 		const p = project;
 		if (p && p.activeAssignmentCount != null) return p.activeAssignmentCount;
-		const active = assignments.filter((a) => !a.expiresAt || new Date(a.expiresAt) > new Date()).length;
-		return active > 0 ? active : 5;
+		return assignments.filter((a) => !a.expiresAt || new Date(a.expiresAt) > new Date()).length;
 	});
 	let totalGuides = $derived.by(() => {
 		const p = project;
-		return p ? (p.guideCount ?? 12) : 12;
+		return p ? (p.guideCount ?? 0) : 0;
 	});
 
 	// Health score computed from actual page health data
@@ -427,7 +426,7 @@
 		exportingVersion = version.id;
 		try {
 			const token = localStorage.getItem('auth_token');
-			const response = await fetch(`http://localhost:3001/api/versions/${version.id}/export`, {
+			const response = await fetch(`/api/versions/${version.id}/export`, {
 				headers: token ? { Authorization: `Bearer ${token}` } : {},
 			});
 			if (!response.ok) throw new Error('Export failed');

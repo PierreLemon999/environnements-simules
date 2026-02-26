@@ -22,13 +22,16 @@ COPY <<'EOF' /app/start.sh
 #!/bin/sh
 set -e
 
-# Backend API on port 3001
+# Backend API on fixed internal port 3001
 cd /app/backend
-node --import tsx src/index.ts &
+BACKEND_PORT=3001 node --import tsx src/index.ts &
 
-# Frontend on $PORT (Railway expects this)
+# Wait for backend to be ready
+sleep 2
+
+# Frontend on $PORT (Railway expects this) — proxies /api to backend via hooks.server.ts
 cd /app/frontend
-PORT=${PORT:-3000} ORIGIN=${ORIGIN:-https://env-ll.com} BODY_SIZE_LIMIT=52428800 node build/index.js &
+BACKEND_URL=http://localhost:3001 PORT=${PORT:-3000} ORIGIN=${ORIGIN:-https://env-ll.com} BODY_SIZE_LIMIT=52428800 node build/index.js &
 
 wait
 EOF

@@ -1,0 +1,1096 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obfuscation — Environnements Simulés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f8;
+    --bg-sidebar: #fafaf9;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0,0,0,.03);
+    --bg-active: #eff6ff;
+    --bg-input: #f5f5f4;
+    --border: #e7e5e4;
+    --border-light: #f0eeee;
+    --border-focus: #2563eb;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-white: #fafaf9;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-pale: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-md: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.2); }
+
+  /* ===== ICON SIDEBAR (48px) ===== */
+  .sidebar {
+    width: 48px; min-width: 48px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+    z-index: 20;
+  }
+  .sidebar-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .sidebar-icon {
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .sidebar-icon:hover { background: var(--bg-hover); color: var(--text); }
+  .sidebar-icon.active { background: var(--accent-light); color: var(--accent); }
+  .sidebar-icon svg { width: 18px; height: 18px; }
+  .sidebar-icon .sidebar-tooltip {
+    position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--text); color: var(--text-white);
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+  }
+  .sidebar-icon:hover .sidebar-tooltip { opacity: 1; }
+  .sidebar-spacer { flex: 1; }
+
+  /* ===== MAIN ===== */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  /* Topbar */
+  .topbar {
+    min-height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; border-bottom: 1px solid var(--border);
+    background: var(--bg-card); flex-wrap: wrap; gap: 8px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+
+  .project-selector {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer;
+    color: var(--text-secondary); font-weight: 500; font-family: var(--font);
+    transition: all var(--transition-fast);
+  }
+  .project-selector:hover { border-color: var(--border-focus); background: var(--bg-hover); }
+  .project-selector svg { width: 12px; height: 12px; color: var(--text-muted); }
+  .project-selector .tool-dot { width: 7px; height: 7px; border-radius: 50%; background: #00a1e0; flex-shrink: 0; }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+  /* Toolbar pills */
+  .toolbar-pills {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .toolbar-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 20px; font-size: 12px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-secondary);
+    font-family: var(--font); transition: all var(--transition-fast);
+  }
+  .toolbar-pill:hover { border-color: #d4d4d4; background: var(--bg-hover); }
+  .toolbar-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar-pill svg { width: 13px; height: 13px; }
+  .toolbar-pill .pill-count {
+    font-size: 10px; font-weight: 700;
+    padding: 0 5px; border-radius: 8px; line-height: 1.6;
+  }
+  .toolbar-pill.active .pill-count { background: rgba(255,255,255,.2); }
+  .toolbar-pill:not(.active) .pill-count { background: rgba(0,0,0,.06); }
+
+  /* Toggle switch */
+  .toggle-group { display: flex; align-items: center; gap: 8px; }
+  .toggle-label { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .toggle {
+    position: relative; width: 36px; height: 20px;
+    background: var(--border); border-radius: 10px;
+    cursor: pointer; transition: background var(--transition);
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: #fff;
+    border-radius: 50%; transition: transform var(--transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .toggle.on::after { transform: translateX(16px); }
+
+  /* ===== CONTENT ===== */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* Two-column layout */
+  .obfusc-grid { display: grid; grid-template-columns: 1fr 440px; gap: 20px; }
+
+  /* ===== SECTION CARD ===== */
+  .section-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .5s ease both;
+  }
+  .section-card:nth-child(1) { animation-delay: .05s; }
+  .section-card:nth-child(2) { animation-delay: .15s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border-light);
+  }
+  .section-header-left { display: flex; align-items: center; gap: 10px; }
+  .section-title { font-size: 14px; font-weight: 600; letter-spacing: -.1px; }
+  .section-count {
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px; background: var(--accent-light); color: var(--accent);
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text);
+    transition: all var(--transition-fast); white-space: nowrap;
+    box-shadow: var(--shadow-xs); font-family: var(--font);
+  }
+  .btn:hover { background: var(--bg-hover); border-color: #d4d4d4; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); }
+  .btn-primary {
+    background: var(--accent); color: var(--text-white); border-color: var(--accent);
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* ===== RULES TABLE ===== */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 500;
+    color: var(--text-muted); background: var(--bg);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  tbody td {
+    padding: 0 16px; font-size: 13px; border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition-fast);
+    height: 50px; vertical-align: middle;
+  }
+  tbody tr { animation: fadeIn .4s ease both; }
+  tbody tr:nth-child(1) { animation-delay: .1s; }
+  tbody tr:nth-child(2) { animation-delay: .15s; }
+  tbody tr:nth-child(3) { animation-delay: .2s; }
+  tbody tr:nth-child(4) { animation-delay: .25s; }
+  tbody tr:nth-child(5) { animation-delay: .3s; }
+  tbody tr:nth-child(6) { animation-delay: .35s; }
+  tbody tr:nth-child(7) { animation-delay: .4s; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg-hover); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Rule row with colored left border */
+  .rule-row { position: relative; }
+  .rule-row td:first-child { border-left: 3px solid var(--green); transition: border-color var(--transition); }
+  .rule-row.inactive td:first-child { border-left-color: var(--border); }
+
+  /* Drag handle */
+  .drag-handle {
+    width: 16px; height: 16px; cursor: grab;
+    color: var(--text-muted); opacity: 0;
+    transition: opacity var(--transition-fast);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-right: 6px; vertical-align: middle;
+  }
+  tbody tr:hover .drag-handle { opacity: .5; }
+  .drag-handle:hover { opacity: 1 !important; }
+
+  .rule-type-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: var(--radius-xs);
+    margin-right: 8px; vertical-align: middle; flex-shrink: 0;
+  }
+  .rule-type-icon.text { background: var(--accent-light); color: var(--accent); }
+  .rule-type-icon.regex { background: var(--purple-bg); color: var(--purple); }
+  .rule-type-icon.date { background: var(--amber-bg); color: var(--amber); }
+  .rule-type-icon svg { width: 12px; height: 12px; }
+
+  .rule-search {
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    color: var(--text); background: var(--bg-input);
+    padding: 3px 8px; border-radius: var(--radius-xs);
+    display: inline-block; max-width: 180px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rule-replace {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text-muted); background: var(--bg);
+    padding: 3px 8px; border-radius: var(--radius-xs);
+    display: inline-block; letter-spacing: .5px;
+  }
+  .rule-scope {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 500; display: inline-flex; align-items: center;
+  }
+  .rule-scope.global { background: var(--accent-light); color: var(--accent); }
+  .rule-scope.partial { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+
+  .rule-hits {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .rule-hits svg { width: 12px; height: 12px; color: var(--text-muted); }
+
+  /* Mini toggle for rules */
+  .rule-toggle {
+    position: relative; width: 32px; height: 18px;
+    background: var(--border); border-radius: 9px;
+    cursor: pointer; transition: background var(--transition);
+    flex-shrink: 0; display: inline-block;
+  }
+  .rule-toggle.on { background: var(--green); }
+  .rule-toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; background: #fff;
+    border-radius: 50%; transition: transform var(--transition);
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  }
+  .rule-toggle.on::after { transform: translateX(14px); }
+
+  /* Row actions */
+  .row-actions {
+    display: flex; gap: 2px; opacity: 0; transition: opacity var(--transition-fast);
+  }
+  tbody tr:hover .row-actions { opacity: 1; }
+  .row-action {
+    width: 28px; height: 28px; border-radius: var(--radius-xs);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); transition: all var(--transition-fast);
+    border: none; background: none;
+  }
+  .row-action:hover { background: var(--bg-input); color: var(--text); }
+  .row-action.danger:hover { background: var(--red-bg); color: var(--red); }
+  .row-action svg { width: 14px; height: 14px; }
+
+  /* ===== ADD RULE FORM ===== */
+  .add-rule-form {
+    border-top: 1px solid var(--border-light);
+    padding: 16px 20px;
+    background: var(--bg);
+    animation: slideDown .3s cubic-bezier(.4,0,.2,1) both;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; max-height: 0; padding: 0 20px; }
+    to { opacity: 1; max-height: 200px; padding: 16px 20px; }
+  }
+
+  .form-row { display: flex; gap: 10px; align-items: flex-end; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .form-group.scope { flex: 0 0 140px; }
+  .form-group.type { flex: 0 0 120px; }
+  .form-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  .form-input {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--mono); background: var(--bg-card);
+    color: var(--text); transition: border-color var(--transition-fast);
+    outline: none; width: 100%;
+  }
+  .form-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+  .form-select {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--font); background: var(--bg-card);
+    color: var(--text); cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a8a29e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 28px; width: 100%;
+  }
+  .form-select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+  .form-actions { display: flex; gap: 6px; flex-shrink: 0; padding-bottom: 1px; }
+
+  /* ===== MANUAL OBFUSCATION SECTION ===== */
+  .manual-section {
+    padding: 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .manual-icon {
+    width: 44px; height: 44px; border-radius: var(--radius);
+    background: var(--purple-bg); color: var(--purple);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .manual-icon svg { width: 20px; height: 20px; }
+  .manual-body { flex: 1; }
+  .manual-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .manual-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+  .btn-outline-purple {
+    border-color: var(--purple-border); color: var(--purple); background: var(--bg-card);
+  }
+  .btn-outline-purple:hover { background: var(--purple-bg); border-color: var(--purple); box-shadow: 0 4px 12px rgba(124,58,237,.12); }
+
+  /* ===== RIGHT COLUMN: PREVIEW ===== */
+  .preview-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .5s ease .1s both;
+    position: sticky; top: 0;
+  }
+  .preview-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border-light);
+  }
+  .preview-title { font-size: 14px; font-weight: 600; letter-spacing: -.1px; }
+
+  /* Before/After split toggle */
+  .ba-toggle {
+    display: flex; background: var(--bg); border-radius: 20px;
+    padding: 2px; border: 1px solid var(--border);
+  }
+  .ba-option {
+    padding: 4px 12px; border-radius: 18px; font-size: 11px;
+    font-weight: 500; cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast); user-select: none;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ba-option.active { background: var(--text); color: var(--text-white); }
+  .ba-option:hover:not(.active) { color: var(--text-secondary); }
+  .ba-option svg { width: 12px; height: 12px; }
+
+  /* Split preview mode */
+  .preview-mode-tabs {
+    display: flex; gap: 2px; padding: 10px 20px 0;
+  }
+  .preview-mode-tab {
+    padding: 5px 12px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    font-size: 11px; font-weight: 500; cursor: pointer;
+    color: var(--text-muted); background: var(--bg);
+    border: 1px solid var(--border); border-bottom: none;
+    transition: all var(--transition-fast);
+    font-family: var(--font);
+  }
+  .preview-mode-tab.active {
+    background: var(--bg-card); color: var(--text);
+    position: relative;
+  }
+  .preview-mode-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 1px; background: var(--bg-card);
+  }
+
+  /* Mini Salesforce preview */
+  .sf-preview {
+    padding: 16px 20px;
+    position: relative;
+    min-height: 340px;
+  }
+  .sf-chrome {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    font-size: 11px;
+  }
+  .sf-topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: #032d60; color: #fff;
+    font-size: 11px; font-weight: 500;
+  }
+  .sf-topbar-logo { font-weight: 700; font-size: 12px; }
+  .sf-topbar-nav { display: flex; gap: 12px; margin-left: 16px; }
+  .sf-topbar-nav span { opacity: .7; cursor: default; }
+  .sf-topbar-nav span.active { opacity: 1; border-bottom: 2px solid #fff; padding-bottom: 2px; }
+
+  .sf-body { padding: 12px; }
+
+  .sf-record {
+    background: var(--bg-card); border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); padding: 12px;
+    margin-bottom: 8px;
+  }
+  .sf-record-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .sf-record-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #e0e7ff; display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: var(--accent);
+  }
+  .sf-record-name { font-weight: 600; font-size: 13px; }
+  .sf-record-company { font-size: 11px; color: var(--text-muted); }
+
+  .sf-field { display: flex; gap: 8px; margin-bottom: 6px; align-items: baseline; }
+  .sf-field-label { font-size: 10px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; min-width: 60px; flex-shrink: 0; }
+  .sf-field-value { font-size: 11px; color: var(--text); font-weight: 500; }
+
+  /* Obfuscated text highlight */
+  .obf-highlight {
+    background: rgba(217,119,6,.1);
+    border-radius: 2px; padding: 1px 3px;
+    transition: all .4s ease;
+  }
+  .obf-block {
+    display: inline-block;
+    background: #d4d4d4;
+    color: #d4d4d4;
+    border-radius: 2px; padding: 1px 3px;
+    font-family: var(--mono); font-size: 11px;
+    letter-spacing: 1px; user-select: none;
+  }
+
+  /* Crossfade animation for before/after */
+  .sf-preview .state-before,
+  .sf-preview .state-after {
+    transition: opacity .4s ease;
+  }
+  .sf-preview[data-state="after"] .state-before { opacity: 0; position: absolute; pointer-events: none; }
+  .sf-preview[data-state="after"] .state-after { opacity: 1; }
+  .sf-preview[data-state="before"] .state-after { opacity: 0; position: absolute; pointer-events: none; }
+  .sf-preview[data-state="before"] .state-before { opacity: 1; }
+
+  /* Stats bar */
+  .preview-stats {
+    display: flex; border-top: 1px solid var(--border-light);
+    animation: fadeUp .5s ease .3s both;
+  }
+  .preview-stat {
+    flex: 1; padding: 14px 16px; text-align: center;
+    border-right: 1px solid var(--border-light);
+  }
+  .preview-stat:last-child { border-right: none; }
+  .preview-stat-value {
+    font-size: 18px; font-weight: 700; letter-spacing: -.3px;
+    font-variant-numeric: tabular-nums; color: var(--text);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .preview-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .stat-trend {
+    font-size: 10px; font-weight: 600; padding: 1px 5px;
+    border-radius: 6px; display: inline-flex; align-items: center; gap: 2px;
+  }
+  .stat-trend.up { background: var(--green-bg); color: var(--green); }
+  .stat-trend.down { background: var(--red-bg); color: var(--red); }
+  .stat-trend svg { width: 10px; height: 10px; }
+
+  /* ===== Coverage bar ===== */
+  .coverage-section {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border-light);
+  }
+  .coverage-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .coverage-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .coverage-value { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .coverage-bar {
+    height: 6px; background: var(--bg); border-radius: 3px;
+    overflow: hidden;
+  }
+  .coverage-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), #60a5fa);
+    border-radius: 3px;
+    transition: width 1.2s cubic-bezier(.4,0,.2,1);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 1100px) {
+    .obfusc-grid { grid-template-columns: 1fr; }
+    .preview-card { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">ES</div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="sidebar-tooltip">Dashboard</span></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg><span class="sidebar-tooltip">Projets</span></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg><span class="sidebar-tooltip">Arborescence</span></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg><span class="sidebar-tooltip">Analytics</span></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><span class="sidebar-tooltip">Utilisateurs</span></div>
+  <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span class="sidebar-tooltip">Obfuscation</span></div>
+  <div class="sidebar-spacer"></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="sidebar-tooltip">Paramètres</span></div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 class="topbar-title">Obfuscation</h1>
+      <div class="project-selector">
+        <span class="tool-dot"></span>
+        Salesforce &mdash; Démo Q1
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="toolbar-pills">
+        <div class="toolbar-pill active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Règles auto
+          <span class="pill-count">7</span>
+        </div>
+        <div class="toolbar-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Manuel
+          <span class="pill-count">3</span>
+        </div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="toggle-group">
+        <span class="toggle-label">Appliquer globalement</span>
+        <div class="toggle on" id="globalToggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+    <div class="obfusc-grid">
+
+      <!-- ===== LEFT COLUMN ===== -->
+      <div class="left-col">
+
+        <!-- Rules Section -->
+        <div class="section-card" style="margin-bottom:20px">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-title">Règles automatiques</div>
+              <span class="section-count">7 règles</span>
+            </div>
+            <button class="btn btn-primary" onclick="toggleAddForm()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Ajouter une règle
+            </button>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width:30px"></th>
+                <th>Rechercher</th>
+                <th>Remplacer par</th>
+                <th>Portée</th>
+                <th>Occurrences</th>
+                <th>Statut</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="rule-row">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                </td>
+                <td><span class="rule-search">Acme Corporation</span></td>
+                <td><span class="rule-replace">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span></td>
+                <td><span class="rule-scope global">Global</span></td>
+                <td><span class="rule-hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>34</span></td>
+                <td><span class="rule-toggle on" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="rule-row">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                </td>
+                <td><span class="rule-search">Jean Dupont</span></td>
+                <td><span class="rule-replace">&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span></td>
+                <td><span class="rule-scope global">Global</span></td>
+                <td><span class="rule-hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>28</span></td>
+                <td><span class="rule-toggle on" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="rule-row">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon regex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3l-5 5.5L17 14"/><path d="M3 3l5 5.5L3 14"/><line x1="12" y1="20" x2="12" y2="20"/></svg></span>
+                </td>
+                <td><span class="rule-search">jean.dupont@acme.fr</span></td>
+                <td><span class="rule-replace">&#9608;&#9608;&#9608;&#9608;@&#9608;&#9608;&#9608;&#9608;.&#9608;&#9608;</span></td>
+                <td><span class="rule-scope global">Global</span></td>
+                <td><span class="rule-hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>18</span></td>
+                <td><span class="rule-toggle on" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="rule-row">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                </td>
+                <td><span class="rule-search">+33 6 12 34 56 78</span></td>
+                <td><span class="rule-replace">+33 &#9608; &#9608;&#9608; &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;</span></td>
+                <td><span class="rule-scope global">Global</span></td>
+                <td><span class="rule-hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>22</span></td>
+                <td><span class="rule-toggle on" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="rule-row">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                </td>
+                <td><span class="rule-search">42 Rue de la Paix</span></td>
+                <td><span class="rule-replace">&#9608;&#9608; &#9608;&#9608;&#9608; &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;&#9608;&#9608;</span></td>
+                <td><span class="rule-scope partial">Pages contact</span></td>
+                <td><span class="rule-hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>14</span></td>
+                <td><span class="rule-toggle on" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="rule-row">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                </td>
+                <td><span class="rule-search">15/01/1985</span></td>
+                <td><span class="rule-replace">&#9608;&#9608;/&#9608;&#9608;/&#9608;&#9608;&#9608;&#9608;</span></td>
+                <td><span class="rule-scope global">Global</span></td>
+                <td><span class="rule-hits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>12</span></td>
+                <td><span class="rule-toggle on" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+              <tr class="rule-row inactive">
+                <td>
+                  <span class="drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg></span>
+                  <span class="rule-type-icon text" style="opacity:.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                </td>
+                <td><span class="rule-search" style="opacity:.5">TechVision SAS</span></td>
+                <td><span class="rule-replace" style="opacity:.5">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;&#9608;</span></td>
+                <td><span class="rule-scope global" style="opacity:.5">Global</span></td>
+                <td><span class="rule-hits" style="opacity:.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>14</span></td>
+                <td><span class="rule-toggle" onclick="toggleRule(this)"></span></td>
+                <td>
+                  <div class="row-actions">
+                    <button class="row-action" title="Modifier"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="row-action danger" title="Supprimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Add rule form -->
+          <div class="add-rule-form" id="addRuleForm">
+            <div class="form-row">
+              <div class="form-group type">
+                <label class="form-label">Type</label>
+                <select class="form-select">
+                  <option>Texte exact</option>
+                  <option>Regex</option>
+                  <option>Date</option>
+                  <option>IBAN</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Rechercher</label>
+                <input class="form-input" type="text" placeholder="Texte à masquer...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Remplacer par</label>
+                <input class="form-input" type="text" placeholder="Auto-généré si vide">
+              </div>
+              <div class="form-group scope">
+                <label class="form-label">Portée</label>
+                <select class="form-select">
+                  <option>Global</option>
+                  <option>Pages contact</option>
+                  <option>Pages dashboard</option>
+                  <option>Pages opportunités</option>
+                </select>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary">Ajouter</button>
+                <button class="btn" onclick="toggleAddForm()">Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Manual Obfuscation Section -->
+        <div class="section-card">
+          <div class="manual-section">
+            <div class="manual-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="manual-body">
+              <div class="manual-title">Obfuscation manuelle</div>
+              <div class="manual-desc">Sélectionnez des éléments directement sur la page de démo pour les obfusquer. Cliquez sur un texte, une image ou un bloc pour appliquer un masque personnalisé.</div>
+            </div>
+            <button class="btn btn-outline-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              Ouvrir l'éditeur visuel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== RIGHT COLUMN: LIVE PREVIEW ===== -->
+      <div class="right-col">
+        <div class="preview-card">
+          <div class="preview-header">
+            <div class="preview-title">Aperçu en direct</div>
+            <div class="ba-toggle">
+              <div class="ba-option" data-state="before" onclick="setPreviewState('before')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Avant
+              </div>
+              <div class="ba-option active" data-state="after" onclick="setPreviewState('after')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Après
+              </div>
+            </div>
+          </div>
+
+          <!-- Salesforce Mini Preview -->
+          <div class="sf-preview" id="sfPreview" data-state="after">
+            <!-- AFTER state (default, obfuscated) -->
+            <div class="state-after">
+              <div class="sf-chrome">
+                <div class="sf-topbar">
+                  <span class="sf-topbar-logo">salesforce</span>
+                  <div class="sf-topbar-nav">
+                    <span>Accueil</span>
+                    <span class="active">Contacts</span>
+                    <span>Opportunités</span>
+                    <span>Comptes</span>
+                  </div>
+                </div>
+                <div class="sf-body">
+                  <div class="sf-record">
+                    <div class="sf-record-header">
+                      <div class="sf-record-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div>
+                        <div class="sf-record-name"><span class="obf-highlight"><span class="obf-block">&#9608;&#9608;&#9608;&#9608; &#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span></span></div>
+                        <div class="sf-record-company"><span class="obf-highlight"><span class="obf-block">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span></span></div>
+                      </div>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Email</span>
+                      <span class="sf-field-value"><span class="obf-highlight"><span class="obf-block">&#9608;&#9608;&#9608;&#9608;@&#9608;&#9608;&#9608;&#9608;.&#9608;&#9608;</span></span></span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Tél.</span>
+                      <span class="sf-field-value"><span class="obf-highlight"><span class="obf-block">+33 &#9608; &#9608;&#9608; &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;</span></span></span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Adresse</span>
+                      <span class="sf-field-value"><span class="obf-highlight"><span class="obf-block">&#9608;&#9608; &#9608;&#9608;&#9608; &#9608;&#9608; &#9608;&#9608; &#9608;&#9608;&#9608;&#9608;</span></span></span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Né(e) le</span>
+                      <span class="sf-field-value"><span class="obf-highlight"><span class="obf-block">&#9608;&#9608;/&#9608;&#9608;/&#9608;&#9608;&#9608;&#9608;</span></span></span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Société</span>
+                      <span class="sf-field-value"><span class="obf-highlight"><span class="obf-block">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span></span></span>
+                    </div>
+                  </div>
+
+                  <!-- Secondary record row -->
+                  <div style="display:flex;gap:8px">
+                    <div style="flex:1;background:var(--bg);border-radius:var(--radius-xs);padding:8px 10px">
+                      <div style="font-size:10px;color:var(--text-muted);font-weight:500;margin-bottom:4px">OPPORTUNITÉ</div>
+                      <div style="font-size:11px;font-weight:600">Licence Enterprise</div>
+                      <div style="font-size:10px;color:var(--green);font-weight:500;margin-top:2px">En cours &middot; 85 000 EUR</div>
+                    </div>
+                    <div style="flex:1;background:var(--bg);border-radius:var(--radius-xs);padding:8px 10px">
+                      <div style="font-size:10px;color:var(--text-muted);font-weight:500;margin-bottom:4px">DERNIÈRE ACTIVITÉ</div>
+                      <div style="font-size:11px;font-weight:600">Appel sortant</div>
+                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">il y a 2j &middot; 15 min</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BEFORE state (real data) -->
+            <div class="state-before" style="position:absolute;top:16px;left:20px;right:20px;opacity:0;pointer-events:none">
+              <div class="sf-chrome">
+                <div class="sf-topbar">
+                  <span class="sf-topbar-logo">salesforce</span>
+                  <div class="sf-topbar-nav">
+                    <span>Accueil</span>
+                    <span class="active">Contacts</span>
+                    <span>Opportunités</span>
+                    <span>Comptes</span>
+                  </div>
+                </div>
+                <div class="sf-body">
+                  <div class="sf-record">
+                    <div class="sf-record-header">
+                      <div class="sf-record-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </div>
+                      <div>
+                        <div class="sf-record-name">Jean Dupont</div>
+                        <div class="sf-record-company">Acme Corporation</div>
+                      </div>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Email</span>
+                      <span class="sf-field-value">jean.dupont@acme.fr</span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Tél.</span>
+                      <span class="sf-field-value">+33 6 12 34 56 78</span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Adresse</span>
+                      <span class="sf-field-value">42 Rue de la Paix</span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Né(e) le</span>
+                      <span class="sf-field-value">15/01/1985</span>
+                    </div>
+                    <div class="sf-field">
+                      <span class="sf-field-label">Société</span>
+                      <span class="sf-field-value">Acme Corporation</span>
+                    </div>
+                  </div>
+
+                  <div style="display:flex;gap:8px">
+                    <div style="flex:1;background:var(--bg);border-radius:var(--radius-xs);padding:8px 10px">
+                      <div style="font-size:10px;color:var(--text-muted);font-weight:500;margin-bottom:4px">OPPORTUNITÉ</div>
+                      <div style="font-size:11px;font-weight:600">Licence Enterprise</div>
+                      <div style="font-size:10px;color:var(--green);font-weight:500;margin-top:2px">En cours &middot; 85 000 EUR</div>
+                    </div>
+                    <div style="flex:1;background:var(--bg);border-radius:var(--radius-xs);padding:8px 10px">
+                      <div style="font-size:10px;color:var(--text-muted);font-weight:500;margin-bottom:4px">DERNIÈRE ACTIVITÉ</div>
+                      <div style="font-size:11px;font-weight:600">Appel sortant</div>
+                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">il y a 2j &middot; 15 min</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coverage -->
+          <div class="coverage-section">
+            <div class="coverage-header">
+              <span class="coverage-label">Couverture d'obfuscation</span>
+              <span class="coverage-value" id="coverageValue">0%</span>
+            </div>
+            <div class="coverage-bar">
+              <div class="coverage-fill" id="coverageFill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="preview-stats">
+            <div class="preview-stat">
+              <div class="preview-stat-value">
+                <span data-target="7">0</span>
+                <span class="stat-trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>+1</span>
+              </div>
+              <div class="preview-stat-label">règles actives</div>
+            </div>
+            <div class="preview-stat">
+              <div class="preview-stat-value">
+                <span data-target="162">0</span>
+                <span class="stat-trend up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>+20</span>
+              </div>
+              <div class="preview-stat-label">occurrences trouvées</div>
+            </div>
+            <div class="preview-stat">
+              <div class="preview-stat-value">
+                <span data-target="28">0</span>
+              </div>
+              <div class="preview-stat-label">pages affectées</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== Before/After Toggle =====
+  function setPreviewState(state) {
+    var preview = document.getElementById('sfPreview');
+    preview.setAttribute('data-state', state);
+    var options = document.querySelectorAll('.ba-option');
+    options.forEach(function(opt) {
+      opt.classList.toggle('active', opt.getAttribute('data-state') === state);
+    });
+  }
+
+  // ===== Rule Toggle =====
+  function toggleRule(el) {
+    el.classList.toggle('on');
+    var row = el.closest('.rule-row');
+    if (row) {
+      row.classList.toggle('inactive', !el.classList.contains('on'));
+      var cells = row.querySelectorAll('.rule-search, .rule-replace, .rule-scope, .rule-hits, .rule-type-icon');
+      cells.forEach(function(c) {
+        c.style.opacity = el.classList.contains('on') ? '1' : '.5';
+      });
+    }
+  }
+
+  // ===== Add Rule Form Toggle =====
+  var formVisible = true;
+  function toggleAddForm() {
+    var form = document.getElementById('addRuleForm');
+    formVisible = !formVisible;
+    if (formVisible) {
+      form.style.display = 'block';
+      form.style.animation = 'slideDown .3s cubic-bezier(.4,0,.2,1) both';
+    } else {
+      form.style.animation = 'slideUp .25s cubic-bezier(.4,0,.2,1) both';
+      setTimeout(function() { if (!formVisible) form.style.display = 'none'; }, 260);
+    }
+  }
+
+  var extraStyles = document.createElement('style');
+  extraStyles.textContent = '@keyframes slideUp { from { opacity: 1; max-height: 200px; padding: 16px 20px; } to { opacity: 0; max-height: 0; padding: 0 20px; overflow: hidden; } }';
+  document.head.appendChild(extraStyles);
+
+  // ===== Count-Up Animation =====
+  function animateCountUp() {
+    var counters = document.querySelectorAll('.preview-stat-value [data-target]');
+    counters.forEach(function(counter) {
+      var target = parseInt(counter.getAttribute('data-target'));
+      var duration = 1200;
+      var startTime = performance.now();
+      function update(currentTime) {
+        var elapsed = currentTime - startTime;
+        var progress = Math.min(elapsed / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        counter.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      setTimeout(function() { requestAnimationFrame(update); }, 400);
+    });
+  }
+
+  // ===== Coverage Animation =====
+  function animateCoverage() {
+    var fill = document.getElementById('coverageFill');
+    var val = document.getElementById('coverageValue');
+    setTimeout(function() {
+      fill.style.width = '87%';
+      var start = performance.now();
+      function tick(now) {
+        var p = Math.min((now - start) / 1200, 1);
+        var e = 1 - Math.pow(1 - p, 3);
+        val.textContent = Math.round(e * 87) + '%';
+        if (p < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }, 600);
+  }
+
+  animateCountUp();
+  animateCoverage();
+</script>
+
+</body>
+</html>

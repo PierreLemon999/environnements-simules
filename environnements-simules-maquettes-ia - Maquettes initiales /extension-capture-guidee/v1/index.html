@@ -1,0 +1,832 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extension Capture — Mode Guides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafafa; --bg-card: #fff; --bg-hover: rgba(0,0,0,.02); --border: #e5e5e5;
+    --border-hover: #d4d4d4; --border-light: #f0eeee; --text: #0c0a09; --text-secondary: #57534e;
+    --text-muted: #a8a29e; --accent: #2563eb; --accent-hover: #1d4ed8; --accent-light: #eff6ff;
+    --accent-lighter: #f0f5ff; --accent-pale: #bfdbfe; --green: #16a34a; --green-bg: #f0fdf4;
+    --green-border: #bbf7d0; --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fde68a;
+    --red: #dc2626; --red-bg: #fef2f2; --red-border: #fecaca; --purple: #7c3aed; --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe; --orange: #ea580c; --orange-bg: #fff7ed; --orange-border: #fed7aa;
+    --radius: 8px; --radius-sm: 6px; --radius-xs: 4px;
+    --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.03); --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --transition: .2s cubic-bezier(.4,0,.2,1); --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+  }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; width: 380px;
+    min-height: 580px; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  @keyframes statusPulse { 0%, 100% { opacity: 0; transform: scale(.7); } 50% { opacity: .3; transform: scale(1.2); } }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeInItem { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes progressPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); } 50% { box-shadow: 0 0 8px 2px rgba(37,99,235,.15); } }
+  @keyframes dotBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+  @keyframes successPop { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  @keyframes streamPulse { 0% { opacity:.5; } 50% { opacity:1; } 100% { opacity:.5; } }
+  @keyframes scanPulse { 0% { box-shadow: 0 0 0 0 rgba(37,99,235,.2); } 70% { box-shadow: 0 0 0 8px rgba(37,99,235,0); } 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); } }
+
+  /* === HEADER === */
+  .ext-header {
+    background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 11px 14px; display: flex;
+    align-items: center; gap: 10px; animation: slideDown .3s ease both;
+  }
+  .ext-logo {
+    width: 28px; height: 28px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+    border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: #fff;
+    font-weight: 700; font-size: 11px; letter-spacing: -0.3px; box-shadow: 0 1px 3px rgba(37,99,235,.3);
+    flex-shrink: 0; transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .ext-logo:hover { transform: scale(1.08) rotate(-2deg); box-shadow: 0 2px 8px rgba(37,99,235,.4); }
+  .ext-title { font-weight: 600; font-size: 14px; flex: 1; letter-spacing: -0.2px; }
+  .ext-status {
+    display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green); font-weight: 500;
+    white-space: nowrap; cursor: default; position: relative;
+  }
+  .ext-status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green); position: relative; flex-shrink: 0;
+  }
+  .ext-status-dot::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%; background: var(--green); opacity: 0;
+    animation: statusPulse 2s ease-in-out infinite;
+  }
+  .ext-status .tooltip {
+    position: absolute; top: calc(100% + 8px); right: 0; background: var(--text); color: #fafafa;
+    padding: 6px 10px; border-radius: var(--radius-sm); font-size: 10.5px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity var(--transition-fast), transform var(--transition-fast);
+    transform: translateY(-2px); z-index: 50;
+  }
+  .ext-status .tooltip::before {
+    content: ''; position: absolute; bottom: 100%; right: 16px; border: 4px solid transparent; border-bottom-color: var(--text);
+  }
+  .ext-status:hover .tooltip { opacity: 1; transform: translateY(0); }
+
+  /* === CAPTURE MODES === */
+  .capture-modes-section {
+    padding: 10px 14px 6px; animation: fadeInUp .3s ease .04s both;
+  }
+  .capture-modes-label {
+    font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
+  }
+  .capture-modes {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+  }
+  .capture-mode {
+    display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 6px 10px;
+    border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 11px;
+    color: var(--text-secondary); background: var(--bg-card); transition: all var(--transition); text-align: center;
+    box-shadow: var(--shadow-sm); user-select: none; position: relative; overflow: hidden;
+  }
+  .capture-mode::before {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 40%, rgba(37,99,235,.03) 100%);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .capture-mode:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .capture-mode:hover::before { opacity: 1; }
+  .capture-mode:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+  .capture-mode.active {
+    border-color: var(--accent); background: var(--accent-light); color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.08), var(--shadow-sm);
+  }
+  .capture-mode.active::before { opacity: 0; }
+  .capture-mode.active::after {
+    content: ''; position: absolute; top: 5px; right: 5px; width: 5px; height: 5px; background: var(--accent);
+    border-radius: 50%; animation: dotBounce .4s ease;
+  }
+  .capture-mode-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border: 1px solid var(--border-light); transition: all var(--transition); position: relative; z-index: 1;
+  }
+  .capture-mode.active .capture-mode-icon { background: rgba(37,99,235,.08); border-color: rgba(37,99,235,.15); }
+  .capture-mode:hover .capture-mode-icon { border-color: var(--border-hover); transform: scale(1.05); }
+  .capture-mode svg { width: 16px; height: 16px; stroke-width: 1.8; transition: transform var(--transition); position: relative; z-index: 1; }
+  .capture-mode-label { font-weight: 600; line-height: 1.2; position: relative; z-index: 1; font-size: 11.5px; }
+  .capture-mode-desc { font-size: 9px; color: var(--text-muted); line-height: 1.2; position: relative; z-index: 1; }
+  .capture-mode.active .capture-mode-desc { color: rgba(37,99,235,.6); }
+
+  /* === SECTIONS === */
+  .ext-section { padding: 10px 14px; animation: fadeInUp .35s ease both; }
+  .ext-section:nth-child(2) { animation-delay: .05s; }
+  .ext-section:nth-child(3) { animation-delay: .1s; }
+  .ext-section + .ext-section { padding-top: 0; }
+  .ext-section-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+
+  /* === PROJECT SELECTOR === */
+  .ext-project-row { display: flex; gap: 6px; align-items: stretch; }
+  .ext-select-wrapper { position: relative; flex: 1; min-width: 0; }
+  .ext-select {
+    width: 100%; padding: 7px 32px 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-family: inherit; font-size: 12.5px; font-weight: 500; color: var(--text);
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a8a29e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+  }
+  .ext-select:hover { border-color: var(--border-hover); background: #fefefe; }
+  .ext-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+  .project-url-hint {
+    display: flex; align-items: center; gap: 4px; margin-top: 5px; font-size: 10px; color: var(--text-muted);
+  }
+  .project-url-hint svg { width: 11px; height: 11px; flex-shrink: 0; stroke-width: 2; color: var(--green); }
+  .project-url-hint .url-match { color: var(--green); font-weight: 500; font-family: var(--mono); font-size: 9.5px; }
+  .ext-new-project-btn {
+    display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 11px;
+    border: 1.5px dashed var(--accent-pale); border-radius: var(--radius-sm); background: var(--accent-light);
+    color: var(--accent); font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; transition: all var(--transition); box-shadow: none; flex-shrink: 0; position: relative; overflow: hidden;
+  }
+  .ext-new-project-btn::before {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 30%, rgba(37,99,235,.06) 100%);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .ext-new-project-btn:hover {
+    border-color: var(--accent); background: rgba(37,99,235,.1); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.15);
+  }
+  .ext-new-project-btn:hover::before { opacity: 1; }
+  .ext-new-project-btn:active { transform: translateY(0); box-shadow: none; }
+  .ext-new-project-btn svg { width: 14px; height: 14px; stroke-width: 2.2; flex-shrink: 0; position: relative; z-index: 1; transition: transform var(--transition); }
+  .ext-new-project-btn:hover svg { transform: rotate(90deg); }
+  .ext-new-project-btn span { position: relative; z-index: 1; }
+
+  /* === GUIDES PANEL === */
+  .guides-panel {
+    margin: 8px 14px 0; padding: 12px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); animation: scaleIn .3s ease both; box-shadow: var(--shadow);
+  }
+  .guides-panel-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px;
+  }
+  .guides-panel-title {
+    font-size: 12px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px;
+  }
+  .guides-panel-title svg { width: 15px; height: 15px; stroke-width: 2; flex-shrink: 0; }
+  .guides-panel-title .ll-badge {
+    font-size: 9px; font-weight: 600; color: #fff; background: linear-gradient(135deg, #f59e0b, #f97316);
+    padding: 1px 6px; border-radius: 10px; letter-spacing: .3px;
+  }
+
+  /* Scan button */
+  .scan-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 9px 14px;
+    border: 1.5px dashed var(--accent-pale); border-radius: var(--radius-sm); background: var(--accent-light);
+    color: var(--accent); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all var(--transition); position: relative; overflow: hidden;
+  }
+  .scan-btn::before {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 30%, rgba(37,99,235,.06) 100%);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .scan-btn:hover {
+    border-color: var(--accent); border-style: solid; background: rgba(37,99,235,.1);
+    transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.15);
+  }
+  .scan-btn:hover::before { opacity: 1; }
+  .scan-btn:active { transform: translateY(0); box-shadow: none; }
+  .scan-btn svg { width: 15px; height: 15px; stroke-width: 2; flex-shrink: 0; position: relative; z-index: 1; }
+  .scan-btn span { position: relative; z-index: 1; }
+  .scan-btn.scanning {
+    border-style: solid; border-color: var(--accent); background: var(--accent-lighter);
+    pointer-events: none;
+  }
+  .scan-btn.scanning svg { animation: spin .8s linear infinite; }
+
+  /* Player detection hint */
+  .player-detect {
+    display: flex; align-items: center; gap: 6px; padding: 7px 10px; margin-top: 8px;
+    background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius-sm);
+    font-size: 10.5px; color: var(--green); font-weight: 500; animation: fadeInUp .25s ease both;
+  }
+  .player-detect svg { width: 13px; height: 13px; flex-shrink: 0; stroke-width: 2.5; }
+  .player-detect .player-name { font-weight: 600; }
+
+  /* Separator */
+  .guides-separator {
+    height: 1px; background: var(--border-light); margin: 10px 0;
+  }
+
+  /* Select all row */
+  .guide-select-all {
+    display: flex; align-items: center; justify-content: space-between; padding: 4px 0; margin-bottom: 6px;
+  }
+  .guide-select-all-left {
+    display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--text-muted); font-weight: 500;
+  }
+  .guide-select-all-left .guide-count {
+    font-family: var(--mono); font-size: 9.5px; background: var(--bg); padding: 1px 6px; border-radius: 10px;
+    border: 1px solid var(--border-light);
+  }
+  .guide-select-all-actions { display: flex; gap: 2px; }
+  .guide-select-all-btn {
+    font-family: inherit; font-size: 10px; font-weight: 500; color: var(--accent); background: none;
+    border: none; cursor: pointer; padding: 2px 6px; border-radius: 3px; transition: all var(--transition-fast);
+  }
+  .guide-select-all-btn:hover { background: var(--accent-light); }
+  .guide-select-all-btn.deselect { color: var(--text-muted); }
+  .guide-select-all-btn.deselect:hover { background: var(--bg-hover); }
+
+  /* Guide list */
+  .guides-list {
+    display: flex; flex-direction: column; gap: 4px; max-height: 176px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .guides-list::-webkit-scrollbar { width: 4px; }
+  .guides-list::-webkit-scrollbar-track { background: transparent; }
+  .guides-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .guide-item {
+    display: flex; align-items: center; gap: 7px; padding: 7px 8px; background: var(--bg);
+    border: 1px solid var(--border-light); border-radius: var(--radius-xs); transition: all var(--transition-fast);
+    cursor: default; font-size: 11.5px; opacity: 0; animation: fadeInItem .3s ease forwards;
+  }
+  .guide-item:nth-child(1) { animation-delay: .05s; }
+  .guide-item:nth-child(2) { animation-delay: .10s; }
+  .guide-item:nth-child(3) { animation-delay: .15s; }
+  .guide-item:nth-child(4) { animation-delay: .20s; }
+  .guide-item:hover { background: var(--bg-hover); border-color: var(--border); }
+  .guide-item-check {
+    width: 16px; height: 16px; border-radius: 3px; border: 1.5px solid var(--border-hover); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: all var(--transition-fast); background: var(--bg-card);
+  }
+  .guide-item-check.checked { background: var(--accent); border-color: var(--accent); }
+  .guide-item-check svg { width: 10px; height: 10px; stroke-width: 3; color: #fff; opacity: 0; transition: opacity var(--transition-fast); }
+  .guide-item-check.checked svg { opacity: 1; }
+  .guide-item-info { flex: 1; min-width: 0; }
+  .guide-item-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+  .guide-item-meta { font-size: 9.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .guide-item-steps {
+    font-size: 9.5px; font-family: var(--mono); color: var(--text-muted); flex-shrink: 0; font-weight: 500;
+    background: var(--bg); padding: 1px 6px; border-radius: 8px; border: 1px solid var(--border-light);
+    white-space: nowrap;
+  }
+
+  /* Execution mode toggle */
+  .exec-mode-section {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light);
+  }
+  .exec-mode-label {
+    font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 6px;
+  }
+  .exec-mode-toggle {
+    display: flex; gap: 4px; padding: 3px; background: var(--bg); border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+  }
+  .exec-mode-btn {
+    flex: 1; padding: 6px 8px; border-radius: var(--radius-xs); font-family: inherit; font-size: 11px;
+    font-weight: 500; color: var(--text-muted); border: none; background: none; cursor: pointer;
+    transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .exec-mode-btn svg { width: 13px; height: 13px; stroke-width: 2; flex-shrink: 0; }
+  .exec-mode-btn:hover { color: var(--text-secondary); }
+  .exec-mode-btn.active {
+    background: var(--bg-card); color: var(--text); box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+    font-weight: 600;
+  }
+
+  /* Estimation bar */
+  .estimation-bar {
+    display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 10px;
+    background: var(--accent-lighter); border: 1px solid rgba(37,99,235,.12); border-radius: var(--radius-sm);
+    animation: fadeInUp .25s ease both;
+  }
+  .estimation-bar svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; stroke-width: 2; }
+  .estimation-text { font-size: 11px; color: var(--text-secondary); font-weight: 500; flex: 1; }
+  .estimation-text strong { color: var(--accent); font-weight: 700; font-family: var(--mono); }
+  .estimation-detail { font-size: 9.5px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
+
+  /* === PROGRESS SECTION === */
+  .progress-section {
+    padding: 10px 14px; animation: fadeInUp .35s ease .18s both;
+  }
+  .progress-header {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px;
+  }
+  .progress-title { font-weight: 600; font-size: 12.5px; letter-spacing: -0.1px; }
+  .progress-count { font-family: var(--mono); font-size: 11.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .progress-streaming {
+    display: flex; align-items: center; gap: 5px;
+  }
+  .progress-streaming-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: streamPulse 1.2s ease-in-out infinite;
+  }
+  .progress-streaming-label {
+    font-size: 10px; color: var(--accent); font-weight: 500;
+  }
+
+  /* Current guide progress */
+  .current-guide {
+    display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-bottom: 8px;
+    background: var(--accent-lighter); border: 1px solid rgba(37,99,235,.15); border-radius: var(--radius-sm);
+    animation: fadeInUp .25s ease both;
+  }
+  .current-guide-spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(37,99,235,.15); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0;
+  }
+  .current-guide-info { flex: 1; min-width: 0; }
+  .current-guide-name {
+    font-size: 11.5px; font-weight: 600; color: var(--accent); white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .current-guide-step { font-size: 9.5px; color: rgba(37,99,235,.7); font-weight: 500; }
+  .current-guide-progress {
+    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap;
+  }
+
+  .progress-bar-track { width: 100%; height: 8px; background: #e7e5e4; border-radius: 4px; overflow: hidden; position: relative; }
+  .progress-bar-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 50%, #60a5fa 100%);
+    border-radius: 4px; position: relative; overflow: hidden; transition: width .6s cubic-bezier(.4,0,.2,1);
+    animation: progressPulse 3s ease-in-out infinite;
+  }
+  .progress-bar-fill::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.15) 20%, rgba(255,255,255,.45) 50%, rgba(255,255,255,.15) 80%, transparent 100%);
+    width: 50%; animation: shimmer 1.8s ease-in-out infinite;
+  }
+  .progress-stats { display: flex; gap: 10px; margin-top: 8px; font-size: 10.5px; color: var(--text-muted); flex-wrap: wrap; }
+  .progress-stat { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; transition: color var(--transition-fast); cursor: default; }
+  .progress-stat:hover { color: var(--text-secondary); }
+  .stat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; transition: transform var(--transition-fast); }
+  .progress-stat:hover .stat-dot { transform: scale(1.4); }
+  .stat-dot.sent { background: var(--green); }
+  .stat-dot.pending { background: var(--accent); }
+  .stat-dot.error { background: var(--red); }
+  .stat-dot.queue { background: var(--text-muted); }
+
+  /* Guide progress mini-list */
+  .guide-progress-list {
+    display: flex; flex-direction: column; gap: 3px; margin-top: 8px;
+  }
+  .guide-progress-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: var(--radius-xs);
+    font-size: 10.5px; transition: background var(--transition-fast); cursor: default;
+  }
+  .guide-progress-item:hover { background: var(--bg-hover); }
+  .guide-progress-icon {
+    width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .guide-progress-icon.done { background: var(--green-bg); color: var(--green); }
+  .guide-progress-icon.running { background: var(--accent-light); color: var(--accent); }
+  .guide-progress-icon.pending { background: none; border: 1.5px dashed var(--border); }
+  .guide-progress-icon.error { background: var(--red-bg); color: var(--red); }
+  .guide-progress-icon svg { width: 8px; height: 8px; stroke-width: 3; }
+  .guide-progress-icon .mini-spinner {
+    width: 8px; height: 8px; border: 1.5px solid rgba(37,99,235,.15); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .6s linear infinite;
+  }
+  .guide-progress-name {
+    flex: 1; min-width: 0; font-weight: 500; color: var(--text-secondary); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .guide-progress-item.running .guide-progress-name { color: var(--accent); font-weight: 600; }
+  .guide-progress-item.done .guide-progress-name { color: var(--text-muted); }
+  .guide-progress-pages {
+    font-family: var(--mono); font-size: 9.5px; color: var(--text-muted); flex-shrink: 0; font-weight: 500;
+  }
+  .guide-progress-item.done .guide-progress-pages { color: var(--green); }
+  .guide-progress-item.running .guide-progress-pages { color: var(--accent); }
+
+  /* === ACTIONS === */
+  .ext-actions {
+    padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: var(--bg-card);
+    position: sticky; bottom: 0; animation: fadeInUp .35s ease .28s both;
+  }
+  .ext-btn {
+    flex: 1; padding: 8px 14px; border-radius: var(--radius-sm); font-family: inherit; font-size: 12.5px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--bg-card); color: var(--text);
+    text-align: center; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center;
+    gap: 6px; box-shadow: var(--shadow-sm); user-select: none; position: relative; overflow: hidden;
+  }
+  .ext-btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.4) 50%, transparent 100%);
+    transform: translateX(-100%); transition: transform .5s;
+  }
+  .ext-btn:hover::after { transform: translateX(100%); }
+  .ext-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .ext-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+  .ext-btn svg { width: 14px; height: 14px; flex-shrink: 0; position: relative; z-index: 1; }
+  .ext-btn span { position: relative; z-index: 1; }
+  .ext-btn-outline { background: var(--bg-card); color: var(--text-secondary); border-color: var(--border); }
+  .ext-btn-outline:hover { background: var(--bg); border-color: var(--border-hover); }
+  .ext-btn-primary {
+    background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 1px 3px rgba(37,99,235,.2);
+  }
+  .ext-btn-primary::after {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.2) 50%, transparent 100%);
+  }
+  .ext-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 3px 10px rgba(37,99,235,.3); }
+  .ext-btn-primary:active { box-shadow: 0 1px 2px rgba(37,99,235,.2); }
+  .ext-btn .kbd {
+    font-family: var(--mono); font-size: 9px; padding: 1px 4px; background: rgba(255,255,255,.15); border-radius: 3px;
+    font-weight: 600; margin-left: 2px; position: relative; z-index: 1;
+  }
+  .ext-btn-outline .kbd { background: rgba(0,0,0,.06); color: var(--text-muted); }
+
+  /* === FOOTER === */
+  .ext-footer {
+    padding: 8px 14px 10px; text-align: center; font-size: 10.5px; color: var(--text-muted); border-top: 1px solid var(--border);
+    background: var(--bg-card); display: flex; align-items: center; justify-content: center; gap: 4px;
+    animation: fadeInUp .35s ease .32s both;
+  }
+  .ext-footer a { color: var(--text-secondary); text-decoration: none; transition: color var(--transition-fast); padding: 1px 2px; border-radius: 2px; }
+  .ext-footer a:hover { color: var(--accent); background: var(--accent-light); }
+  .ext-footer-sep { color: var(--border); font-size: 9px; }
+  .ext-footer-version { font-family: var(--mono); font-size: 9px; color: var(--text-muted); opacity: .5; margin-left: 4px; }
+
+  .hidden { display: none !important; }
+
+  /* === INTERACTIVE STATE MANAGEMENT === */
+  .state-before-scan .guides-content,
+  .state-before-scan .exec-mode-section,
+  .state-before-scan .estimation-bar { display: none; }
+  .state-scanned .scan-section { display: none; }
+  .state-running .scan-section { display: none; }
+
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="ext-header">
+  <div class="ext-logo">ES</div>
+  <div class="ext-title">Env. Simul&eacute;s</div>
+  <div class="ext-status">
+    <span class="ext-status-dot"></span>
+    Connect&eacute;
+    <span class="tooltip">Connect&eacute; &middot; Salesforce Demo Q1</span>
+  </div>
+</div>
+
+<!-- ===== CAPTURE MODES ===== -->
+<div class="capture-modes-section">
+  <div class="capture-modes-label">Mode de capture</div>
+  <div class="capture-modes">
+    <div class="capture-mode" onclick="setMode(this)">
+      <div class="capture-mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </div>
+      <span class="capture-mode-label">Libre</span>
+      <span class="capture-mode-desc">Navigation manuelle</span>
+    </div>
+    <div class="capture-mode active" onclick="setMode(this)">
+      <div class="capture-mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+      </div>
+      <span class="capture-mode-label">Guides</span>
+      <span class="capture-mode-desc">Guides Lemon Learning</span>
+    </div>
+    <div class="capture-mode" onclick="setMode(this)">
+      <div class="capture-mode-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <span class="capture-mode-label">Auto</span>
+      <span class="capture-mode-desc">Crawl automatique</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PROJECT SELECTOR ===== -->
+<div class="ext-section">
+  <div class="ext-section-label">Projet</div>
+  <div class="ext-project-row">
+    <div class="ext-select-wrapper">
+      <select class="ext-select">
+        <option>Salesforce &mdash; D&eacute;mo Commerciale Q1 (v3.2)</option>
+        <option>HubSpot &mdash; Onboarding Marketing (v1.4)</option>
+        <option>Workday &mdash; Formation RH (v2.0)</option>
+        <option>ServiceNow &mdash; Gestion Incidents (v1.1)</option>
+      </select>
+      <div class="project-url-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        D&eacute;tect&eacute; via URL&nbsp;: <span class="url-match">salesforce.com</span>
+      </div>
+    </div>
+    <button class="ext-new-project-btn" title="Cr&eacute;er un nouveau projet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      <span>Nouveau</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== GUIDES PANEL ===== -->
+<div class="guides-panel" id="guidesPanel">
+  <div class="guides-panel-header">
+    <div class="guides-panel-title">
+      <!-- book-open icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      Guides Lemon Learning
+      <span class="ll-badge">LL</span>
+    </div>
+  </div>
+
+  <!-- Step 1: Scan for guides -->
+  <div class="scan-section" id="scanSection">
+    <button class="scan-btn" id="scanBtn" onclick="scanGuides()">
+      <!-- search icon -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <span>R&eacute;cup&eacute;rer les guides</span>
+    </button>
+    <div class="player-detect" id="playerDetect" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      <span>Player <span class="player-name">Lemon Learning</span> d&eacute;tect&eacute; sur cette page</span>
+    </div>
+  </div>
+
+  <!-- Guides content (shown after scan) -->
+  <div class="guides-content" id="guidesContent" style="display:none">
+
+    <!-- Player detected confirmation -->
+    <div class="player-detect">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      <span>Player <span class="player-name">Lemon Learning</span> d&eacute;tect&eacute; &mdash; 4 guides trouv&eacute;s</span>
+    </div>
+
+    <div class="guides-separator"></div>
+
+    <!-- Select all / Deselect all -->
+    <div class="guide-select-all">
+      <div class="guide-select-all-left">
+        Guides disponibles
+        <span class="guide-count">4</span>
+      </div>
+      <div class="guide-select-all-actions">
+        <button class="guide-select-all-btn" onclick="selectAll(true)">Tout s&eacute;lectionner</button>
+        <button class="guide-select-all-btn deselect" onclick="selectAll(false)">D&eacute;s&eacute;lectionner</button>
+      </div>
+    </div>
+
+    <!-- Guide list with checkboxes -->
+    <div class="guides-list">
+      <div class="guide-item" data-steps="12">
+        <div class="guide-item-check checked" onclick="toggleCheck(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="guide-item-info">
+          <div class="guide-item-name">Cr&eacute;er un contact</div>
+          <div class="guide-item-meta">Salesforce &middot; CRM</div>
+        </div>
+        <span class="guide-item-steps">12 &eacute;tapes</span>
+      </div>
+      <div class="guide-item" data-steps="8">
+        <div class="guide-item-check checked" onclick="toggleCheck(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="guide-item-info">
+          <div class="guide-item-name">G&eacute;rer les opportunit&eacute;s</div>
+          <div class="guide-item-meta">Salesforce &middot; Ventes</div>
+        </div>
+        <span class="guide-item-steps">8 &eacute;tapes</span>
+      </div>
+      <div class="guide-item" data-steps="5">
+        <div class="guide-item-check checked" onclick="toggleCheck(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="guide-item-info">
+          <div class="guide-item-name">Tableau de bord commercial</div>
+          <div class="guide-item-meta">Salesforce &middot; Dashboard</div>
+        </div>
+        <span class="guide-item-steps">5 &eacute;tapes</span>
+      </div>
+      <div class="guide-item" data-steps="6">
+        <div class="guide-item-check" onclick="toggleCheck(this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="guide-item-info">
+          <div class="guide-item-name">Exporter un rapport</div>
+          <div class="guide-item-meta">Salesforce &middot; Rapports</div>
+        </div>
+        <span class="guide-item-steps">6 &eacute;tapes</span>
+      </div>
+    </div>
+
+    <!-- Execution mode toggle -->
+    <div class="exec-mode-section">
+      <div class="exec-mode-label">Mode d'ex&eacute;cution</div>
+      <div class="exec-mode-toggle">
+        <button class="exec-mode-btn" onclick="setExecMode(this, 'manual')">
+          <!-- hand icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 00-2-2 2 2 0 00-2 2"/><path d="M14 10V4a2 2 0 00-2-2 2 2 0 00-2 2v2"/><path d="M10 10.5V6a2 2 0 00-2-2 2 2 0 00-2 2v8"/><path d="M18 8a2 2 0 012 2v7.1a3 3 0 01-.879 2.121L15 23h-1a7 7 0 01-5-2l-3-3a2 2 0 012.83-2.83L10 17"/></svg>
+          <span>Manuel</span>
+        </button>
+        <button class="exec-mode-btn active" onclick="setExecMode(this, 'auto')">
+          <!-- play-circle icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16 10,8"/></svg>
+          <span>Automatique</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Estimation (shown in auto mode) -->
+    <div class="estimation-bar" id="estimationBar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <div class="estimation-text">Pages estim&eacute;es&nbsp;: <strong id="estimatedPages">~25</strong></div>
+      <div class="estimation-detail" id="estimationDetail">3 guides &middot; 25 &eacute;t.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PROGRESS SECTION (shown during capture) ===== -->
+<div class="progress-section" id="progressSection" style="display:none">
+  <div class="progress-header">
+    <div class="progress-title">Progression</div>
+    <div class="progress-streaming">
+      <span class="progress-streaming-dot"></span>
+      <span class="progress-streaming-label">Capture active</span>
+    </div>
+  </div>
+
+  <!-- Current guide being captured -->
+  <div class="current-guide">
+    <div class="current-guide-spinner"></div>
+    <div class="current-guide-info">
+      <div class="current-guide-name">G&eacute;rer les opportunit&eacute;s</div>
+      <div class="current-guide-step">&Eacute;tape 3 sur 8 &mdash; Page "Pipeline Kanban"</div>
+    </div>
+    <div class="current-guide-progress">3/8</div>
+  </div>
+
+  <!-- Overall progress bar -->
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" style="width:52%"></div>
+  </div>
+
+  <div class="progress-stats">
+    <div class="progress-stat"><span class="stat-dot sent"></span> 13 captur&eacute;es</div>
+    <div class="progress-stat"><span class="stat-dot pending"></span> 5 en cours</div>
+    <div class="progress-stat"><span class="stat-dot queue"></span> 7 restantes</div>
+  </div>
+
+  <!-- Guide-by-guide mini progress -->
+  <div class="guide-progress-list">
+    <div class="guide-progress-item done">
+      <div class="guide-progress-icon done">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <span class="guide-progress-name">Cr&eacute;er un contact</span>
+      <span class="guide-progress-pages">12/12</span>
+    </div>
+    <div class="guide-progress-item running">
+      <div class="guide-progress-icon running">
+        <div class="mini-spinner"></div>
+      </div>
+      <span class="guide-progress-name">G&eacute;rer les opportunit&eacute;s</span>
+      <span class="guide-progress-pages">3/8</span>
+    </div>
+    <div class="guide-progress-item">
+      <div class="guide-progress-icon pending"></div>
+      <span class="guide-progress-name">Tableau de bord commercial</span>
+      <span class="guide-progress-pages">0/5</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ACTIONS ===== -->
+<div class="ext-actions" id="actionsSection">
+  <button class="ext-btn ext-btn-primary" id="launchBtn" onclick="launchCapture()">
+    <!-- play icon -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,12 5,21 5,3"/></svg>
+    <span>Lancer la capture</span>
+  </button>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div class="ext-footer">
+  <a href="#">Param&egrave;tres</a>
+  <span class="ext-footer-sep">&middot;</span>
+  <a href="#">Admin</a>
+  <span class="ext-footer-version">v0.7.0</span>
+</div>
+
+<script>
+  // Mode tab switching
+  function setMode(el) {
+    document.querySelectorAll('.capture-mode').forEach(m => m.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Toggle checkbox
+  function toggleCheck(el) {
+    el.classList.toggle('checked');
+    updateEstimation();
+  }
+
+  // Select / Deselect all
+  function selectAll(checked) {
+    document.querySelectorAll('.guide-item-check').forEach(c => {
+      if (checked) c.classList.add('checked');
+      else c.classList.remove('checked');
+    });
+    updateEstimation();
+  }
+
+  // Execution mode toggle
+  function setExecMode(btn, mode) {
+    document.querySelectorAll('.exec-mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const estBar = document.getElementById('estimationBar');
+    if (mode === 'auto') {
+      estBar.style.display = '';
+      updateEstimation();
+    } else {
+      estBar.style.display = 'none';
+    }
+  }
+
+  // Update page estimation
+  function updateEstimation() {
+    let totalSteps = 0;
+    let guideCount = 0;
+    document.querySelectorAll('.guide-item').forEach(item => {
+      const check = item.querySelector('.guide-item-check');
+      if (check.classList.contains('checked')) {
+        totalSteps += parseInt(item.getAttribute('data-steps') || 0);
+        guideCount++;
+      }
+    });
+    document.getElementById('estimatedPages').textContent = '~' + totalSteps;
+    document.getElementById('estimationDetail').textContent = guideCount + ' guide' + (guideCount > 1 ? 's' : '') + ' \u00b7 ' + totalSteps + ' \u00e9t.';
+  }
+
+  // Simulate scan for guides
+  function scanGuides() {
+    const scanBtn = document.getElementById('scanBtn');
+    const playerDetect = document.getElementById('playerDetect');
+
+    // Phase 1: scanning animation
+    scanBtn.classList.add('scanning');
+    scanBtn.querySelector('span').textContent = 'Recherche du player...';
+
+    setTimeout(() => {
+      // Phase 2: player detected
+      playerDetect.style.display = '';
+
+      setTimeout(() => {
+        // Phase 3: show guide list
+        scanBtn.querySelector('span').textContent = 'R\u00e9cup\u00e9ration des guides...';
+
+        setTimeout(() => {
+          document.getElementById('scanSection').style.display = 'none';
+          document.getElementById('guidesContent').style.display = '';
+          updateEstimation();
+        }, 800);
+      }, 600);
+    }, 1200);
+  }
+
+  // Launch capture simulation
+  function launchCapture() {
+    const btn = document.getElementById('launchBtn');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg><span>Pause</span><span class="kbd" style="position:relative;z-index:1">P</span>';
+
+    // Show progress section
+    document.getElementById('progressSection').style.display = '';
+
+    // Update actions to show pause/stop
+    const actions = document.getElementById('actionsSection');
+    actions.innerHTML = `
+      <button class="ext-btn ext-btn-outline" onclick="resetDemo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        <span>Arr&ecirc;ter</span>
+      </button>
+      <button class="ext-btn ext-btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        <span>Pause</span>
+        <span class="kbd">P</span>
+      </button>
+    `;
+  }
+
+  // Reset demo to initial state
+  function resetDemo() {
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('actionsSection').innerHTML = `
+      <button class="ext-btn ext-btn-primary" id="launchBtn" onclick="launchCapture()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5,3 19,12 5,21 5,3"/></svg>
+        <span>Lancer la capture</span>
+      </button>
+    `;
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,865 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — Environnements de Démonstration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: rgba(37, 99, 235, 0.1);
+    --accent-ring: rgba(37, 99, 235, 0.12);
+    --bg: #fafafa;
+    --bg-card: #ffffff;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --border: #e7e5e4;
+    --border-hover: #d6d3d1;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── Animated background ── */
+  .bg-gradient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 20%, rgba(37, 99, 235, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 60%),
+      var(--bg);
+  }
+
+  .bg-shape {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0;
+    animation: shapeFloat 20s ease-in-out infinite;
+    z-index: 0;
+  }
+  .bg-shape:nth-child(1) {
+    width: 500px; height: 500px;
+    background: rgba(37, 99, 235, 0.06);
+    top: -150px; left: -100px;
+    animation-delay: 0s;
+  }
+  .bg-shape:nth-child(2) {
+    width: 400px; height: 400px;
+    background: rgba(37, 99, 235, 0.04);
+    bottom: -100px; right: -80px;
+    animation-delay: -7s;
+  }
+  .bg-shape:nth-child(3) {
+    width: 300px; height: 300px;
+    background: rgba(37, 99, 235, 0.05);
+    top: 50%; left: 60%;
+    animation-delay: -14s;
+  }
+  .bg-shape:nth-child(4) {
+    width: 200px; height: 200px;
+    background: rgba(37, 99, 235, 0.03);
+    top: 30%; left: 20%;
+    animation-delay: -10s;
+  }
+
+  @keyframes shapeFloat {
+    0%, 100% { opacity: 0.5; transform: translate(0, 0) scale(1); }
+    25% { opacity: 0.8; transform: translate(30px, -20px) scale(1.05); }
+    50% { opacity: 0.6; transform: translate(-20px, 30px) scale(0.95); }
+    75% { opacity: 0.9; transform: translate(15px, 15px) scale(1.02); }
+  }
+
+  /* ── Dot pattern overlay ── */
+  .bg-dots {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image: radial-gradient(circle, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 80%);
+  }
+
+  /* ── Main card ── */
+  .login-wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 440px;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUpStagger {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 44px 40px 40px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 8px 32px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .login-card:hover {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 12px 40px rgba(0, 0, 0, 0.06);
+  }
+
+  /* ── Logo & branding ── */
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 36px;
+    animation: fadeUpStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  }
+
+  .logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    margin-bottom: 18px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+
+  .logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  }
+
+  .brand-title {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .brand-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    animation: fadeUpStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  }
+
+  .section-label svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* ── Google SSO button ── */
+  .btn-google {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    animation: fadeUpStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  }
+
+  .btn-google::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(66,133,244,.04), rgba(52,168,83,.04));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn-google:hover::before {
+    opacity: 1;
+  }
+
+  .btn-google:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .btn-google:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .btn-google svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .btn-google span {
+    position: relative;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0;
+    font-size: 12px;
+    color: var(--text-muted);
+    animation: fadeUpStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Form elements ── */
+  .form-area {
+    animation: fadeUpStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 6px;
+    transition: color 0.15s ease;
+  }
+
+  .form-input-wrapper {
+    position: relative;
+  }
+
+  .form-input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 0.2s ease;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 11px 14px 11px 40px;
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .form-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-ring);
+    background: #fff;
+  }
+
+  .form-input:focus ~ .form-input-icon {
+    color: var(--accent);
+  }
+
+  .form-input:hover:not(:focus) {
+    border-color: var(--border-hover);
+  }
+
+  .form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+
+  .remember-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .remember-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .form-link {
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+  }
+
+  .form-link:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ── Primary button ── */
+  .btn-primary {
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+  }
+
+  .btn-primary.loading {
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  .btn-primary .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+
+  .btn-primary.loading .spinner {
+    display: block;
+  }
+
+  .btn-primary.loading .btn-text {
+    display: none;
+  }
+
+  .btn-primary .loading-text {
+    display: none;
+  }
+
+  .btn-primary.loading .loading-text {
+    display: inline;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .btn-primary svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Hint note ── */
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    animation: fadeUpStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+  }
+
+  .hint svg {
+    width: 13px;
+    height: 13px;
+    vertical-align: -2px;
+    margin-right: 4px;
+    color: var(--text-muted);
+  }
+
+  /* ── User type badge ── */
+  .user-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    background: var(--accent-light);
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-top: 10px;
+  }
+
+  .user-type-badge svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* ── Notification toast ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    z-index: 100;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .toast svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  .login-footer {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+  }
+
+  .login-footer-brand {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .login-footer a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .login-footer a:hover {
+    color: var(--text-secondary);
+  }
+
+  /* ── Password field wrapper ── */
+  .password-wrapper {
+    position: relative;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+    border-radius: 4px;
+  }
+
+  .password-toggle:hover {
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.04);
+  }
+
+  .password-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* ── Success state ── */
+  .success-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .success-overlay.show {
+    display: flex;
+  }
+
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--green-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--green);
+  }
+
+  .success-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .success-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.3px;
+  }
+
+  .success-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── Error message ── */
+  .form-error {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--red-bg);
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--red);
+    margin-bottom: 16px;
+    animation: fadeUpStagger 0.3s ease both;
+  }
+
+  .form-error.show {
+    display: flex;
+  }
+
+  .form-error svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .login-card {
+      padding: 32px 24px 28px;
+      border-radius: 12px;
+    }
+    .brand-title {
+      font-size: 18px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background decorations -->
+<div class="bg-gradient"></div>
+<div class="bg-dots"></div>
+<div class="bg-shape"></div>
+<div class="bg-shape"></div>
+<div class="bg-shape"></div>
+<div class="bg-shape"></div>
+
+<div class="login-wrapper">
+  <div class="login-card">
+
+    <!-- Branding -->
+    <div class="brand">
+      <div class="logo">ED</div>
+      <div class="brand-title">Environnements de Démonstration</div>
+      <div class="brand-subtitle">Lemon Learning</div>
+    </div>
+
+    <!-- Main content: everything on the same level -->
+    <div id="mainContent">
+
+      <!-- SSO Section -->
+      <div class="section-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Connexion rapide
+      </div>
+
+      <button class="btn-google" type="button" onclick="simulateSSO('Google')">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 001 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+        </svg>
+        <span>Se connecter avec Google</span>
+      </button>
+
+      <!-- Divider -->
+      <div class="divider">ou avec vos identifiants</div>
+
+      <!-- Email/Password Form -->
+      <div class="form-area">
+        <!-- Error message -->
+        <div class="form-error" id="formError">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Identifiants invalides. Veuillez réessayer.</span>
+        </div>
+
+        <form id="login-form" onsubmit="return handleLogin(event);">
+          <div class="form-group">
+            <label class="form-label" for="email">Adresse e-mail</label>
+            <div class="form-input-wrapper">
+              <input class="form-input" id="email" type="email" placeholder="vous@entreprise.com" autocomplete="email" required>
+              <svg class="form-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Mot de passe</label>
+            <div class="password-wrapper">
+              <div class="form-input-wrapper">
+                <input class="form-input" id="password" type="password" placeholder="Votre mot de passe" autocomplete="current-password" required style="padding-right: 44px;">
+                <svg class="form-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              </div>
+              <button class="password-toggle" type="button" id="toggle-password" aria-label="Afficher le mot de passe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" id="eye-icon">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="remember-label">
+              <input type="checkbox" checked>
+              Se souvenir de moi
+            </label>
+            <a href="#" class="form-link">Mot de passe oublié ?</a>
+          </div>
+          <button class="btn-primary" type="submit" id="submitBtn">
+            <span class="spinner"></span>
+            <svg class="btn-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            <span class="btn-text">Se connecter</span>
+            <span class="loading-text">Connexion en cours...</span>
+          </button>
+        </form>
+
+        <p class="hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          Accès pour les équipes et les clients avec leurs identifiants
+        </p>
+      </div>
+
+      <!-- Success panel -->
+      <div class="success-overlay" id="successPanel">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="success-title">Connexion réussie</div>
+        <div class="success-desc">Redirection vers votre tableau de bord...</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="login-footer">
+    Propulsé par <span class="login-footer-brand">Lemon Learning</span>
+    <br>&copy; 2026 Environnements de Démonstration &middot; <a href="#">Confidentialité</a> &middot; <a href="#">Conditions</a>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Password visibility toggle ──
+  var toggleBtn = document.getElementById('toggle-password');
+  var passwordInput = document.getElementById('password');
+  var eyeIcon = document.getElementById('eye-icon');
+
+  toggleBtn.addEventListener('click', function() {
+    var isPassword = passwordInput.type === 'password';
+    passwordInput.type = isPassword ? 'text' : 'password';
+
+    if (isPassword) {
+      eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 01-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+      eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+  });
+
+  // ── Login form handler ──
+  function handleLogin(e) {
+    e.preventDefault();
+    var btn = document.getElementById('submitBtn');
+    var error = document.getElementById('formError');
+    error.classList.remove('show');
+    btn.classList.add('loading');
+
+    setTimeout(function() {
+      btn.classList.remove('loading');
+      // Hide form content, show success
+      document.querySelector('.section-label').style.display = 'none';
+      document.querySelector('.btn-google').style.display = 'none';
+      document.querySelector('.divider').style.display = 'none';
+      document.querySelector('.form-area').style.display = 'none';
+      document.getElementById('successPanel').classList.add('show');
+      showToast('Connexion réussie !', 'success');
+    }, 1800);
+
+    return false;
+  }
+
+  // ── SSO simulation ──
+  function simulateSSO(provider) {
+    var btn = event.currentTarget;
+    var originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="display:block;width:16px;height:16px;border:2px solid rgba(0,0,0,0.1);border-top-color:var(--accent);border-radius:50%;animation:spin 0.6s linear infinite"></span><span>Redirection vers ' + provider + '...</span>';
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.8';
+
+    setTimeout(function() {
+      btn.innerHTML = originalHTML;
+      btn.style.pointerEvents = '';
+      btn.style.opacity = '';
+      // Hide form content, show success
+      document.querySelector('.section-label').style.display = 'none';
+      document.querySelector('.btn-google').style.display = 'none';
+      document.querySelector('.divider').style.display = 'none';
+      document.querySelector('.form-area').style.display = 'none';
+      document.getElementById('successPanel').classList.add('show');
+      showToast('Authentification ' + provider + ' réussie !', 'success');
+    }, 2000);
+  }
+
+  // ── Toast ──
+  function showToast(message, type) {
+    var toast = document.getElementById('toast');
+    var icon = type === 'success'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+    toast.innerHTML = icon + message;
+    toast.classList.add('show');
+    setTimeout(function() { toast.classList.remove('show'); }, 3000);
+  }
+</script>
+
+</body>
+</html>

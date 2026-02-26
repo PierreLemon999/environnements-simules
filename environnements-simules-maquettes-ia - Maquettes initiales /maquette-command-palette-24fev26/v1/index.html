@@ -1,0 +1,780 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Palette de commandes — Environnements Simul&#233;s</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f1f3f5;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* -- Background hint: faded admin UI -- */
+  .bg-hint {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background:
+      linear-gradient(180deg, #f8f9fb 0%, #eef0f4 100%);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bg-hint-topbar {
+    height: 48px;
+    background: #fff;
+    border-bottom: 1px solid #e2e5ea;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  .bg-hint-topbar .logo {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1d23;
+    letter-spacing: -0.01em;
+  }
+
+  .bg-hint-topbar .logo span {
+    color: #2563eb;
+  }
+
+  .bg-hint-topbar .nav-items {
+    display: flex;
+    gap: 6px;
+    margin-left: 32px;
+  }
+
+  .bg-hint-topbar .nav-item {
+    font-size: 13px;
+    color: #6b7280;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-weight: 500;
+  }
+
+  .bg-hint-topbar .nav-item.active {
+    color: #1a1d23;
+    background: #f3f4f6;
+  }
+
+  .bg-hint-sidebar {
+    position: absolute;
+    left: 0;
+    top: 48px;
+    bottom: 0;
+    width: 220px;
+    background: #fff;
+    border-right: 1px solid #e2e5ea;
+    padding: 16px 12px;
+  }
+
+  .bg-hint-sidebar-item {
+    height: 32px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .bg-hint-sidebar-item.active {
+    background: #eff3ff;
+    color: #2563eb;
+  }
+
+  .bg-hint-sidebar-item::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: #e5e7eb;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  .bg-hint-sidebar-item.active::before {
+    background: #bfdbfe;
+  }
+
+  .bg-hint-main {
+    position: absolute;
+    left: 220px;
+    top: 48px;
+    right: 0;
+    bottom: 0;
+    padding: 32px;
+  }
+
+  .bg-hint-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e5ea;
+    height: 200px;
+    margin-bottom: 16px;
+  }
+
+  /* -- Overlay -- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: min(20vh, 160px);
+    animation: overlayFadeIn 0.2s ease-out both;
+  }
+
+  @keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* -- Modal -- */
+  .palette {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.05),
+      0 4px 6px -1px rgba(0, 0, 0, 0.08),
+      0 25px 50px -6px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: min(70vh, 520px);
+    animation: paletteIn 0.25s cubic-bezier(0.16, 1, 0.3, 1.05) both;
+  }
+
+  @keyframes paletteIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* -- Search input area -- */
+  .search-area {
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    border-bottom: 1px solid #e5e7eb;
+    flex-shrink: 0;
+  }
+
+  .search-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 400;
+    color: #1a1d23;
+    padding: 16px 12px;
+    background: transparent;
+    line-height: 1.5;
+  }
+
+  .search-input::placeholder {
+    color: #9ca3af;
+  }
+
+  .kbd-badge {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    font-size: 11px;
+    font-weight: 500;
+    color: #9ca3af;
+    line-height: 1;
+  }
+
+  /* -- Results -- */
+  .results {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    flex: 1;
+    padding: 6px 0;
+  }
+
+  .results::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .results::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .results::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+
+  .group {
+    padding: 0 6px;
+  }
+
+  .group + .group {
+    margin-top: 2px;
+  }
+
+  .group-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 10px 4px;
+    user-select: none;
+  }
+
+  .result-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    position: relative;
+    animation: resultSlideIn 0.2s ease-out both;
+  }
+
+  .result-item:hover {
+    background: #f3f4f6;
+  }
+
+  .result-item.selected {
+    background: #2563eb;
+  }
+
+  .result-item.selected .result-name,
+  .result-item.selected .result-meta,
+  .result-item.selected .result-icon,
+  .result-item.selected .result-shortcut kbd {
+    color: #fff;
+  }
+
+  .result-item.selected .result-icon-wrap {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .result-item.selected .result-shortcut kbd {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+
+  .result-item.selected .result-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  .result-item.selected .avatar {
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes resultSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Stagger animation delays */
+  .group:nth-child(1) .result-item:nth-child(2) { animation-delay: 0.02s; }
+  .group:nth-child(1) .result-item:nth-child(3) { animation-delay: 0.04s; }
+  .group:nth-child(1) .result-item:nth-child(4) { animation-delay: 0.06s; }
+  .group:nth-child(1) .result-item:nth-child(5) { animation-delay: 0.08s; }
+  .group:nth-child(2) .result-item:nth-child(2) { animation-delay: 0.08s; }
+  .group:nth-child(2) .result-item:nth-child(3) { animation-delay: 0.10s; }
+  .group:nth-child(2) .result-item:nth-child(4) { animation-delay: 0.12s; }
+  .group:nth-child(3) .result-item:nth-child(2) { animation-delay: 0.12s; }
+  .group:nth-child(3) .result-item:nth-child(3) { animation-delay: 0.14s; }
+  .group:nth-child(3) .result-item:nth-child(4) { animation-delay: 0.16s; }
+  .group:nth-child(4) .result-item:nth-child(2) { animation-delay: 0.16s; }
+  .group:nth-child(4) .result-item:nth-child(3) { animation-delay: 0.18s; }
+  .group:nth-child(4) .result-item:nth-child(4) { animation-delay: 0.20s; }
+
+  .result-icon-wrap {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background-color 0.1s ease, color 0.1s ease;
+  }
+
+  .result-icon {
+    width: 16px;
+    height: 16px;
+    color: #6b7280;
+    transition: color 0.1s ease;
+  }
+
+  .result-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .result-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .result-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1d23;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.1s ease;
+    line-height: 1.4;
+  }
+
+  .result-name mark {
+    background: none;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: #2563eb;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 2px;
+  }
+
+  .result-item.selected .result-name mark {
+    text-decoration-color: rgba(255, 255, 255, 0.6);
+  }
+
+  .result-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #eff6ff;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    transition: background-color 0.1s ease, color 0.1s ease;
+  }
+
+  .result-badge.sap {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  .result-badge.demo {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .result-meta {
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.1s ease;
+    line-height: 1.4;
+  }
+
+  .result-shortcut {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .result-shortcut kbd {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: #9ca3af;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 2px 5px;
+    min-width: 22px;
+    text-align: center;
+    line-height: 1.4;
+    transition: background-color 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+  }
+
+  /* Avatar for users */
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+    border: 2px solid #fff;
+    transition: border-color 0.1s ease;
+  }
+
+  .avatar.blue   { background: #3b82f6; }
+  .avatar.purple { background: #8b5cf6; }
+  .avatar.green  { background: #10b981; }
+  .avatar.orange { background: #f59e0b; }
+
+  /* -- Footer -- */
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    border-top: 1px solid #e5e7eb;
+    background: #fafbfc;
+    flex-shrink: 0;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .footer-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #9ca3af;
+  }
+
+  .footer-hint kbd {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 5px;
+    padding: 1px 5px;
+    min-width: 20px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .footer-spacer {
+    flex: 1;
+  }
+
+  .footer-brand {
+    font-size: 11px;
+    color: #c9cdd3;
+    font-weight: 500;
+  }
+
+  /* -- Responsive -- */
+  @media (max-width: 640px) {
+    .overlay {
+      padding-top: 0;
+      align-items: flex-start;
+    }
+
+    .palette {
+      max-width: 100%;
+      max-height: 100vh;
+      border-radius: 0;
+      height: 100vh;
+    }
+
+    .footer {
+      border-radius: 0;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Background: faded admin UI to give context -->
+<div class="bg-hint">
+  <div class="bg-hint-topbar">
+    <div class="logo">Env<span>Sim</span></div>
+    <div class="nav-items">
+      <div class="nav-item active">Projets</div>
+      <div class="nav-item">D&#233;mos</div>
+      <div class="nav-item">Utilisateurs</div>
+      <div class="nav-item">Captures</div>
+    </div>
+  </div>
+  <div class="bg-hint-sidebar">
+    <div class="bg-hint-sidebar-item active">Tous les projets</div>
+    <div class="bg-hint-sidebar-item">Salesforce</div>
+    <div class="bg-hint-sidebar-item">SAP SuccessFactors</div>
+    <div class="bg-hint-sidebar-item">Workday</div>
+    <div class="bg-hint-sidebar-item">ServiceNow</div>
+  </div>
+  <div class="bg-hint-main">
+    <div class="bg-hint-card"></div>
+    <div class="bg-hint-card" style="height:140px"></div>
+  </div>
+</div>
+
+<!-- Command Palette Overlay -->
+<div class="overlay">
+  <div class="palette" role="dialog" aria-label="Palette de commandes">
+
+    <!-- Search input -->
+    <div class="search-area">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        value="Dashboard princ..."
+        placeholder="Rechercher une page, un projet, une action..."
+        autofocus
+        aria-label="Rechercher"
+      />
+      <div class="kbd-badge"><kbd>&#8984;</kbd><kbd>K</kbd></div>
+    </div>
+
+    <!-- Results -->
+    <div class="results">
+
+      <!-- Pages -->
+      <div class="group">
+        <div class="group-label">Pages</div>
+
+        <!-- Selected item -->
+        <div class="result-item selected">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name"><mark>Dashboard princ</mark>ipal</span>
+              <span class="result-badge">Salesforce</span>
+            </div>
+            <span class="result-meta">Projet Salesforce Lightning &mdash; Page d'accueil</span>
+          </div>
+          <div class="result-shortcut"><kbd>&#8984;</kbd><kbd>1</kbd></div>
+        </div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name"><mark>Dashboard</mark> SAP</span>
+              <span class="result-badge sap">SAP</span>
+            </div>
+            <span class="result-meta">Projet SAP SuccessFactors &mdash; Vue d'ensemble RH</span>
+          </div>
+          <div class="result-shortcut"><kbd>&#8984;</kbd><kbd>2</kbd></div>
+        </div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name">Fiche employ&#233; &mdash; <mark>Dashboard</mark> RH</span>
+            </div>
+            <span class="result-meta">Projet Workday &mdash; Module recrutement</span>
+          </div>
+          <div class="result-shortcut"><kbd>&#8984;</kbd><kbd>3</kbd></div>
+        </div>
+      </div>
+
+      <!-- Projets -->
+      <div class="group">
+        <div class="group-label">Projets</div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name">Salesforce Lightning</span>
+              <span class="result-badge">Salesforce</span>
+            </div>
+            <span class="result-meta">12 pages &middot; 4 d&#233;mos actives &middot; Mis &#224; jour il y a 2h</span>
+          </div>
+        </div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name">SAP SuccessFactors</span>
+              <span class="result-badge sap">SAP</span>
+            </div>
+            <span class="result-meta">8 pages &middot; 2 d&#233;mos actives &middot; Mis &#224; jour hier</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Utilisateurs -->
+      <div class="group">
+        <div class="group-label">Utilisateurs</div>
+
+        <div class="result-item">
+          <div class="avatar blue">MC</div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name">Marie Cuvier</span>
+            </div>
+            <span class="result-meta">Responsable d&#233;mos &middot; &#201;quipe Avant-vente</span>
+          </div>
+        </div>
+
+        <div class="result-item">
+          <div class="avatar purple">TL</div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name">Thomas Lefebvre</span>
+            </div>
+            <span class="result-meta">Administrateur &middot; &#201;quipe Produit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="group">
+        <div class="group-label">Actions</div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <span class="result-name">Nouvelle capture</span>
+            <span class="result-meta">Capturer une nouvelle page d'application</span>
+          </div>
+          <div class="result-shortcut"><kbd>&#8984;</kbd><kbd>N</kbd></div>
+        </div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <span class="result-name">Cr&#233;er un projet</span>
+            <span class="result-meta">Initialiser un nouveau projet d'environnement</span>
+          </div>
+          <div class="result-shortcut"><kbd>&#8984;</kbd><kbd>P</kbd></div>
+        </div>
+
+        <div class="result-item">
+          <div class="result-icon-wrap">
+            <svg class="result-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <div class="result-body">
+            <div class="result-name-row">
+              <span class="result-name">Assigner une d&#233;mo</span>
+              <span class="result-badge demo">Rapide</span>
+            </div>
+            <span class="result-meta">Attribuer une d&#233;mo &#224; un membre de l'&#233;quipe</span>
+          </div>
+          <div class="result-shortcut"><kbd>&#8984;</kbd><kbd>D</kbd></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer with keyboard hints -->
+    <div class="footer">
+      <div class="footer-hint">
+        <kbd>&uarr;</kbd><kbd>&darr;</kbd>
+        <span>naviguer</span>
+      </div>
+      <div class="footer-hint">
+        <kbd>&#8629;</kbd>
+        <span>ouvrir</span>
+      </div>
+      <div class="footer-hint">
+        <kbd>esc</kbd>
+        <span>fermer</span>
+      </div>
+      <div class="footer-spacer"></div>
+      <div class="footer-brand">EnvSim</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

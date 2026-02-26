@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { login, loginWithGoogle } from '$lib/stores/auth';
-	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, Info } from 'lucide-svelte';
+	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -93,25 +93,19 @@
 				<div class="brand">
 					<div class="brand-logo">ES</div>
 					<h1 class="brand-title">Environnements Simulés</h1>
-					<p class="brand-subtitle">Plateforme de démonstrations Lemon Learning</p>
+					<p class="brand-subtitle">Lemon Learning</p>
 				</div>
 
-				<!-- Section header -->
-				<div class="section-header">
-					<div class="section-label">
-						<Lock size={14} />
-						<span>Identifiants</span>
-					</div>
-					<div class="section-hint">
-						<Info size={12} />
-						<span>Accès pour les équipes et les clients avec leurs identifiants</span>
-					</div>
+				<!-- Section label -->
+				<div class="section-label">
+					<Lock size={13} />
+					<span>Identifiants</span>
 				</div>
 
 				<!-- Unified login form -->
 				<form onsubmit={handleLogin} class="login-form">
 					<div class="form-group">
-						<label for="email" class="form-label">Email</label>
+						<label for="email" class="form-label">Adresse e-mail</label>
 						<div class="input-wrapper">
 							<Mail size={16} class="input-icon" />
 							<input
@@ -183,6 +177,8 @@
 					</button>
 				</form>
 
+				<p class="form-hint">Accès pour les équipes et les clients avec leurs identifiants</p>
+
 				<!-- Divider -->
 				<div class="divider">
 					<div class="divider-line"></div>
@@ -207,7 +203,7 @@
 								<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
 							</svg>
 						{/if}
-						Continuer avec Google
+						Se connecter avec Google
 					</button>
 					<p class="google-hint">(admin uniquement)</p>
 				</div>
@@ -215,8 +211,8 @@
 
 			<!-- Footer -->
 			<div class="login-footer fade-up" style="animation-delay: 200ms">
-				<p class="footer-brand">Propulsé par Lemon Learning</p>
-				<p class="footer-legal">&copy; 2026 Environnements Simulés &middot; Confidentialité &middot; Conditions</p>
+				Propulsé par <span class="footer-brand">Lemon Learning</span>
+				<br />&copy; 2026 Environnements Simulés &middot; Confidentialité &middot; Conditions
 			</div>
 		{/if}
 	</div>
@@ -283,7 +279,7 @@
 		position: relative;
 		z-index: 10;
 		width: 100%;
-		max-width: 420px;
+		max-width: 440px;
 		padding: 0 16px;
 	}
 
@@ -303,7 +299,7 @@
 	/* Brand */
 	.brand {
 		text-align: center;
-		margin-bottom: 28px;
+		margin-bottom: 36px;
 	}
 
 	.brand-logo {
@@ -323,49 +319,34 @@
 	}
 
 	.brand-title {
-		font-size: 20px;
+		font-size: 21px;
 		font-weight: 700;
 		color: var(--color-foreground);
-		letter-spacing: -0.01em;
+		letter-spacing: -0.4px;
 	}
 
 	.brand-subtitle {
 		margin-top: 4px;
-		font-size: 14px;
-		color: var(--color-muted-foreground);
+		font-size: 13px;
+		color: var(--color-muted);
 	}
 
-	/* Section header */
-	.section-header {
-		margin-bottom: 20px;
-	}
-
+	/* Section label */
 	.section-label {
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		font-size: 13px;
+		gap: 8px;
+		font-size: 11px;
 		font-weight: 600;
-		color: var(--color-foreground);
-		margin-bottom: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: var(--color-muted);
+		margin-bottom: 14px;
 	}
 
 	.section-label :global(svg) {
-		color: var(--color-muted-foreground);
-	}
-
-	.section-hint {
-		display: flex;
-		align-items: flex-start;
-		gap: 5px;
-		font-size: 12px;
-		color: var(--color-muted);
-		line-height: 1.4;
-	}
-
-	.section-hint :global(svg) {
-		flex-shrink: 0;
-		margin-top: 1px;
+		width: 13px;
+		height: 13px;
 	}
 
 	/* Form */
@@ -517,26 +498,36 @@
 		justify-content: center;
 		gap: 8px;
 		width: 100%;
-		height: 40px;
+		padding: 12px 20px;
 		border: none;
 		border-radius: 8px;
 		background: var(--color-primary);
 		color: white;
 		font-size: 14px;
-		font-weight: 500;
+		font-weight: 600;
 		font-family: inherit;
 		cursor: pointer;
-		transition: background-color 0.2s, box-shadow 0.2s;
+		transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.btn-primary:hover:not(:disabled) {
 		background: var(--color-primary-hover);
-		box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
 	}
 
 	.btn-primary:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+	}
+
+	/* Form hint */
+	.form-hint {
+		text-align: center;
+		font-size: 12px;
+		color: var(--color-muted);
+		line-height: 1.5;
+		margin-top: 16px;
 	}
 
 	/* Divider */
@@ -573,7 +564,7 @@
 		justify-content: center;
 		gap: 10px;
 		width: 100%;
-		height: 40px;
+		padding: 13px 20px;
 		border: 1px solid var(--color-border);
 		border-radius: 8px;
 		background: white;
@@ -582,13 +573,15 @@
 		font-weight: 500;
 		font-family: inherit;
 		cursor: pointer;
-		transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+		transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+		position: relative;
+		overflow: hidden;
 	}
 
 	.btn-google:hover:not(:disabled) {
-		background: var(--color-input);
-		border-color: var(--color-muted);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+		border-color: #d6d3d1;
+		transform: translateY(-1px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 	}
 
 	.btn-google:disabled {
@@ -605,19 +598,15 @@
 	/* Footer */
 	.login-footer {
 		text-align: center;
-		margin-top: 24px;
+		margin-top: 28px;
+		font-size: 12px;
+		color: var(--color-muted);
+		line-height: 1.6;
 	}
 
 	.footer-brand {
-		font-size: 13px;
-		color: var(--color-muted-foreground);
 		font-weight: 500;
-		margin-bottom: 4px;
-	}
-
-	.footer-legal {
-		font-size: 11px;
-		color: var(--color-muted);
+		color: var(--color-muted-foreground);
 	}
 
 	/* Success */

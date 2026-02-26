@@ -1,0 +1,2439 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viewer Commercial v3 — Environnements Simul&eacute;s</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Salesforce tokens */
+    --sf-blue: #032d60;
+    --sf-blue-light: #1b5297;
+    --sf-link: #0070d2;
+    --sf-link-hover: #005fb2;
+    --sf-bg: #f3f3f3;
+    --sf-card: #ffffff;
+    --sf-border: #dddbda;
+    --sf-text: #181818;
+    --sf-text-secondary: #706e6b;
+    --sf-text-muted: #969492;
+    --sf-green: #2e844a;
+    --sf-purple: #7526c1;
+    --sf-orange: #dd7a01;
+    --obfuscated: #c9c7c5;
+
+    /* Banner tokens */
+    --banner-bg: rgba(12, 10, 9, .92);
+    --banner-text: #ffffff;
+    --banner-text-secondary: rgba(255,255,255,.6);
+    --banner-border: rgba(255,255,255,.08);
+    --banner-hover: rgba(255,255,255,.1);
+    --banner-h: 44px;
+    --banner-transition: 0.3s cubic-bezier(.4,0,.2,1);
+
+    /* Design system tokens */
+    --bg: #f8f8f8;
+    --surface: #ffffff;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --text: #0c0a09;
+    --text-secondary: #78716c;
+    --border: #e7e5e4;
+    --danger: #dc2626;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--sf-bg);
+    color: var(--sf-text);
+    font-size: 13px;
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ============================== */
+  /*  ANIMATIONS                    */
+  /* ============================== */
+  @keyframes fadeInPage {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 4px 16px rgba(251,191,36,.35), 0 1px 3px rgba(0,0,0,.12); }
+    50% { box-shadow: 0 4px 24px rgba(251,191,36,.5), 0 1px 3px rgba(0,0,0,.12); }
+  }
+  @keyframes toastIn {
+    0% { opacity: 0; transform: translate(-50%, 10px); }
+    100% { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes toastOut {
+    0% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -8px); }
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+  @keyframes fadeInPanel {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInDialog {
+    from { opacity: 0; transform: translateY(-6px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ============================== */
+  /*  TAB / TONGUE (LANGUETTE)      */
+  /* ============================== */
+  .tongue-tab {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    width: 56px;
+    height: 14px;
+    background: rgba(12, 10, 9, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 0 0 8px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: height 0.2s ease, background 0.2s ease, width 0.2s ease;
+  }
+  .tongue-tab:hover {
+    height: 18px;
+    background: rgba(12, 10, 9, 0.88);
+    width: 60px;
+  }
+  .tongue-tab svg {
+    width: 8px;
+    height: 8px;
+    color: rgba(255,255,255,0.5);
+    transition: color 0.2s ease;
+  }
+  .tongue-tab:hover svg {
+    color: rgba(255,255,255,0.8);
+  }
+  /* Hide tongue when banner is open */
+  .tongue-tab.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(-100%);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  /* ============================== */
+  /*  SLIM BANNER (SINGLE LINE)     */
+  /* ============================== */
+  .slim-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10000;
+    height: 0;
+    overflow: hidden;
+    background: var(--banner-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--banner-border);
+    color: var(--banner-text);
+    font-size: 13px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.15);
+    transition: height var(--banner-transition);
+  }
+  .slim-banner.open {
+    height: var(--banner-h);
+  }
+
+  .slim-banner-inner {
+    height: var(--banner-h);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease 0.05s;
+  }
+  .slim-banner.open .slim-banner-inner {
+    opacity: 1;
+  }
+
+  /* Banner Logo */
+  .sb-logo {
+    color: #fbbf24;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    padding-right: 10px;
+    margin-right: 2px;
+    border-right: 1px solid var(--banner-border);
+    white-space: nowrap;
+  }
+
+  /* Project Name */
+  .sb-project {
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  /* Search Input */
+  .sb-search-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .sb-search-wrap svg {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    color: rgba(255,255,255,.35);
+    pointer-events: none;
+  }
+  .sb-search-input {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: 5px 10px 5px 26px;
+    color: #fff;
+    font-size: 11.5px;
+    font-family: inherit;
+    width: 200px;
+    outline: none;
+    transition: background 0.15s, border-color 0.15s, width 0.2s;
+  }
+  .sb-search-input:focus {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.22);
+    width: 240px;
+  }
+  .sb-search-input::placeholder {
+    color: rgba(255,255,255,.35);
+  }
+
+  /* Divider */
+  .sb-divider {
+    width: 1px;
+    height: 18px;
+    background: var(--banner-border);
+    flex-shrink: 0;
+  }
+
+  /* Activity indicator */
+  .sb-activity {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgba(255,255,255,.5);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sb-activity svg {
+    width: 11px;
+    height: 11px;
+    color: rgba(255,255,255,.4);
+  }
+
+  /* Version badge */
+  .sb-version {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    background: rgba(251,191,36,.12);
+    border: 1px solid rgba(251,191,36,.2);
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #fbbf24;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Spacer */
+  .sb-spacer {
+    flex: 1;
+    min-width: 8px;
+  }
+
+  /* Action buttons */
+  .sb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.8);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sb-btn:hover {
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    border-color: rgba(255,255,255,.2);
+  }
+  .sb-btn svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+  .sb-btn.primary {
+    background: #fbbf24;
+    color: #171717;
+    border-color: #fbbf24;
+    font-weight: 600;
+  }
+  .sb-btn.primary:hover {
+    background: #f59e0b;
+    border-color: #f59e0b;
+  }
+
+  /* Live indicator */
+  .sb-live {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+  .sb-live-dot {
+    width: 7px;
+    height: 7px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+  .sb-live-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.08);
+    padding: 1px 6px;
+    border-radius: 8px;
+  }
+
+  /* Close button */
+  .sb-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,.5);
+    transition: background .15s, color .15s;
+    background: none;
+    border: none;
+    flex-shrink: 0;
+    font-family: inherit;
+  }
+  .sb-close:hover {
+    background: rgba(255,255,255,.1);
+    color: #fff;
+  }
+  .sb-close svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Bottom-center handle tab for closing */
+  .sb-bottom-handle {
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 12px;
+    background: rgba(12, 10, 9, 0.85);
+    border-radius: 0 0 6px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, background 0.15s;
+    z-index: 2;
+  }
+  .slim-banner.open .sb-bottom-handle {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .sb-bottom-handle:hover {
+    background: rgba(12, 10, 9, 0.95);
+  }
+  .sb-bottom-handle svg {
+    width: 10px;
+    height: 10px;
+    color: rgba(255,255,255,.5);
+  }
+  .sb-bottom-handle:hover svg {
+    color: rgba(255,255,255,.8);
+  }
+
+  /* ============================== */
+  /*  SHARING DIALOG (R010)         */
+  /* ============================== */
+  .share-dialog-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 10002;
+    background: rgba(0,0,0,.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .share-dialog-backdrop.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .share-dialog {
+    position: fixed;
+    z-index: 10003;
+    width: 320px;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.3);
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-6px) scale(.97);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    color: #fff;
+    font-size: 13px;
+  }
+  .share-dialog.visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0) scale(1);
+    animation: fadeInDialog 0.25s ease-out;
+  }
+
+  .share-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .share-dialog-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .share-dialog-close {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,.5);
+    background: none;
+    border: none;
+    transition: background .15s, color .15s;
+  }
+  .share-dialog-close:hover {
+    background: rgba(255,255,255,.1);
+    color: #fff;
+  }
+  .share-dialog-close svg { width: 14px; height: 14px; }
+
+  .share-dialog-body {
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .sd-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,.45);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 5px;
+  }
+
+  .sd-url-row {
+    display: flex;
+    gap: 6px;
+  }
+  .sd-url-input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 11px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    color: rgba(255,255,255,.6);
+    outline: none;
+  }
+  .sd-url-input:focus {
+    border-color: rgba(255,255,255,.2);
+  }
+  .sd-copy-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 6px;
+    cursor: pointer;
+    color: rgba(255,255,255,.6);
+    transition: background .15s, color .15s;
+  }
+  .sd-copy-btn:hover {
+    background: rgba(255,255,255,.15);
+    color: #fff;
+  }
+  .sd-copy-btn svg { width: 13px; height: 13px; }
+
+  .sd-select {
+    width: 100%;
+    appearance: none;
+    background: rgba(255,255,255,.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: 7px 30px 7px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .sd-select:focus {
+    border-color: rgba(251,191,36,.4);
+  }
+  .sd-select option {
+    background: #1a1a1a;
+    color: #fff;
+  }
+
+  .sd-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .sd-toggle-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,.8);
+  }
+
+  .sd-toggle {
+    width: 36px;
+    height: 20px;
+    background: rgba(255,255,255,.15);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .sd-toggle.on {
+    background: #fbbf24;
+  }
+  .sd-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .sd-toggle.on::after {
+    transform: translateX(16px);
+  }
+
+  .sd-password-input {
+    width: 100%;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    color: #fff;
+    outline: none;
+    margin-top: 6px;
+    display: none;
+    transition: border-color .15s;
+  }
+  .sd-password-input:focus {
+    border-color: rgba(251,191,36,.4);
+  }
+  .sd-password-input::placeholder {
+    color: rgba(255,255,255,.3);
+  }
+
+  .sd-tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    min-height: 34px;
+  }
+  .sd-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    background: rgba(251,191,36,.12);
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #fbbf24;
+    white-space: nowrap;
+  }
+  .sd-tag-remove {
+    width: 12px;
+    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    color: #fbbf24;
+    opacity: .6;
+    transition: opacity .15s;
+  }
+  .sd-tag-remove:hover { opacity: 1; }
+  .sd-tag-remove svg { width: 8px; height: 8px; }
+  .sd-tag-input {
+    border: none;
+    outline: none;
+    font-size: 11px;
+    font-family: inherit;
+    color: #fff;
+    background: transparent;
+    min-width: 80px;
+    padding: 2px 0;
+  }
+  .sd-tag-input::placeholder {
+    color: rgba(255,255,255,.3);
+  }
+
+  .sd-generate-btn {
+    width: 100%;
+    padding: 9px 16px;
+    border-radius: 8px;
+    background: #fbbf24;
+    color: #171717;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    transition: background .15s;
+    margin-top: 2px;
+  }
+  .sd-generate-btn:hover {
+    background: #f59e0b;
+  }
+
+  /* ============================== */
+  /*  TOAST NOTIFICATION            */
+  /* ============================== */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15,15,15,.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    z-index: 20000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    animation: toastIn .25s ease-out;
+  }
+  .toast.hiding {
+    animation: toastOut .2s ease-in forwards;
+  }
+  .toast svg { width: 16px; height: 16px; color: #22c55e; }
+
+  /* ============================== */
+  /*  MAIN CONTENT WRAPPER          */
+  /* ============================== */
+  .main-content-wrapper {
+    margin-top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    transition: margin-top var(--banner-transition), height var(--banner-transition);
+  }
+  .main-content-wrapper.shifted {
+    margin-top: var(--banner-h);
+    height: calc(100vh - var(--banner-h));
+  }
+
+  /* ============================== */
+  /*  SALESFORCE -- GLOBAL NAV      */
+  /* ============================== */
+  .sf-app {
+    width: 100%;
+    animation: fadeInPage .5s ease-out;
+  }
+
+  .sf-global-nav {
+    background: var(--sf-blue);
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    position: relative;
+    z-index: 100;
+  }
+
+  .sf-logo {
+    display: flex; align-items: center; gap: 8px;
+    color: #fff; font-weight: 700; font-size: 14px;
+    margin-right: 8px; padding-right: 16px;
+    border-right: 1px solid rgba(255,255,255,.15);
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .sf-logo-icon {
+    width: 24px; height: 24px; background: rgba(255,255,255,.15);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  }
+  .sf-logo-icon svg { width: 16px; height: 16px; }
+
+  .sf-nav-items {
+    display: flex; align-items: center; gap: 0;
+    height: 100%; overflow: hidden;
+  }
+  .sf-nav-item {
+    color: rgba(255,255,255,.72);
+    font-size: 12.5px; font-weight: 500;
+    padding: 0 14px; height: 100%;
+    display: flex; align-items: center;
+    cursor: pointer; position: relative;
+    white-space: nowrap;
+    transition: color .15s;
+  }
+  .sf-nav-item:hover { color: rgba(255,255,255,.95); }
+  .sf-nav-item.active { color: #fff; }
+  .sf-nav-item.active::after {
+    content: ''; position: absolute; bottom: 0; left: 14px; right: 14px;
+    height: 3px; background: #fff; border-radius: 3px 3px 0 0;
+  }
+
+  .sf-nav-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .sf-search-box {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: 6px 12px 6px 32px;
+    color: #fff; font-size: 12px;
+    width: 240px;
+    font-family: inherit;
+    outline: none;
+    transition: background .15s, border-color .15s;
+  }
+  .sf-search-box:focus {
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.25);
+  }
+  .sf-search-box::placeholder { color: rgba(255,255,255,.45); }
+
+  .sf-search-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .sf-search-wrap svg {
+    position: absolute; left: 10px; width: 14px; height: 14px;
+    color: rgba(255,255,255,.45); pointer-events: none;
+  }
+
+  .sf-nav-icon-btn {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.65); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .sf-nav-icon-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .sf-nav-icon-btn svg { width: 18px; height: 18px; }
+
+  .sf-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #1b96ff, #0b5cab);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.02em;
+    border: 2px solid rgba(255,255,255,.2);
+  }
+
+  /* ============================== */
+  /*  SALESFORCE -- TAB BAR         */
+  /* ============================== */
+  .sf-tab-bar-wrap {
+    background: #fff;
+    border-bottom: 1px solid var(--sf-border);
+    padding: 0 24px;
+  }
+  .sf-page-header {
+    max-width: 1200px; margin: 0 auto;
+    padding: 16px 0 0 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .sf-breadcrumb {
+    font-size: 11px; color: var(--sf-text-muted); margin-bottom: 4px;
+  }
+  .sf-breadcrumb a { color: var(--sf-link); text-decoration: none; }
+  .sf-breadcrumb a:hover { text-decoration: underline; }
+  .sf-page-title {
+    font-size: 20px; font-weight: 700; color: var(--sf-blue);
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: -0.02em;
+  }
+  .sf-page-title-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, #7f8ced, #6870e0);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+  }
+  .sf-page-title-icon svg { width: 20px; height: 20px; }
+
+  .sf-header-actions {
+    display: flex; gap: 8px; padding-top: 4px;
+  }
+  .sf-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 12.5px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+    border: 1px solid transparent;
+  }
+  .sf-btn-primary {
+    background: var(--sf-link); color: #fff;
+    border-color: var(--sf-link);
+  }
+  .sf-btn-primary:hover { background: var(--sf-link-hover); border-color: var(--sf-link-hover); }
+  .sf-btn-outline {
+    background: #fff; color: var(--sf-text);
+    border-color: var(--sf-border);
+  }
+  .sf-btn-outline:hover { background: #f5f5f5; }
+
+  .sf-tabs {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; gap: 0; padding-top: 8px;
+  }
+  .sf-tab {
+    padding: 10px 16px;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--sf-text-secondary);
+    cursor: pointer;
+    position: relative;
+    transition: color .15s;
+    white-space: nowrap;
+  }
+  .sf-tab:hover { color: var(--sf-text); }
+  .sf-tab.active {
+    color: var(--sf-link); font-weight: 600;
+  }
+  .sf-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 3px; background: var(--sf-link); border-radius: 3px 3px 0 0;
+  }
+
+  /* ============================== */
+  /*  SALESFORCE -- PAGE CONTENT    */
+  /* ============================== */
+  .sf-content {
+    max-width: 1200px; margin: 0 auto;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 20px;
+    animation: fadeInPage .4s ease-out .1s both;
+  }
+
+  .sf-card {
+    background: var(--sf-card);
+    border: 1px solid var(--sf-border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .sf-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .sf-card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0efed;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sf-card-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--sf-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .sf-card-action {
+    font-size: 11px; color: var(--sf-link); cursor: pointer; font-weight: 500;
+  }
+  .sf-card-action:hover { text-decoration: underline; }
+  .sf-card-body { padding: 0; }
+
+  /* Field rows */
+  .sf-fields { padding: 4px 0; }
+  .sf-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid #f5f4f2;
+  }
+  .sf-field-row:last-child { border-bottom: none; }
+  .sf-field-cell {
+    padding: 10px 16px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .sf-field-cell + .sf-field-cell {
+    border-left: 1px solid #f5f4f2;
+  }
+  .sf-field-label {
+    font-size: 11px; color: var(--sf-text-muted);
+    font-weight: 500;
+  }
+  .sf-field-value {
+    font-size: 13px; font-weight: 500; color: var(--sf-text);
+  }
+  .sf-field-value a {
+    color: var(--sf-link); text-decoration: none;
+  }
+  .sf-field-value a:hover { text-decoration: underline; }
+
+  /* Obfuscated text blocks */
+  .obf {
+    display: inline-block;
+    background: var(--obfuscated);
+    color: transparent;
+    border-radius: 3px;
+    user-select: none;
+    pointer-events: none;
+    line-height: 1.3;
+    vertical-align: baseline;
+    letter-spacing: 0;
+  }
+
+  /* Timeline */
+  .sf-timeline { padding: 8px 16px 12px; }
+  .sf-timeline-item {
+    display: flex; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f4f2;
+    position: relative;
+  }
+  .sf-timeline-item:last-child { border-bottom: none; }
+  .sf-timeline-dot-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 3px;
+  }
+  .sf-timeline-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sf-timeline-dot.call { background: var(--sf-green); }
+  .sf-timeline-dot.email { background: var(--sf-purple); }
+  .sf-timeline-dot.meeting { background: var(--sf-link); }
+  .sf-timeline-dot.task { background: var(--sf-orange); }
+  .sf-timeline-line {
+    width: 2px; flex: 1; background: #e5e5e3;
+    margin-top: 4px; border-radius: 1px;
+  }
+  .sf-timeline-content { flex: 1; min-width: 0; }
+  .sf-timeline-title {
+    font-size: 13px; font-weight: 500; color: var(--sf-text);
+  }
+  .sf-timeline-type {
+    display: inline-block;
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px; border-radius: 3px;
+    margin-right: 6px;
+  }
+  .sf-timeline-type.call { background: #e8f5e9; color: var(--sf-green); }
+  .sf-timeline-type.email { background: #f3e8ff; color: var(--sf-purple); }
+  .sf-timeline-type.meeting { background: #e1f0ff; color: var(--sf-link); }
+  .sf-timeline-type.task { background: #fff3e0; color: var(--sf-orange); }
+  .sf-timeline-date {
+    font-size: 11px; color: var(--sf-text-muted); margin-top: 2px;
+  }
+  .sf-timeline-desc {
+    font-size: 12px; color: var(--sf-text-secondary); margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Opportunity cards */
+  .sf-opp-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f5f4f2;
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .sf-opp-item:last-child { border-bottom: none; }
+  .sf-opp-item:hover { background: #fafaf9; }
+  .sf-opp-name {
+    font-size: 13px; font-weight: 600; color: var(--sf-link);
+    margin-bottom: 4px;
+  }
+  .sf-opp-meta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11.5px; color: var(--sf-text-secondary);
+  }
+  .sf-opp-stage {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .sf-opp-stage.negociation { background: #fff3cd; color: #8a6d00; }
+  .sf-opp-stage.qualification { background: #d1ecf1; color: #0c5460; }
+  .sf-opp-stage.proposition { background: #e8d5f5; color: #5b2c8c; }
+  .sf-opp-amount { font-weight: 600; }
+
+  /* Notes card */
+  .sf-notes-body {
+    padding: 14px 16px;
+    font-size: 13px; color: var(--sf-text-secondary);
+    line-height: 1.65;
+  }
+
+  /* ============================== */
+  /*  LEMON LEARNING BADGE          */
+  /* ============================== */
+  .ll-badge {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    z-index: 9990;
+    width: 48px; height: 48px;
+    background: #fbbf24;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #171717;
+    font-weight: 800; font-size: 16px;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    animation: pulseGlow 3s ease-in-out infinite;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .ll-badge:hover {
+    transform: scale(1.1);
+  }
+  .ll-badge:active {
+    transform: scale(1.04);
+  }
+
+  /* ============================== */
+  /*  PARAMETERS PANEL (R001)       */
+  /* ============================== */
+  .params-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 15000;
+    background: var(--bg);
+    overflow-y: auto;
+    display: none;
+  }
+  .params-overlay.visible {
+    display: block;
+    animation: fadeInPanel .3s ease-out;
+  }
+
+  .params-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .params-back-btn {
+    width: 36px; height: 36px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text);
+    transition: background .15s, border-color .15s;
+    flex-shrink: 0;
+  }
+  .params-back-btn:hover {
+    background: var(--bg);
+    border-color: #d6d3d1;
+  }
+  .params-back-btn svg { width: 18px; height: 18px; }
+
+  .params-header-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .params-header-subtitle {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: auto;
+  }
+
+  .params-body {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .params-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .params-section:hover {
+    box-shadow: 0 2px 12px rgba(0,0,0,.04);
+  }
+
+  .params-section-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .params-section-icon {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .params-section-icon svg { width: 16px; height: 16px; }
+  .params-section-icon.blue { background: #eff6ff; color: var(--accent); }
+  .params-section-icon.purple { background: #f5f3ff; color: #7c3aed; }
+  .params-section-icon.green { background: #f0fdf4; color: #16a34a; }
+  .params-section-icon.orange { background: #fff7ed; color: #ea580c; }
+
+  .params-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .params-section-desc {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+
+  .params-section-body {
+    padding: 0;
+  }
+
+  /* Parameter rows */
+  .param-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f5f4f2;
+    gap: 16px;
+    min-height: 52px;
+  }
+  .param-row:last-child { border-bottom: none; }
+
+  .param-label-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+  .param-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .param-hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+  }
+
+  .param-control {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Toggle switch */
+  .toggle {
+    width: 40px; height: 22px;
+    background: #d6d3d1;
+    border-radius: 11px;
+    position: relative;
+    cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .toggle.on {
+    background: var(--accent);
+  }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  }
+  .toggle.on::after {
+    transform: translateX(18px);
+  }
+
+  /* Text inputs in params */
+  .param-input {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    min-width: 220px;
+  }
+  .param-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .param-input::placeholder {
+    color: #a8a29e;
+  }
+  .param-input.url-input {
+    min-width: 300px;
+    font-family: 'SF Mono', ui-monospace, monospace;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    background: var(--bg);
+  }
+
+  /* Small select */
+  .param-select {
+    appearance: none;
+    padding: 7px 32px 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    min-width: 150px;
+  }
+  .param-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+
+  /* Copy button */
+  .param-copy-btn {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background .15s, color .15s, border-color .15s;
+    flex-shrink: 0;
+  }
+  .param-copy-btn:hover {
+    background: var(--bg);
+    color: var(--text);
+    border-color: #d6d3d1;
+  }
+  .param-copy-btn svg { width: 14px; height: 14px; }
+
+  /* Tags / chips */
+  .param-tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .param-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #eff6ff;
+    color: var(--accent);
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .param-tag-remove {
+    width: 14px; height: 14px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background .15s;
+    color: var(--accent);
+    opacity: .6;
+  }
+  .param-tag-remove:hover { opacity: 1; background: rgba(37,99,235,.1); }
+  .param-tag-remove svg { width: 10px; height: 10px; }
+  .param-tag-input {
+    border: none;
+    outline: none;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text);
+    background: transparent;
+    min-width: 100px;
+    padding: 4px 0;
+  }
+  .param-tag-input::placeholder {
+    color: #a8a29e;
+  }
+
+  /* Danger button */
+  .param-danger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border: 1px solid var(--danger);
+    background: #fff;
+    color: var(--danger);
+    transition: background .15s, color .15s;
+  }
+  .param-danger-btn:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+  .param-danger-btn svg { width: 14px; height: 14px; }
+
+  /* Param row with full-width sub-content */
+  .param-row.stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .param-row.stacked .param-control {
+    width: 100%;
+  }
+  .param-row.stacked .param-input {
+    width: 100%;
+    min-width: 0;
+  }
+  .param-row.stacked .param-tags-wrap {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    min-height: 40px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ================================================ -->
+<!--  TONGUE / TAB (LANGUETTE)                        -->
+<!-- ================================================ -->
+<div class="tongue-tab" id="tongueTab">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+</div>
+
+<!-- ================================================ -->
+<!--  SLIM SINGLE-LINE BANNER                         -->
+<!-- ================================================ -->
+<div class="slim-banner" id="slimBanner">
+  <div class="slim-banner-inner">
+
+    <!-- LL Logo -->
+    <div class="sb-logo">LL</div>
+
+    <!-- Project name -->
+    <div class="sb-project">D&eacute;mo Salesforce &mdash; Acme Corp</div>
+
+    <div class="sb-divider"></div>
+
+    <!-- Search input (R004) -->
+    <div class="sb-search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input class="sb-search-input" type="text" placeholder="Rechercher...">
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- Activity indicator (R007) -->
+    <div class="sb-activity">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      il y a 2 min
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <!-- Version badge -->
+    <div class="sb-version">v2.1</div>
+
+    <!-- Spacer -->
+    <div class="sb-spacer"></div>
+
+    <!-- Action buttons (R009) -->
+    <button class="sb-btn primary" id="btnPartager">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"/>
+        <circle cx="6" cy="12" r="3"/>
+        <circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+      Partager
+    </button>
+
+    <button class="sb-btn" id="btnParams">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+      </svg>
+      Param&egrave;tres
+    </button>
+
+    <div class="sb-divider"></div>
+
+    <!-- Live indicator -->
+    <div class="sb-live">
+      <div class="sb-live-dot"></div>
+      <div class="sb-live-count">3</div>
+    </div>
+
+    <!-- Close button -->
+    <button class="sb-close" id="btnCloseBanner" title="Fermer le bandeau">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+    </button>
+
+  </div>
+
+  <!-- Bottom handle for closing -->
+  <div class="sb-bottom-handle" id="sbBottomHandle">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </div>
+</div>
+
+<!-- ================================================ -->
+<!--  ADVANCED SHARING DIALOG (R010)                  -->
+<!-- ================================================ -->
+<div class="share-dialog-backdrop" id="shareBackdrop"></div>
+<div class="share-dialog" id="shareDialog" style="top: 52px; right: 24px;">
+
+  <div class="share-dialog-header">
+    <div class="share-dialog-title">Partager le lien</div>
+    <button class="share-dialog-close" id="shareDialogClose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="share-dialog-body">
+
+    <!-- Share URL -->
+    <div>
+      <div class="sd-field-label">Lien de partage</div>
+      <div class="sd-url-row">
+        <input class="sd-url-input" type="text" value="https://demo.lemonlearning.com/share/sf-acme?t=abc123" readonly id="sdUrlInput">
+        <button class="sd-copy-btn" id="sdCopyBtn" title="Copier le lien">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Duree de validite -->
+    <div>
+      <div class="sd-field-label">Dur&eacute;e de validit&eacute;</div>
+      <select class="sd-select" id="sdDuration">
+        <option value="24h">24 heures</option>
+        <option value="7d" selected>7 jours</option>
+        <option value="30d">30 jours</option>
+        <option value="permanent">Permanent</option>
+      </select>
+    </div>
+
+    <!-- Password toggle -->
+    <div>
+      <div class="sd-toggle-row">
+        <div class="sd-toggle-label">Prot&eacute;ger par mot de passe</div>
+        <div class="sd-toggle" id="sdPasswordToggle"></div>
+      </div>
+      <input class="sd-password-input" type="password" placeholder="Entrer un mot de passe..." id="sdPasswordField">
+    </div>
+
+    <!-- Domaines autorises -->
+    <div>
+      <div class="sd-field-label">Domaines autoris&eacute;s</div>
+      <div class="sd-tags-wrap" id="sdTagsWrap">
+        <div class="sd-tag">
+          acme-corp.com
+          <span class="sd-tag-remove" onclick="this.parentElement.remove()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </span>
+        </div>
+        <input class="sd-tag-input" type="text" placeholder="Ajouter..." id="sdTagInput">
+      </div>
+    </div>
+
+    <!-- Generate button -->
+    <button class="sd-generate-btn" id="sdGenerateBtn">G&eacute;n&eacute;rer le lien</button>
+
+  </div>
+</div>
+
+<!-- ================================================ -->
+<!--  PARAMETERS PANEL (R001)                         -->
+<!-- ================================================ -->
+<div class="params-overlay" id="paramsOverlay">
+  <div class="params-header">
+    <button class="params-back-btn" id="paramsCloseBtn" title="Retour au viewer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="params-header-title">Param&egrave;tres</div>
+    <div class="params-header-subtitle">D&eacute;mo Salesforce &mdash; Acme Corp</div>
+  </div>
+
+  <div class="params-body">
+
+    <!-- Section 1: Partage & Acces -->
+    <div class="params-section">
+      <div class="params-section-header">
+        <div class="params-section-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"/>
+            <circle cx="6" cy="12" r="3"/>
+            <circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+        </div>
+        <div>
+          <div class="params-section-title">Partage &amp; Acc&egrave;s</div>
+          <div class="params-section-desc">G&eacute;rer la visibilit&eacute; et la s&eacute;curit&eacute; du lien de d&eacute;mo</div>
+        </div>
+      </div>
+      <div class="params-section-body">
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Lien public</div>
+            <div class="param-hint">Autoriser l'acc&egrave;s via un lien public</div>
+          </div>
+          <div class="param-control">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">URL de partage</div>
+          </div>
+          <div class="param-control">
+            <input class="param-input url-input" type="text" value="https://demo.lemonlearning.com/share/sf-acme?t=abc123" readonly>
+            <button class="param-copy-btn" onclick="copyShareLink()" title="Copier le lien">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Expiration du lien</div>
+            <div class="param-hint">D&eacute;lai avant d&eacute;sactivation automatique</div>
+          </div>
+          <div class="param-control">
+            <select class="param-select">
+              <option value="7">7 jours</option>
+              <option value="30" selected>30 jours</option>
+              <option value="never">Jamais</option>
+            </select>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Mot de passe</div>
+            <div class="param-hint">Prot&eacute;ger l'acc&egrave;s par un mot de passe</div>
+          </div>
+          <div class="param-control">
+            <input class="param-input" type="password" placeholder="Mot de passe..." style="min-width:160px; display:none;" id="paramPasswordField">
+            <div class="toggle" onclick="this.classList.toggle('on'); var f=document.getElementById('paramPasswordField'); f.style.display=this.classList.contains('on')?'block':'none';"></div>
+          </div>
+        </div>
+        <div class="param-row stacked">
+          <div class="param-label-wrap">
+            <div class="param-label">Domaines autoris&eacute;s</div>
+            <div class="param-hint">Limiter l'acc&egrave;s aux domaines email sp&eacute;cifi&eacute;s</div>
+          </div>
+          <div class="param-control">
+            <div class="param-tags-wrap">
+              <div class="param-tag">
+                acme-corp.com
+                <span class="param-tag-remove" onclick="this.parentElement.remove()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </span>
+              </div>
+              <div class="param-tag">
+                lemonlearning.com
+                <span class="param-tag-remove" onclick="this.parentElement.remove()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </span>
+              </div>
+              <input class="param-tag-input" type="text" placeholder="Ajouter un domaine...">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Affichage -->
+    <div class="params-section">
+      <div class="params-section-header">
+        <div class="params-section-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <div>
+          <div class="params-section-title">Affichage</div>
+          <div class="params-section-desc">Personnaliser l'apparence et le comportement du viewer</div>
+        </div>
+      </div>
+      <div class="params-section-body">
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Bandeau Lemon Learning visible</div>
+            <div class="param-hint">Afficher le bandeau de contr&ocirc;le en haut du viewer</div>
+          </div>
+          <div class="param-control">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Obfuscation activ&eacute;e</div>
+            <div class="param-hint">Masquer les donn&eacute;es sensibles (noms, emails, etc.)</div>
+          </div>
+          <div class="param-control">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Th&egrave;me</div>
+            <div class="param-hint">Apparence visuelle du viewer</div>
+          </div>
+          <div class="param-control">
+            <select class="param-select">
+              <option value="light" selected>Clair</option>
+              <option value="dark">Sombre</option>
+              <option value="auto">Auto</option>
+            </select>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Navigation libre</div>
+            <div class="param-hint">Permet au prospect de naviguer librement dans l'environnement</div>
+          </div>
+          <div class="param-control">
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Analytics -->
+    <div class="params-section">
+      <div class="params-section-header">
+        <div class="params-section-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+        </div>
+        <div>
+          <div class="params-section-title">Analytics</div>
+          <div class="params-section-desc">Suivi et mesure de l'engagement des prospects</div>
+        </div>
+      </div>
+      <div class="params-section-body">
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Suivi des interactions</div>
+            <div class="param-hint">Enregistrer les clics, d&eacute;filements et temps pass&eacute;</div>
+          </div>
+          <div class="param-control">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Enregistrement de session</div>
+            <div class="param-hint">Capturer un replay de chaque session prospect</div>
+          </div>
+          <div class="param-control">
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Notifications temps r&eacute;el</div>
+            <div class="param-hint">Recevoir un email quand un prospect acc&egrave;de au lien</div>
+          </div>
+          <div class="param-control">
+            <input class="param-input" type="email" placeholder="email@exemple.com" style="min-width:180px; display:none;" id="paramNotifEmail">
+            <div class="toggle on" onclick="this.classList.toggle('on'); var f=document.getElementById('paramNotifEmail'); f.style.display=this.classList.contains('on')?'block':'none';" id="paramNotifToggle"></div>
+          </div>
+        </div>
+        <div class="param-row" id="paramNotifEmailRow">
+          <div class="param-label-wrap">
+            <div class="param-label">Email de notification</div>
+          </div>
+          <div class="param-control">
+            <input class="param-input" type="email" value="julien.durand@lemonlearning.com" style="min-width:260px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Avance -->
+    <div class="params-section">
+      <div class="params-section-header">
+        <div class="params-section-icon orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="params-section-title">Avanc&eacute;</div>
+          <div class="params-section-desc">Configuration technique et options de r&eacute;initialisation</div>
+        </div>
+      </div>
+      <div class="params-section-body">
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">URL de redirection</div>
+            <div class="param-hint">Page affich&eacute;e apr&egrave;s la fin de session</div>
+          </div>
+          <div class="param-control">
+            <input class="param-input" type="url" placeholder="https://..." value="https://www.lemonlearning.com/merci" style="min-width:280px;">
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">Dur&eacute;e de session max</div>
+            <div class="param-hint">Temps maximum avant expiration automatique</div>
+          </div>
+          <div class="param-control">
+            <select class="param-select">
+              <option value="15">15 min</option>
+              <option value="30" selected>30 min</option>
+              <option value="60">1h</option>
+              <option value="unlimited">Illimit&eacute;</option>
+            </select>
+          </div>
+        </div>
+        <div class="param-row">
+          <div class="param-label-wrap">
+            <div class="param-label">R&eacute;initialiser l'environnement</div>
+            <div class="param-hint">Supprimer toutes les sessions et r&eacute;initialiser les donn&eacute;es</div>
+          </div>
+          <div class="param-control">
+            <button class="param-danger-btn" onclick="showToast('Environnement r\u00e9initialis\u00e9')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+              </svg>
+              R&eacute;initialiser
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================================================ -->
+<!--  MAIN CONTENT: SIMULATED SALESFORCE              -->
+<!-- ================================================ -->
+<div class="main-content-wrapper" id="mainContent">
+<div class="sf-app">
+
+  <!-- Global Navigation Bar -->
+  <nav class="sf-global-nav">
+    <div class="sf-logo">
+      <div class="sf-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19.5 10c.3 0 .5.2.5.5V16a6 6 0 01-12 0v-.5"/>
+          <circle cx="12" cy="10" r="3"/>
+          <path d="M5 18a7 7 0 0114 0"/>
+          <path d="M12 2v3"/>
+        </svg>
+      </div>
+      Sales Cloud
+    </div>
+
+    <div class="sf-nav-items">
+      <div class="sf-nav-item">Accueil</div>
+      <div class="sf-nav-item">Opportunit&eacute;s</div>
+      <div class="sf-nav-item active">Contacts</div>
+      <div class="sf-nav-item">Comptes</div>
+      <div class="sf-nav-item">Rapports</div>
+      <div class="sf-nav-item">Tableaux de bord</div>
+    </div>
+
+    <div class="sf-nav-right">
+      <div class="sf-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="sf-search-box" type="text" placeholder="Rechercher dans Salesforce...">
+      </div>
+      <div class="sf-nav-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div class="sf-nav-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </div>
+      <div class="sf-avatar">JD</div>
+    </div>
+  </nav>
+
+  <!-- Page Header + Tabs -->
+  <div class="sf-tab-bar-wrap">
+    <div class="sf-page-header">
+      <div>
+        <div class="sf-breadcrumb">
+          <a href="#">Contacts</a>&nbsp;&nbsp;/&nbsp;&nbsp;Fiche Contact
+        </div>
+        <div class="sf-page-title">
+          <div class="sf-page-title-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span>Fiche Contact</span>
+        </div>
+      </div>
+      <div class="sf-header-actions">
+        <button class="sf-btn sf-btn-outline">Cloner</button>
+        <button class="sf-btn sf-btn-primary">Modifier</button>
+      </div>
+    </div>
+    <div class="sf-tabs">
+      <div class="sf-tab active">D&eacute;tails</div>
+      <div class="sf-tab">Activit&eacute;</div>
+      <div class="sf-tab">Opportunit&eacute;s li&eacute;es</div>
+      <div class="sf-tab">Fichiers</div>
+    </div>
+  </div>
+
+  <!-- Two-Column Content -->
+  <div class="sf-content">
+    <!-- LEFT COLUMN -->
+    <div>
+      <!-- Personal Information -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Informations personnelles</div>
+          <div class="sf-card-action">Tout modifier</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-fields">
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Nom complet</div>
+                <div class="sf-field-value"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Soci&eacute;t&eacute;</div>
+                <div class="sf-field-value"><a href="#"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> Corp</a></div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Email</div>
+                <div class="sf-field-value"><a href="#"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></a></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">T&eacute;l&eacute;phone</div>
+                <div class="sf-field-value"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Titre</div>
+                <div class="sf-field-value">Directeur Commercial</div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">D&eacute;partement</div>
+                <div class="sf-field-value">Ventes</div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Adresse</div>
+                <div class="sf-field-value"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Source du lead</div>
+                <div class="sf-field-value">Salon professionnel</div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Propri&eacute;taire du contact</div>
+                <div class="sf-field-value"><a href="#">Julien Durand</a></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Cr&eacute;&eacute; le</div>
+                <div class="sf-field-value">15 janvier 2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Activit&eacute; r&eacute;cente</div>
+          <div class="sf-card-action">Voir tout</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-timeline">
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot call"></div>
+                <div class="sf-timeline-line"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type call">Appel</span>
+                  Discussion renouvellement contrat
+                </div>
+                <div class="sf-timeline-desc">Point sur les conditions de renouvellement et les nouvelles fonctionnalit&eacute;s demand&eacute;es.</div>
+                <div class="sf-timeline-date">24 f&eacute;v. 2026 &middot; 14:30</div>
+              </div>
+            </div>
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot email"></div>
+                <div class="sf-timeline-line"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type email">Email</span>
+                  Envoi proposition commerciale v2
+                </div>
+                <div class="sf-timeline-date">22 f&eacute;v. 2026 &middot; 09:15</div>
+              </div>
+            </div>
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot meeting"></div>
+                <div class="sf-timeline-line"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type meeting">R&eacute;union</span>
+                  Point trimestriel Q1 2026
+                </div>
+                <div class="sf-timeline-date">18 f&eacute;v. 2026 &middot; 15:00</div>
+              </div>
+            </div>
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot task"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type task">T&acirc;che</span>
+                  Pr&eacute;parer d&eacute;mo personnalis&eacute;e
+                </div>
+                <div class="sf-timeline-desc">Pr&eacute;parer la d&eacute;mo Analytics pour la semaine 10.</div>
+                <div class="sf-timeline-date">15 f&eacute;v. 2026 &middot; 10:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <!-- Opportunities -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Opportunit&eacute;s en cours</div>
+          <div class="sf-card-action">Nouvelle</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-opp-item">
+            <div class="sf-opp-name">Renouvellement Enterprise 2026</div>
+            <div class="sf-opp-meta">
+              <span class="sf-opp-amount">&euro;45 000</span>
+              <span class="sf-opp-stage negociation">N&eacute;gociation</span>
+              <span style="margin-left:auto">Cl&ocirc;ture : 15 mars</span>
+            </div>
+          </div>
+          <div class="sf-opp-item">
+            <div class="sf-opp-name">Upsell Module Analytics</div>
+            <div class="sf-opp-meta">
+              <span class="sf-opp-amount">&euro;12 000</span>
+              <span class="sf-opp-stage qualification">Qualification</span>
+              <span style="margin-left:auto">Cl&ocirc;ture : 30 avr.</span>
+            </div>
+          </div>
+          <div class="sf-opp-item">
+            <div class="sf-opp-name">Extension Licences &Eacute;quipe Support</div>
+            <div class="sf-opp-meta">
+              <span class="sf-opp-amount">&euro;8 500</span>
+              <span class="sf-opp-stage proposition">Proposition</span>
+              <span style="margin-left:auto">Cl&ocirc;ture : 20 mai</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Notes</div>
+          <div class="sf-card-action">Modifier</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-notes-body">
+            Client tr&egrave;s satisfait du produit actuel. Souhaite explorer le module Analytics pour le suivi d&rsquo;adoption interne. Prochaine &eacute;tape&nbsp;: d&eacute;mo personnalis&eacute;e semaine 10.<br><br>
+            Contact pr&eacute;f&eacute;r&eacute; pour les &eacute;changes&nbsp;: email. Disponibilit&eacute; les mardis et jeudis apr&egrave;s-midi.
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Metrics mini card -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Score du contact</div>
+        </div>
+        <div class="sf-card-body">
+          <div style="padding:14px 16px; display:flex; align-items:center; gap:16px;">
+            <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#2e844a,#48bb78); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">A</div>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--sf-text);">Score&nbsp;: 87/100</div>
+              <div style="font-size:11.5px; color:var(--sf-text-muted); margin-top:2px;">Engagement &eacute;lev&eacute; &middot; 12 interactions ce mois</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Files mini card -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Fichiers r&eacute;cents</div>
+          <div class="sf-card-action">Voir tout</div>
+        </div>
+        <div class="sf-card-body">
+          <div style="padding:10px 16px;">
+            <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #f5f4f2;">
+              <div style="width:28px; height:28px; border-radius:4px; background:#e1f0ff; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#0070d2" stroke-width="2" style="width:14px; height:14px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px; font-weight:500;">Proposition_commerciale_v2.pdf</div>
+                <div style="font-size:11px; color:var(--sf-text-muted);">245 Ko &middot; 22 f&eacute;v.</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; padding:6px 0;">
+              <div style="width:28px; height:28px; border-radius:4px; background:#e8f5e9; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2e844a" stroke-width="2" style="width:14px; height:14px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px; font-weight:500;">CR_reunion_Q4.xlsx</div>
+                <div style="font-size:11px; color:var(--sf-text-muted);">128 Ko &middot; 18 f&eacute;v.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================================================ -->
+<!--  LEMON LEARNING BADGE                            -->
+<!-- ================================================ -->
+<div class="ll-badge" title="Lemon Learning">LL</div>
+
+<!-- ================================================ -->
+<!--  JAVASCRIPT                                      -->
+<!-- ================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  var tongueTab = document.getElementById('tongueTab');
+  var slimBanner = document.getElementById('slimBanner');
+  var mainContent = document.getElementById('mainContent');
+  var btnCloseBanner = document.getElementById('btnCloseBanner');
+  var sbBottomHandle = document.getElementById('sbBottomHandle');
+  var btnPartager = document.getElementById('btnPartager');
+  var btnParams = document.getElementById('btnParams');
+  var shareBackdrop = document.getElementById('shareBackdrop');
+  var shareDialog = document.getElementById('shareDialog');
+  var shareDialogClose = document.getElementById('shareDialogClose');
+  var sdCopyBtn = document.getElementById('sdCopyBtn');
+  var sdPasswordToggle = document.getElementById('sdPasswordToggle');
+  var sdPasswordField = document.getElementById('sdPasswordField');
+  var sdTagInput = document.getElementById('sdTagInput');
+  var sdGenerateBtn = document.getElementById('sdGenerateBtn');
+  var paramsOverlay = document.getElementById('paramsOverlay');
+  var paramsCloseBtn = document.getElementById('paramsCloseBtn');
+
+  var bannerOpen = false;
+  var shareOpen = false;
+  var paramsOpen = false;
+
+  // ========================================
+  // BANNER OPEN / CLOSE
+  // ========================================
+  function openBanner() {
+    if (bannerOpen) return;
+    bannerOpen = true;
+    tongueTab.classList.add('hidden');
+    slimBanner.classList.add('open');
+    mainContent.classList.add('shifted');
+  }
+
+  function closeBanner() {
+    if (!bannerOpen) return;
+    bannerOpen = false;
+    closeShareDialog();
+    slimBanner.classList.remove('open');
+    mainContent.classList.remove('shifted');
+    // Delay showing the tongue so the banner finishes animating
+    setTimeout(function() {
+      if (!bannerOpen) {
+        tongueTab.classList.remove('hidden');
+      }
+    }, 300);
+  }
+
+  tongueTab.addEventListener('click', function() {
+    openBanner();
+  });
+
+  btnCloseBanner.addEventListener('click', function() {
+    closeBanner();
+  });
+
+  sbBottomHandle.addEventListener('click', function() {
+    closeBanner();
+  });
+
+  // ========================================
+  // SHARING DIALOG (R010)
+  // ========================================
+  function openShareDialog() {
+    if (shareOpen) return;
+    shareOpen = true;
+
+    // Position dialog anchored near the Partager button
+    var btnRect = btnPartager.getBoundingClientRect();
+    shareDialog.style.top = (btnRect.bottom + 8) + 'px';
+    shareDialog.style.right = 'auto';
+    shareDialog.style.left = Math.max(8, Math.min(btnRect.left, window.innerWidth - 336)) + 'px';
+
+    shareBackdrop.classList.add('visible');
+    shareDialog.classList.add('visible');
+  }
+
+  function closeShareDialog() {
+    if (!shareOpen) return;
+    shareOpen = false;
+    shareBackdrop.classList.remove('visible');
+    shareDialog.classList.remove('visible');
+  }
+
+  function toggleShareDialog() {
+    if (shareOpen) {
+      closeShareDialog();
+    } else {
+      openShareDialog();
+    }
+  }
+
+  btnPartager.addEventListener('click', function() {
+    toggleShareDialog();
+  });
+
+  shareDialogClose.addEventListener('click', function() {
+    closeShareDialog();
+  });
+
+  shareBackdrop.addEventListener('click', function() {
+    closeShareDialog();
+  });
+
+  // Copy URL in sharing dialog
+  sdCopyBtn.addEventListener('click', function() {
+    var url = document.getElementById('sdUrlInput').value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function() {
+        showToast('Lien copi\u00e9 !');
+      }).catch(function() {
+        showToast('Lien copi\u00e9 !');
+      });
+    } else {
+      showToast('Lien copi\u00e9 !');
+    }
+  });
+
+  // Password toggle in sharing dialog
+  sdPasswordToggle.addEventListener('click', function() {
+    this.classList.toggle('on');
+    sdPasswordField.style.display = this.classList.contains('on') ? 'block' : 'none';
+    if (this.classList.contains('on')) {
+      sdPasswordField.focus();
+    }
+  });
+
+  // Tag input in sharing dialog
+  sdTagInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && this.value.trim()) {
+      e.preventDefault();
+      var val = this.value.trim();
+      var tag = document.createElement('div');
+      tag.className = 'sd-tag';
+      tag.innerHTML = val + ' <span class="sd-tag-remove" onclick="this.parentElement.remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>';
+      this.parentElement.insertBefore(tag, this);
+      this.value = '';
+    }
+  });
+
+  // Generate link button
+  sdGenerateBtn.addEventListener('click', function() {
+    showToast('Lien g\u00e9n\u00e9r\u00e9 avec succ\u00e8s !');
+    closeShareDialog();
+  });
+
+  // ========================================
+  // PARAMETERS PANEL (R001)
+  // ========================================
+  function openParams() {
+    paramsOpen = true;
+    paramsOverlay.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+    closeBanner();
+  }
+
+  function closeParams() {
+    paramsOpen = false;
+    paramsOverlay.classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  btnParams.addEventListener('click', function() {
+    openParams();
+  });
+
+  paramsCloseBtn.addEventListener('click', function() {
+    closeParams();
+  });
+
+  // Also expose openSettings globally for any inline onclick
+  window.openSettings = function() {
+    openParams();
+  };
+
+  // ========================================
+  // ESCAPE KEY: Progressive dismissal
+  // ========================================
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (paramsOpen) {
+        closeParams();
+      } else if (shareOpen) {
+        closeShareDialog();
+      } else if (bannerOpen) {
+        closeBanner();
+      }
+    }
+  });
+
+  // ========================================
+  // TOAST NOTIFICATIONS
+  // ========================================
+  var currentToast = null;
+
+  function showToast(message, icon) {
+    if (currentToast) {
+      currentToast.remove();
+      currentToast = null;
+    }
+
+    var toast = document.createElement('div');
+    toast.className = 'toast';
+
+    var svgIcon = icon || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+    toast.innerHTML = svgIcon + '<span>' + message + '</span>';
+    document.body.appendChild(toast);
+    currentToast = toast;
+
+    setTimeout(function() {
+      toast.classList.add('hiding');
+      setTimeout(function() {
+        if (toast.parentNode) toast.remove();
+        if (currentToast === toast) currentToast = null;
+      }, 200);
+    }, 2000);
+  }
+
+  window.showToast = showToast;
+
+  // ========================================
+  // ACTION HELPERS
+  // ========================================
+  window.copyShareLink = function() {
+    var fakeLink = 'https://demo.lemonlearning.com/share/sf-acme-contact?token=abc123';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fakeLink).then(function() {
+        showToast('Lien de partage copi\u00e9 !');
+      }).catch(function() {
+        showToast('Lien de partage copi\u00e9 !');
+      });
+    } else {
+      showToast('Lien de partage copi\u00e9 !');
+    }
+  };
+
+  // ========================================
+  // TAG INPUT HANDLING (PARAMS PANEL)
+  // ========================================
+  document.querySelectorAll('.param-tag-input').forEach(function(input) {
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && this.value.trim()) {
+        e.preventDefault();
+        var val = this.value.trim();
+        var tag = document.createElement('div');
+        tag.className = 'param-tag';
+        tag.innerHTML = val + ' <span class="param-tag-remove" onclick="this.parentElement.remove()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>';
+        this.parentElement.insertBefore(tag, this);
+        this.value = '';
+      }
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

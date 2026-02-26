@@ -427,7 +427,9 @@
 			});
 
 			const baseUrl = window.location.origin;
-			linkGenerated = `${baseUrl}/demo/${res.data.accessToken}`;
+			const project = projects.find(p => p.id === linkProjectId);
+			const subdomain = project?.subdomain ?? '';
+			linkGenerated = `${baseUrl}/view/${subdomain}?token=${res.data.accessToken}`;
 			// Store the company name and expiry for the info banner
 			linkGeneratedCompany = companyName;
 			const expiryDate = new Date();

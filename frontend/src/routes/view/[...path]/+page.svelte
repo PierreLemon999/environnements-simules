@@ -85,8 +85,8 @@
 			if (accessToken) {
 				try {
 					await post('/auth/demo-access', {
-						token: accessToken,
-						password: '', // Link access, no password needed
+						accessToken: accessToken,
+						password: '', // Link access — verification is best-effort
 					});
 				} catch {
 					// Silent fail — the demo endpoint itself doesn't require auth

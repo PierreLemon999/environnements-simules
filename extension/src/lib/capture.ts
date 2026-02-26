@@ -40,6 +40,9 @@ function capturePageDOM(): { html: string; title: string; url: string } {
 	// Convert images to base64 data URIs
 	inlineImages(docClone);
 
+	// Inline same-origin iframes
+	inlineIframes(docClone);
+
 	// Remove scripts (they shouldn't execute in the demo)
 	const scripts = docClone.querySelectorAll('script');
 	scripts.forEach((s) => s.remove());
@@ -95,6 +98,39 @@ function capturePageDOM(): { html: string; title: string; url: string } {
 		} catch {
 			// Silently fail style inlining
 		}
+	}
+
+	function inlineIframes(root: HTMLElement): void {
+		const iframes = root.querySelectorAll('iframe');
+		iframes.forEach((iframe) => {
+			try {
+				const src = iframe.getAttribute('src') || '';
+				// Find the corresponding live iframe
+				const liveIframe = document.querySelector(
+					`iframe[src="${src}"]`
+				) as HTMLIFrameElement | null;
+				if (!liveIframe) return;
+
+				// Only inline same-origin iframes
+				try {
+					const iframeDoc = liveIframe.contentDocument;
+					if (iframeDoc) {
+						const iframeHtml = iframeDoc.documentElement.outerHTML;
+						iframe.setAttribute('srcdoc', iframeHtml);
+						iframe.removeAttribute('src');
+					}
+				} catch {
+					// Cross-origin iframe — convert relative src to absolute
+					if (src.startsWith('/')) {
+						iframe.setAttribute('src', `${window.location.origin}${src}`);
+					} else if (src && !src.startsWith('http')) {
+						iframe.setAttribute('src', new URL(src, window.location.href).href);
+					}
+				}
+			} catch {
+				// Skip problematic iframes
+			}
+		});
 	}
 
 	function inlineImages(root: HTMLElement): void {

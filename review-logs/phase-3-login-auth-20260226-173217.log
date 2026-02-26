@@ -1,0 +1,26 @@
+## Phase 3 Complete — Summary
+
+**All 9 Playwright tests pass.** Here's what was reviewed and fixed:
+
+### Auth Flows (all working)
+- Client login (email/password) → redirects to `/view`
+- Admin login (Google SSO) → redirects to `/admin`
+- Auth guard blocks unauthenticated users from `/admin` → redirects to `/login`
+- Auth guard blocks client users from `/admin` → redirects to `/view`
+- Root `/` redirects based on auth state
+- Invalid credentials show error banner
+- Empty fields show validation message
+- Password toggle works correctly
+
+### Visual Fixes Applied (13 items)
+The login page was brought into alignment with mockup v4:
+- Labels: "Email" → "Adresse e-mail", "Continuer avec Google" → "Se connecter avec Google"
+- Brand subtitle simplified to "Lemon Learning"
+- Section label redesigned to uppercase 11px muted style
+- Hint text moved below form (centered)
+- Button styling, spacing, hover effects, and footer all refined to match mockup
+
+### File Modified
+- `frontend/src/routes/login/+page.svelte`
+
+Report written to `review-logs/phase-3-report.md`.

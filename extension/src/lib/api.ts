@@ -16,6 +16,9 @@ export class ApiError extends Error {
 	}
 }
 
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY = 1000;
+
 async function request<T = unknown>(
 	endpoint: string,
 	options: {
@@ -37,27 +40,58 @@ async function request<T = unknown>(
 		}
 	}
 
-	const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-		method,
-		headers,
-		body: body !== undefined ? JSON.stringify(body) : undefined
-	});
+	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+		try {
+			const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+				method,
+				headers,
+				body: body !== undefined ? JSON.stringify(body) : undefined
+			});
 
-	if (response.status === 204) {
-		return undefined as T;
+			if (response.status === 204) {
+				return undefined as T;
+			}
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				// Don't retry 4xx errors (client errors)
+				if (response.status >= 400 && response.status < 500) {
+					throw new ApiError(
+						response.status,
+						data?.code ?? 'UNKNOWN_ERROR',
+						data?.error ?? response.statusText
+					);
+				}
+				// 5xx errors: retry
+				if (attempt < MAX_RETRIES - 1) {
+					await sleep(RETRY_BASE_DELAY * Math.pow(2, attempt));
+					continue;
+				}
+				throw new ApiError(
+					response.status,
+					data?.code ?? 'UNKNOWN_ERROR',
+					data?.error ?? response.statusText
+				);
+			}
+
+			return data as T;
+		} catch (err) {
+			if (err instanceof ApiError) throw err;
+			// Network error: retry
+			if (attempt < MAX_RETRIES - 1) {
+				await sleep(RETRY_BASE_DELAY * Math.pow(2, attempt));
+				continue;
+			}
+			throw new ApiError(0, 'NETWORK_ERROR', err instanceof Error ? err.message : 'Erreur réseau');
+		}
 	}
 
-	const data = await response.json();
+	throw new ApiError(0, 'NETWORK_ERROR', 'Erreur réseau après plusieurs tentatives');
+}
 
-	if (!response.ok) {
-		throw new ApiError(
-			response.status,
-			data?.code ?? 'UNKNOWN_ERROR',
-			data?.error ?? response.statusText
-		);
-	}
-
-	return data as T;
+function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export async function uploadPage(

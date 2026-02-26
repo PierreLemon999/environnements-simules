@@ -776,7 +776,7 @@ async function main() {
     versionId: sfVersion.id,
     ipAddress: '192.168.1.42',
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/120.0.0.0',
-    startedAt: isoDaysAgo(5),
+    startedAt: isoDaysAgo(5).replace(/T.*$/, 'T14:00:00.000Z'),
     endedAt: isoDaysAgo(5).replace(/T.*$/, 'T15:45:00.000Z'),
   });
 
@@ -802,7 +802,7 @@ async function main() {
     versionId: snVersion.id,
     ipAddress: '10.0.0.15',
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Firefox/121.0',
-    startedAt: isoDaysAgo(3),
+    startedAt: isoDaysAgo(3).replace(/T.*$/, 'T10:00:00.000Z'),
     endedAt: isoDaysAgo(3).replace(/T.*$/, 'T11:30:00.000Z'),
   });
 
@@ -827,7 +827,7 @@ async function main() {
     versionId: sfVersion.id,
     ipAddress: '172.16.0.1',
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15',
-    startedAt: isoDaysAgo(1),
+    startedAt: isoDaysAgo(1).replace(/T.*$/, 'T16:00:00.000Z'),
     endedAt: isoDaysAgo(1).replace(/T.*$/, 'T17:00:00.000Z'),
   });
 

@@ -1,0 +1,300 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extension Capture — Env. Simulés</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafafa; --bg-card: #fff;
+    --border: #e5e5e5; --border-hover: #d4d4d4;
+    --text: #171717; --text-secondary: #737373; --text-muted: #a3a3a3;
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --green: #16a34a; --green-bg: #f0fdf4;
+    --amber: #d97706; --amber-bg: #fffbeb;
+    --red: #dc2626; --red-bg: #fef2f2;
+    --radius: 8px; --radius-sm: 6px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  body {
+    font-family: var(--font); background: var(--bg); color: var(--text);
+    font-size: 13px; line-height: 1.5;
+    width: 380px; min-height: 500px;
+  }
+
+  /* Header */
+  .ext-header {
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .ext-logo {
+    width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+  }
+  .ext-title { font-weight: 600; font-size: 14px; flex: 1; }
+  .ext-status {
+    display: flex; align-items: center; gap: 4px; font-size: 11px;
+    color: var(--green); font-weight: 500;
+  }
+  .ext-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+
+  /* Project selector */
+  .ext-section { padding: 12px 16px; }
+  .ext-section-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+
+  .ext-select {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); background: var(--bg-card); font-size: 13px;
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23737373' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+  }
+
+  /* Capture modes */
+  .capture-modes {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+    padding: 0 16px; margin-bottom: 12px;
+  }
+  .capture-mode {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 11px; color: var(--text-secondary);
+    background: var(--bg-card); transition: all .15s; text-align: center;
+  }
+  .capture-mode:hover { border-color: var(--border-hover); }
+  .capture-mode.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+  .capture-mode svg { width: 18px; height: 18px; }
+  .capture-mode-label { font-weight: 500; }
+
+  /* Progress section */
+  .progress-section { padding: 0 16px 12px; }
+  .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .progress-title { font-weight: 600; font-size: 13px; }
+  .progress-count { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); }
+  .progress-bar-bg {
+    width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; background: var(--accent); border-radius: 3px;
+    transition: width .3s ease;
+  }
+  .progress-stats {
+    display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--text-muted);
+  }
+  .progress-stat { display: flex; align-items: center; gap: 4px; }
+  .progress-stat .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .progress-stat .dot.sent { background: var(--green); }
+  .progress-stat .dot.pending { background: var(--amber); }
+  .progress-stat .dot.error { background: var(--red); }
+  .progress-stat .dot.queue { background: var(--text-muted); }
+
+  /* Pages list */
+  .pages-section { border-top: 1px solid var(--border); }
+  .pages-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  }
+
+  .page-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-bottom: 1px solid #f5f5f5;
+    font-size: 12px;
+  }
+  .page-item:hover { background: rgba(0,0,0,.01); }
+  .page-status { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .page-status.sent { background: var(--green-bg); color: var(--green); }
+  .page-status.sending { background: var(--accent-light); color: var(--accent); }
+  .page-status.pending { background: var(--amber-bg); color: var(--amber); }
+  .page-status.error { background: var(--red-bg); color: var(--red); }
+  .page-status svg { width: 10px; height: 10px; }
+  .page-info { flex: 1; min-width: 0; }
+  .page-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .page-url { font-size: 10px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .page-size { font-size: 10px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; }
+
+  /* Action buttons */
+  .ext-actions {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; background: var(--bg-card);
+    position: sticky; bottom: 0;
+  }
+  .ext-btn {
+    flex: 1; padding: 9px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text); text-align: center;
+    transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .ext-btn:hover { background: var(--bg); }
+  .ext-btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .ext-btn-primary:hover { background: #1d4ed8; }
+  .ext-btn-danger { color: var(--red); }
+  .ext-btn svg { width: 14px; height: 14px; }
+
+  /* Spinner */
+  .spinner { width: 12px; height: 12px; border: 2px solid var(--accent-light); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Settings link */
+  .ext-footer {
+    padding: 8px 16px; text-align: center; font-size: 11px;
+    color: var(--text-muted); border-top: 1px solid var(--border);
+  }
+  .ext-footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="ext-header">
+  <div class="ext-logo">ES</div>
+  <div class="ext-title">Env. Simulés</div>
+  <div class="ext-status">
+    <span class="ext-status-dot"></span>
+    Capture en cours
+  </div>
+</div>
+
+<!-- Project/Version selector -->
+<div class="ext-section">
+  <div class="ext-section-label">Projet</div>
+  <select class="ext-select">
+    <option>Salesforce — Démo Commerciale Q1 (v3.2)</option>
+  </select>
+</div>
+
+<!-- Capture Modes -->
+<div class="ext-section" style="padding-bottom:4px">
+  <div class="ext-section-label">Mode de capture</div>
+</div>
+<div class="capture-modes">
+  <div class="capture-mode active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span class="capture-mode-label">Libre</span>
+  </div>
+  <div class="capture-mode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    <span class="capture-mode-label">Guidée</span>
+  </div>
+  <div class="capture-mode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    <span class="capture-mode-label">Auto</span>
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="progress-section">
+  <div class="progress-header">
+    <div class="progress-title">Progression</div>
+    <div class="progress-count">18 / 25 pages</div>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar" style="width:72%"></div>
+  </div>
+  <div class="progress-stats">
+    <div class="progress-stat"><span class="dot sent"></span> 15 envoyées</div>
+    <div class="progress-stat"><span class="dot pending"></span> 2 en cours</div>
+    <div class="progress-stat"><span class="dot error"></span> 1 erreur</div>
+    <div class="progress-stat"><span class="dot queue"></span> 7 en attente</div>
+  </div>
+</div>
+
+<!-- Pages List -->
+<div class="pages-section">
+  <div class="pages-header">
+    <span>Pages capturées</span>
+    <span style="font-weight:400;color:var(--text-muted)">18 pages</span>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status sent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div class="page-info">
+      <div class="page-name">Dashboard principal</div>
+      <div class="page-url">/lightning/page/home</div>
+    </div>
+    <div class="page-size">2.4 Mo</div>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status sent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div class="page-info">
+      <div class="page-name">Liste des contacts</div>
+      <div class="page-url">/lightning/o/Contact/list</div>
+    </div>
+    <div class="page-size">3.1 Mo</div>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status sent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div class="page-info">
+      <div class="page-name">Fiche Contact — J. Dupont</div>
+      <div class="page-url">/lightning/r/Contact/003.../view</div>
+    </div>
+    <div class="page-size">2.8 Mo</div>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status sending">
+      <div class="spinner"></div>
+    </div>
+    <div class="page-info">
+      <div class="page-name">Pipeline Kanban</div>
+      <div class="page-url">/lightning/o/Opportunity/list</div>
+    </div>
+    <div class="page-size">4.2 Mo</div>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status sending">
+      <div class="spinner"></div>
+    </div>
+    <div class="page-info">
+      <div class="page-name">Opportunité — Acme Corp</div>
+      <div class="page-url">/lightning/r/Opportunity/006...</div>
+    </div>
+    <div class="page-size">3.5 Mo</div>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+    <div class="page-info">
+      <div class="page-name" style="color:var(--red)">Rapport trimestriel</div>
+      <div class="page-url" style="color:var(--red)">/lightning/r/Report/00O... · Timeout</div>
+    </div>
+    <div class="page-size" style="color:var(--red)">—</div>
+  </div>
+
+  <div class="page-item">
+    <div class="page-status pending" style="background:none;border:1.5px dashed var(--border)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" style="width:8px;height:8px"><circle cx="12" cy="12" r="1"/></svg>
+    </div>
+    <div class="page-info">
+      <div class="page-name" style="color:var(--text-muted)">Création opportunité</div>
+      <div class="page-url">/lightning/o/Opportunity/new</div>
+    </div>
+    <div class="page-size" style="color:var(--text-muted)">—</div>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="ext-actions">
+  <button class="ext-btn ext-btn-danger">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    Pause
+  </button>
+  <button class="ext-btn ext-btn-primary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Capturer cette page
+  </button>
+</div>
+
+<div class="ext-footer">
+  <a href="#">Paramètres</a> · <a href="#">Zones d'intérêt</a> · <a href="#">Liste noire</a>
+</div>
+
+</body>
+</html>

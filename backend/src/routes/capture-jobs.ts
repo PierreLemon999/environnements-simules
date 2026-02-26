@@ -9,6 +9,58 @@ import { requireRole } from '../middleware/roles.js';
 const router = Router();
 
 /**
+ * GET /versions/:versionId/capture-jobs
+ * List all capture jobs for a version.
+ */
+router.get(
+  '/versions/:versionId/capture-jobs',
+  authenticate,
+  requireRole('admin'),
+  async (req: Request, res: Response) => {
+    try {
+      const version = await db
+        .select()
+        .from(versions)
+        .where(eq(versions.id, req.params.versionId))
+        .get();
+
+      if (!version) {
+        res.status(404).json({ error: 'Version not found', code: 404 });
+        return;
+      }
+
+      const jobs = await db
+        .select()
+        .from(captureJobs)
+        .where(eq(captureJobs.versionId, req.params.versionId))
+        .all();
+
+      // Enrich with interest zones
+      const enriched = await Promise.all(
+        jobs.map(async (job) => {
+          const zones = await db
+            .select()
+            .from(interestZones)
+            .where(eq(interestZones.captureJobId, job.id))
+            .all();
+
+          return {
+            ...job,
+            config: job.config ? JSON.parse(job.config) : null,
+            interestZones: zones,
+          };
+        })
+      );
+
+      res.json({ data: enriched });
+    } catch (error) {
+      console.error('Error listing capture jobs:', error);
+      res.status(500).json({ error: 'Internal server error', code: 500 });
+    }
+  }
+);
+
+/**
  * POST /versions/:versionId/capture-jobs
  * Create a new capture job.
  */

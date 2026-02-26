@@ -1,0 +1,1088 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=380">
+<title>Capture Libre — Env. Simules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --bg-card: #fff;
+    --border: #e5e5e5;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --radius: 8px;
+    --radius-sm: 6px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    width: 380px;
+    min-height: 580px;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ---- Animations ---- */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fadeInUp {
+    animation: fadeInUp 0.35s ease-out both;
+  }
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out both;
+  }
+
+  /* Stagger utility */
+  .stagger-1 { animation-delay: 0.03s; }
+  .stagger-2 { animation-delay: 0.06s; }
+  .stagger-3 { animation-delay: 0.09s; }
+  .stagger-4 { animation-delay: 0.12s; }
+  .stagger-5 { animation-delay: 0.15s; }
+  .stagger-6 { animation-delay: 0.18s; }
+  .stagger-7 { animation-delay: 0.21s; }
+  .stagger-8 { animation-delay: 0.24s; }
+
+  /* ---- Header ---- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    animation: fadeInUp 0.3s ease-out both;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo {
+    width: 30px;
+    height: 30px;
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+  .header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+  .header-subtitle {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: -1px;
+  }
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--green);
+    background: var(--green-bg);
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid rgba(22, 163, 74, 0.15);
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* ---- Section padding ---- */
+  .section {
+    padding: 10px 16px;
+  }
+
+  /* ---- Project Selector ---- */
+  .project-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    animation: fadeInUp 0.35s ease-out 0.05s both;
+  }
+  .project-selector {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+  }
+  .project-select {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .project-select:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+  }
+  .project-select-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .project-icon {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #dbeafe, #eff6ff);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .project-icon svg { color: var(--accent); }
+  .project-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .project-chevron {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+  .project-detected {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--green);
+    background: var(--green-bg);
+    border: 1px solid rgba(22, 163, 74, 0.12);
+    padding: 2px 7px;
+    border-radius: 100px;
+    margin-top: 5px;
+    animation: slideDown 0.3s ease-out 0.3s both;
+  }
+  .project-detected svg {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+  }
+  .btn-nouveau {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+  .btn-nouveau:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+  .btn-nouveau svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ---- Tabs ---- */
+  .tabs-container {
+    animation: fadeInUp 0.35s ease-out 0.1s both;
+  }
+  .tabs {
+    display: flex;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px;
+    gap: 2px;
+  }
+  .tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 4px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    position: relative;
+  }
+  .tab:hover {
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.02);
+  }
+  .tab.active {
+    background: var(--bg-card);
+    color: var(--accent);
+    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+  }
+  .tab svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .tab-label { font-size: 11.5px; }
+
+  /* ---- Quick Actions Bar (R008) ---- */
+  .quick-actions {
+    display: flex;
+    gap: 6px;
+    animation: fadeInUp 0.35s ease-out 0.15s both;
+  }
+  .quick-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .quick-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+  .quick-action-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ---- Speed Indicator ---- */
+  .speed-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    animation: fadeInUp 0.35s ease-out 0.2s both;
+  }
+  .speed-bar svg {
+    width: 14px;
+    height: 14px;
+    color: var(--amber);
+    flex-shrink: 0;
+  }
+  .speed-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .speed-track {
+    flex: 1;
+    height: 4px;
+    background: #f5f5f4;
+    border-radius: 100px;
+    overflow: hidden;
+    position: relative;
+  }
+  .speed-fill {
+    height: 100%;
+    width: 65%;
+    background: linear-gradient(90deg, var(--green), #4ade80);
+    border-radius: 100px;
+    transition: width 0.5s ease;
+  }
+  .speed-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* ---- Tags row ---- */
+  .tags-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    animation: fadeInUp 0.35s ease-out 0.22s both;
+  }
+  .tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 10.5px;
+    font-weight: 500;
+    border-radius: 100px;
+    border: 1px solid;
+  }
+  .tag-green {
+    color: var(--green);
+    background: var(--green-bg);
+    border-color: rgba(22, 163, 74, 0.12);
+  }
+  .tag-amber {
+    color: var(--amber);
+    background: var(--amber-bg);
+    border-color: rgba(217, 119, 6, 0.12);
+  }
+  .tag svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+  }
+
+  /* ---- Progress Section (R003) ---- */
+  .progress-section {
+    animation: fadeInUp 0.35s ease-out 0.25s both;
+  }
+  .progress-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .progress-count {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .progress-count-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-left: 4px;
+  }
+  .progress-bar-container {
+    height: 6px;
+    background: #f5f5f4;
+    border-radius: 100px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 72%;
+    border-radius: 100px;
+    background: linear-gradient(90deg, var(--accent), #60a5fa);
+    position: relative;
+    transition: width 0.6s ease;
+  }
+  .progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255,255,255,0.35) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
+  .progress-stats {
+    display: flex;
+    gap: 12px;
+  }
+  .progress-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .stat-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .stat-dot-green  { background: var(--green); }
+  .stat-dot-amber  { background: var(--amber); }
+  .stat-dot-red    { background: var(--red); }
+  .stat-dot-muted  { background: var(--text-muted); }
+  .stat-value {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ---- Pages List ---- */
+  .pages-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    animation: fadeInUp 0.35s ease-out 0.28s both;
+  }
+  .pages-list-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .pages-list-count {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .pages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 188px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .pages-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  .pages-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .pages-list::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 100px;
+  }
+  .page-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    animation: fadeIn 0.3s ease-out both;
+  }
+  .page-item:hover {
+    border-color: #d4d4d4;
+    box-shadow: var(--shadow-sm);
+  }
+  .page-status-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .page-status-icon svg {
+    width: 11px;
+    height: 11px;
+  }
+  .page-status-sent {
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid rgba(22, 163, 74, 0.15);
+  }
+  .page-status-sending {
+    background: var(--amber-bg);
+    color: var(--amber);
+    border: 1px solid rgba(217, 119, 6, 0.15);
+  }
+  .page-status-error {
+    background: var(--red-bg);
+    color: var(--red);
+    border: 1px solid rgba(220, 38, 38, 0.15);
+  }
+  .page-status-queued {
+    background: #f5f5f4;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .page-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .page-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .page-url {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+  .page-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .page-action-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .page-action-btn:hover {
+    background: var(--accent-light);
+    border-color: rgba(37, 99, 235, 0.12);
+    color: var(--accent);
+  }
+  .page-action-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  /* ---- Bottom Actions ---- */
+  .bottom-actions {
+    padding: 10px 16px 10px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+    display: flex;
+    gap: 8px;
+    animation: fadeInUp 0.35s ease-out 0.35s both;
+  }
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+  }
+  .btn svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+  .btn-secondary {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    background: #f5f5f4;
+    border-color: #d4d4d4;
+  }
+  .btn-primary {
+    flex: 1;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+  }
+  .btn-primary:hover {
+    background: #1d4ed8;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    transform: translateY(-0.5px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  /* ---- Footer ---- */
+  .footer {
+    padding: 8px 16px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    animation: fadeIn 0.3s ease-out 0.4s both;
+  }
+  .footer-text {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .footer-version {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    background: #f5f5f4;
+    padding: 1px 6px;
+    border-radius: 100px;
+  }
+  .footer-sep {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  /* ---- Dividers / Spacing ---- */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 16px;
+  }
+  .section + .section { padding-top: 8px; }
+  .section-tight { padding-top: 6px; padding-bottom: 6px; }
+
+  /* ---- Sending animation on amber dot ---- */
+  .page-status-sending {
+    position: relative;
+  }
+  .page-status-sending::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 1.5px solid var(--amber);
+    opacity: 0;
+    animation: pulse-ring 1.8s ease-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { transform: scale(0.8); opacity: 0.6; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">ES</div>
+    <div>
+      <div class="header-title">Env. Simules</div>
+      <div class="header-subtitle">Lemon Learning</div>
+    </div>
+  </div>
+  <div class="status-badge">
+    <span class="status-dot"></span>
+    Connecte
+  </div>
+</div>
+
+<!-- ===== PROJECT SELECTOR ===== -->
+<div class="section section-tight">
+  <div class="project-row">
+    <div class="project-selector">
+      <div class="project-select">
+        <div class="project-select-left">
+          <div class="project-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <span class="project-name">Salesforce Lightning</span>
+        </div>
+        <span class="project-chevron">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </div>
+      <div class="project-detected">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Detecte via URL
+      </div>
+    </div>
+    <button class="btn-nouveau">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nouveau
+    </button>
+  </div>
+</div>
+
+<!-- ===== CAPTURE MODE TABS ===== -->
+<div class="section section-tight tabs-container">
+  <div class="tabs">
+    <button class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span class="tab-label">Libre</span>
+    </button>
+    <button class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="tab-label">Guidee</span>
+    </button>
+    <button class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span class="tab-label">Auto</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== QUICK ACTIONS BAR (R008) ===== -->
+<div class="section section-tight">
+  <div class="quick-actions">
+    <button class="quick-action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Parametres
+    </button>
+    <button class="quick-action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Zones
+    </button>
+    <button class="quick-action-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Liste noire
+    </button>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== SPEED + CONTEXT TAGS ===== -->
+<div class="section section-tight">
+  <div class="speed-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    <span class="speed-label">Vitesse</span>
+    <div class="speed-track">
+      <div class="speed-fill"></div>
+    </div>
+    <span class="speed-value">1.2s/p</span>
+  </div>
+</div>
+
+<div class="section section-tight">
+  <div class="tags-row">
+    <span class="tag tag-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      API connectee
+    </span>
+    <span class="tag tag-green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Session active
+    </span>
+    <span class="tag tag-amber">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      3 erreurs recentes
+    </span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== PROGRESS (R003: no total, just counter) ===== -->
+<div class="section progress-section">
+  <div class="progress-header">
+    <div>
+      <span class="progress-count">18</span>
+      <span class="progress-count-label">pages capturees</span>
+    </div>
+  </div>
+  <div class="progress-bar-container">
+    <div class="progress-bar-fill"></div>
+  </div>
+  <div class="progress-stats">
+    <div class="progress-stat">
+      <span class="stat-dot stat-dot-green"></span>
+      <span>Envoyees</span>
+      <span class="stat-value">14</span>
+    </div>
+    <div class="progress-stat">
+      <span class="stat-dot stat-dot-amber"></span>
+      <span>En cours</span>
+      <span class="stat-value">1</span>
+    </div>
+    <div class="progress-stat">
+      <span class="stat-dot stat-dot-red"></span>
+      <span>Erreur</span>
+      <span class="stat-value">3</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== PAGES LIST ===== -->
+<div class="section">
+  <div class="pages-list-header">
+    <span class="pages-list-title">Pages recentes</span>
+    <span class="pages-list-count">18 pages</span>
+  </div>
+  <div class="pages-list" id="pagesList">
+
+    <!-- Page 1 - Sending -->
+    <div class="page-item animate-fadeIn stagger-1">
+      <div class="page-status-icon page-status-sending">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Tableau de bord</div>
+        <div class="page-url">/lightning/page/home</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 2 - Sent -->
+    <div class="page-item animate-fadeIn stagger-2">
+      <div class="page-status-icon page-status-sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Contacts - Liste</div>
+        <div class="page-url">/lightning/o/Contact/list</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 3 - Sent -->
+    <div class="page-item animate-fadeIn stagger-3">
+      <div class="page-status-icon page-status-sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Contact - Jean Dupont</div>
+        <div class="page-url">/lightning/r/Contact/003xx/view</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 4 - Error -->
+    <div class="page-item animate-fadeIn stagger-4">
+      <div class="page-status-icon page-status-error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Opportunites - Pipeline</div>
+        <div class="page-url">/lightning/o/Opportunity/list</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 5 - Sent -->
+    <div class="page-item animate-fadeIn stagger-5">
+      <div class="page-status-icon page-status-sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Comptes - Vue d'ensemble</div>
+        <div class="page-url">/lightning/o/Account/list</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 6 - Queued -->
+    <div class="page-item animate-fadeIn stagger-6">
+      <div class="page-status-icon page-status-queued">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Rapports - Ventes Q4</div>
+        <div class="page-url">/lightning/r/Report/00Oxx/view</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 7 - Error -->
+    <div class="page-item animate-fadeIn stagger-7">
+      <div class="page-status-icon page-status-error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Configuration - Utilisateurs</div>
+        <div class="page-url">/lightning/setup/ManageUsers</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Page 8 - Sent -->
+    <div class="page-item animate-fadeIn stagger-8">
+      <div class="page-status-icon page-status-sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-title">Leads - Nouveau lead</div>
+        <div class="page-url">/lightning/o/Lead/new</div>
+      </div>
+      <div class="page-actions">
+        <button class="page-action-btn" title="Cibler un element">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </button>
+        <button class="page-action-btn" title="Modifier">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== BOTTOM ACTIONS ===== -->
+<div class="bottom-actions">
+  <button class="btn btn-secondary" title="Mettre en pause">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+    Pause
+  </button>
+  <button class="btn btn-primary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Capturer cette page
+  </button>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<div class="footer">
+  <span class="footer-text">Environnements Simules</span>
+  <span class="footer-sep"></span>
+  <span class="footer-version">v0.1.0-alpha</span>
+</div>
+
+<script>
+  // Minimal JS: animate the page counter incrementing on load
+  (function() {
+    const countEl = document.querySelector('.progress-count');
+    if (!countEl) return;
+    const target = parseInt(countEl.textContent, 10);
+    let current = 0;
+    const duration = 800;
+    const startTime = performance.now();
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function tick(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      current = Math.round(easeOutCubic(progress) * target);
+      countEl.textContent = current;
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      }
+    }
+
+    // Start after a short delay so the animation is visible
+    setTimeout(function() {
+      requestAnimationFrame(tick);
+    }, 400);
+  })();
+</script>
+</body>
+</html>

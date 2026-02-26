@@ -1,0 +1,1162 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invitations — Environnements Simul&eacute;s</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f8;
+    --bg-sidebar: #fafaf9;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0,0,0,.03);
+    --bg-active: #eff6ff;
+    --bg-input: #f5f5f4;
+    --border: #e7e5e4;
+    --border-light: #f0eeee;
+    --border-focus: #2563eb;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-white: #fafaf9;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-pale: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --blue-border: #bfdbfe;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-md: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.06);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+    --transition-spring: .35s cubic-bezier(.34,1.56,.64,1);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.2); }
+
+  ::selection { background: rgba(37,99,235,.15); color: var(--text); }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px) scale(.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateY(-50%) translateX(-4px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+  @keyframes pulse-online {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,.4); }
+    50% { box-shadow: 0 0 0 4px rgba(22,163,74,0); }
+  }
+  @keyframes toast-progress { to { width: 0%; } }
+  @keyframes rowHighlight {
+    0% { background: rgba(37, 99, 235, .06); }
+    100% { background: transparent; }
+  }
+
+  /* ===== ICON SIDEBAR (48px) ===== */
+  .sidebar {
+    width: 48px; min-width: 48px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+    z-index: 20;
+  }
+  .sidebar-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+    transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .sidebar-logo:hover {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(37,99,235,.4);
+  }
+  .sidebar-icon {
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .sidebar-icon:hover { background: var(--bg-hover); color: var(--text); }
+  .sidebar-icon.active { background: var(--accent-light); color: var(--accent); }
+  .sidebar-icon svg { width: 18px; height: 18px; }
+  .sidebar-icon .sidebar-tooltip {
+    position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--text); color: var(--text-white);
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+  }
+  .sidebar-icon .sidebar-tooltip::before {
+    content: '';
+    position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+    border: 4px solid transparent; border-right-color: var(--text);
+  }
+  .sidebar-icon:hover .sidebar-tooltip { opacity: 1; }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-badge {
+    position: absolute; top: 2px; right: 2px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red); border: 2px solid var(--bg-sidebar);
+  }
+
+  /* ===== MAIN ===== */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
+
+  /* Topbar */
+  .topbar {
+    min-height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; border-bottom: 1px solid var(--border);
+    background: var(--bg-card); gap: 12px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar-breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .topbar-breadcrumb span { cursor: pointer; transition: color var(--transition-fast); }
+  .topbar-breadcrumb span:hover { color: var(--text); }
+  .topbar-breadcrumb svg { width: 12px; height: 12px; opacity: .5; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text);
+    transition: all var(--transition-fast); white-space: nowrap;
+    box-shadow: var(--shadow-xs); font-family: var(--font);
+  }
+  .btn:hover { background: var(--bg-hover); border-color: #d4d4d4; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); transition-duration: .05s; }
+  .btn-primary {
+    background: var(--accent); color: var(--text-white); border-color: var(--accent);
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+  .btn-primary:active { background: #1e40af; }
+  .btn-secondary {
+    background: var(--bg-card); color: var(--text-secondary); border-color: var(--border);
+  }
+  .btn svg { width: 15px; height: 15px; }
+
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border); background: var(--bg-card);
+    cursor: pointer; color: var(--text-secondary); transition: all var(--transition-fast);
+    position: relative;
+  }
+  .icon-btn:hover { background: var(--bg-hover); color: var(--text); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .icon-btn:active { transform: translateY(0); }
+  .icon-btn svg { width: 16px; height: 16px; }
+  .icon-btn .notif-dot {
+    position: absolute; top: 6px; right: 6px;
+    width: 6px; height: 6px; background: var(--red);
+    border-radius: 50%; border: 1.5px solid var(--bg-card);
+  }
+
+  /* ===== CONTENT ===== */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ===== STATS ROW (3 cards) ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px 20px;
+    transition: all var(--transition-fast);
+    animation: fadeUp .5s ease both;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: transparent;
+    transition: background var(--transition);
+  }
+  .stat-card:nth-child(1) { animation-delay: .05s; }
+  .stat-card:nth-child(2) { animation-delay: .1s; }
+  .stat-card:nth-child(3) { animation-delay: .15s; }
+  .stat-card:nth-child(1):hover::before { background: var(--accent); }
+  .stat-card:nth-child(2):hover::before { background: var(--green); }
+  .stat-card:nth-child(3):hover::before { background: var(--amber); }
+  .stat-card:hover { box-shadow: var(--shadow); border-color: #d4d4d4; transform: translateY(-2px); }
+
+  .stat-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+  .stat-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-icon svg { width: 18px; height: 18px; }
+  .stat-icon.blue { background: var(--accent-light); color: var(--accent); }
+  .stat-icon.green { background: var(--green-bg); color: var(--green); }
+  .stat-icon.amber { background: var(--amber-bg); color: var(--amber); }
+
+  .stat-value {
+    font-size: 28px; font-weight: 700; letter-spacing: -.5px;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+    animation: countUp .6s ease both;
+  }
+  .stat-card:nth-child(1) .stat-value { animation-delay: .2s; }
+  .stat-card:nth-child(2) .stat-value { animation-delay: .25s; }
+  .stat-card:nth-child(3) .stat-value { animation-delay: .3s; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ===== TWO-COLUMN LAYOUT ===== */
+  .two-col { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+
+  /* ===== TABLE CARD ===== */
+  .table-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .5s ease .25s both;
+  }
+  .table-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border-light);
+  }
+  .table-card-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+  .table-card-count {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    background: var(--bg); padding: 2px 8px; border-radius: 10px;
+    margin-left: 8px;
+  }
+
+  /* Table toolbar */
+  .table-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--border-light);
+  }
+  .table-toolbar-left { display: flex; align-items: center; gap: 8px; }
+  .table-toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+  .table-search-input {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--bg-card);
+    font-size: 12px; transition: all var(--transition-fast);
+    min-width: 180px;
+  }
+  .table-search-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+  .table-search-input svg { width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0; }
+  .table-search-input input {
+    border: none; outline: none; background: transparent;
+    font-family: var(--font); font-size: 12px; color: var(--text);
+    width: 100%;
+  }
+  .table-search-input input::placeholder { color: var(--text-muted); }
+
+  .table-filter-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px;
+    cursor: pointer; color: var(--text-muted); font-weight: 500;
+    border: 1px solid var(--border); background: var(--bg-card);
+    transition: all var(--transition-fast);
+  }
+  .table-filter-btn:hover { border-color: #d4d4d4; color: var(--text-secondary); background: var(--bg-hover); }
+  .table-filter-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .table-filter-btn svg { width: 13px; height: 13px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); background: var(--bg);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+    text-transform: uppercase; letter-spacing: .4px;
+    cursor: pointer; user-select: none;
+    transition: color var(--transition-fast);
+  }
+  thead th:hover { color: var(--text-secondary); }
+  thead th .sort-icon {
+    display: inline-block; margin-left: 2px; opacity: 0;
+    transition: opacity var(--transition-fast);
+    vertical-align: middle; font-size: 10px;
+  }
+  thead th:hover .sort-icon { opacity: .5; }
+  thead th.sorted .sort-icon { opacity: 1; }
+
+  tbody td {
+    padding: 11px 14px; font-size: 13px; border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition-fast);
+  }
+  tbody tr { cursor: pointer; transition: background var(--transition-fast); animation: fadeIn .4s ease both; position: relative; }
+  tbody tr:nth-child(1) { animation-delay: .3s; }
+  tbody tr:nth-child(2) { animation-delay: .34s; }
+  tbody tr:nth-child(3) { animation-delay: .38s; }
+  tbody tr:nth-child(4) { animation-delay: .42s; }
+  tbody tr:nth-child(5) { animation-delay: .46s; }
+  tbody tr:nth-child(6) { animation-delay: .50s; }
+  tbody tr:nth-child(7) { animation-delay: .54s; }
+  tbody tr:nth-child(8) { animation-delay: .58s; }
+  tbody tr:nth-child(9) { animation-delay: .62s; }
+  tbody tr:nth-child(10) { animation-delay: .66s; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: rgba(37,99,235,.02); }
+
+  /* Row hover indicator */
+  tbody tr::after {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); transform: scaleY(0);
+    transition: transform var(--transition-fast);
+    border-radius: 0 2px 2px 0;
+  }
+  tbody tr:hover::after { transform: scaleY(1); }
+
+  /* Client cell */
+  .client-cell { display: flex; align-items: center; gap: 10px; }
+  .client-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; flex-shrink: 0;
+    transition: transform var(--transition-fast);
+  }
+  tbody tr:hover .client-avatar { transform: scale(1.1); }
+  .client-info { display: flex; flex-direction: column; }
+  .client-name { font-weight: 500; line-height: 1.3; }
+  .client-company { font-size: 11px; color: var(--text-muted); }
+
+  .email-cell { font-size: 12px; color: var(--text-secondary); }
+  .demo-cell { font-size: 12px; color: var(--accent); font-weight: 500; }
+  .date-cell { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  /* Status badges */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    transition: transform var(--transition-fast);
+    white-space: nowrap;
+  }
+  .status-badge:hover { transform: scale(1.03); }
+  .status-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .status-badge.connected { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .status-badge.connected .dot { background: var(--green); animation: pulse-dot 2s ease-in-out infinite; }
+  .status-badge.pending { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+  .status-badge.pending .dot { background: var(--amber); }
+  .status-badge.expired { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .status-badge.expired .dot { background: var(--red); }
+  .status-badge.opened { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .status-badge.opened .dot { background: var(--blue); }
+
+  /* Row actions */
+  .table-row-actions {
+    display: flex; gap: 4px; opacity: 0; transition: opacity var(--transition-fast);
+  }
+  tbody tr:hover .table-row-actions { opacity: 1; }
+  .row-action-btn {
+    width: 28px; height: 28px; border-radius: var(--radius-xs);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); transition: all var(--transition-fast);
+    position: relative;
+  }
+  .row-action-btn:hover { background: var(--bg-input); color: var(--text); transform: scale(1.08); }
+  .row-action-btn svg { width: 14px; height: 14px; }
+
+  /* Tooltip */
+  [data-tooltip] { position: relative; }
+  [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(4px);
+    padding: 4px 8px; border-radius: var(--radius-xs);
+    background: var(--text); color: var(--text-white);
+    font-size: 11px; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: all var(--transition-fast);
+    z-index: 50;
+  }
+  [data-tooltip]:hover::after {
+    opacity: 1; transform: translateX(-50%) translateY(-4px);
+  }
+
+  /* Table footer / pagination */
+  .table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-top: 1px solid var(--border-light);
+    font-size: 12px; color: var(--text-muted);
+  }
+  .table-pagination { display: flex; align-items: center; gap: 4px; }
+  .page-btn {
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; border: 1px solid transparent; background: none;
+    font-family: var(--font);
+    transition: all var(--transition-fast);
+  }
+  .page-btn:hover { background: var(--bg-hover); color: var(--text-secondary); border-color: var(--border); }
+  .page-btn.active { background: var(--text); color: var(--text-white); border-color: var(--text); }
+  .page-btn.nav { color: var(--text-muted); }
+  .page-btn.nav:hover { color: var(--text); }
+  .page-btn svg { width: 14px; height: 14px; }
+
+  /* ===== FORM CARD ===== */
+  .form-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .5s ease .3s both;
+  }
+  .form-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 16px 20px; border-bottom: 1px solid var(--border-light);
+  }
+  .form-card-header svg { width: 18px; height: 18px; color: var(--accent); }
+  .form-card-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+  .form-body { padding: 20px; }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group:last-of-type { margin-bottom: 20px; }
+  .form-label {
+    display: block; font-size: 13px; font-weight: 500; color: var(--text);
+    margin-bottom: 6px;
+  }
+  .form-label .optional {
+    font-weight: 400; color: var(--text-muted); font-size: 11px; margin-left: 4px;
+  }
+  .form-input {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font);
+    color: var(--text); background: var(--bg-card);
+    transition: all var(--transition-fast);
+  }
+  .form-input:hover { border-color: #d4d4d4; }
+  .form-input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  }
+  .form-input::placeholder { color: var(--text-muted); }
+  textarea.form-input { resize: vertical; min-height: 80px; line-height: 1.5; }
+  select.form-input {
+    appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+  }
+
+  .form-actions {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .form-actions .btn { flex: 1; justify-content: center; }
+
+  /* Link preview */
+  .link-preview {
+    background: var(--bg-input); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    transition: all var(--transition-fast);
+  }
+  .link-preview:hover { border-color: #d4d4d4; }
+  .link-preview-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    background: var(--accent-light); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .link-preview-icon svg { width: 16px; height: 16px; }
+  .link-preview-text { flex: 1; min-width: 0; }
+  .link-preview-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+  .link-preview-url {
+    font-size: 12px; font-family: var(--mono); color: var(--accent); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .link-preview-copy {
+    width: 28px; height: 28px; border-radius: var(--radius-xs);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); transition: all var(--transition-fast);
+    flex-shrink: 0;
+  }
+  .link-preview-copy:hover { background: var(--bg-hover); color: var(--text); transform: scale(1.08); }
+  .link-preview-copy svg { width: 14px; height: 14px; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 100;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px; background: var(--text);
+    color: var(--text-white); border-radius: var(--radius);
+    font-size: 13px; box-shadow: var(--shadow-lg);
+    animation: slideUp .5s cubic-bezier(.34,1.56,.64,1) 1.5s both;
+    backdrop-filter: blur(8px);
+  }
+  .toast .toast-icon { width: 18px; height: 18px; color: var(--green); flex-shrink: 0; }
+  .toast .toast-dismiss {
+    margin-left: 8px; opacity: .5; cursor: pointer;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+  }
+  .toast .toast-dismiss:hover { opacity: 1; transform: scale(1.15); }
+  .toast .toast-progress {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: rgba(255,255,255,.1); border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+  }
+  .toast .toast-progress-bar {
+    height: 100%; width: 100%; background: var(--green);
+    animation: toast-progress 6s linear 2s forwards;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 1200px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .topbar { padding: 0 16px; }
+    .content { padding: 16px; }
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR (48px icon rail) ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">ES</div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="sidebar-tooltip">Dashboard</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    <span class="sidebar-tooltip">Projets</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
+    <span class="sidebar-tooltip">Arborescence</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+    <span class="sidebar-tooltip">Analytics</span>
+  </div>
+
+  <div class="sidebar-icon active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+    <span class="sidebar-tooltip">Invitations</span>
+  </div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <span class="sidebar-tooltip">Utilisateurs</span>
+    <span class="sidebar-badge"></span>
+  </div>
+
+  <div class="sidebar-spacer"></div>
+
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span class="sidebar-tooltip">Param&egrave;tres</span>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 class="topbar-title">Invitations</h1>
+      <div class="topbar-breadcrumb">
+        <span>Accueil</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:var(--text);font-weight:500">Gestion des invitations</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn" data-tooltip="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="notif-dot"></span>
+      </div>
+      <button class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Nouvel acc&egrave;s
+      </button>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+
+    <!-- ===== STATS ROW (3 cards) ===== -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Invitations envoy&eacute;es</div>
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">24</div>
+        <div class="stat-sub">+6 cette semaine</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Liens actifs</div>
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">18</div>
+        <div class="stat-sub">6 expir&eacute;s</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Connexions</div>
+          <div class="stat-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">156</div>
+        <div class="stat-sub">+23 cette semaine</div>
+      </div>
+    </div>
+
+    <!-- ===== TWO-COLUMN LAYOUT ===== -->
+    <div class="two-col">
+
+      <!-- LEFT: Invitations table -->
+      <div>
+        <div class="table-card">
+          <div class="table-card-header">
+            <div style="display:flex;align-items:center">
+              <span class="table-card-title">Invitations r&eacute;centes</span>
+              <span class="table-card-count">24</span>
+            </div>
+          </div>
+
+          <!-- Table toolbar -->
+          <div class="table-toolbar">
+            <div class="table-toolbar-left">
+              <div class="table-search-input">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" placeholder="Rechercher un client..." />
+              </div>
+              <div class="table-filter-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Statut
+              </div>
+              <div class="table-filter-btn active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                Tous les projets
+              </div>
+            </div>
+            <div class="table-toolbar-right">
+              <div class="table-filter-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                Exporter
+              </div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th class="sorted">Client <span class="sort-icon">&#9660;</span></th>
+                <th>Email</th>
+                <th>Projet / D&eacute;mo</th>
+                <th>Statut</th>
+                <th>Envoy&eacute; le</th>
+                <th style="width:90px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 1. Acme Corp -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#e0e7ff;color:#4338ca">AC</div>
+                    <div class="client-info">
+                      <span class="client-name">Jean Moreau</span>
+                      <span class="client-company">Acme Corp</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">j.moreau@acme.com</td>
+                <td class="demo-cell">D&eacute;mo Commerciale Q1 &mdash; Salesforce</td>
+                <td><span class="status-badge connected"><span class="dot"></span> Connect&eacute;</span></td>
+                <td class="date-cell">25 f&eacute;v &middot; 09:14</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 2. BNP Paribas -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#d1fae5;color:#059669">PD</div>
+                    <div class="client-info">
+                      <span class="client-name">Pierre Dubois</span>
+                      <span class="client-company">BNP Paribas</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">p.dubois@bnp.fr</td>
+                <td class="demo-cell">Onboarding RH &mdash; SAP</td>
+                <td><span class="status-badge connected"><span class="dot"></span> Connect&eacute;</span></td>
+                <td class="date-cell">24 f&eacute;v &middot; 16:45</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 3. Societe Generale -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#fce7f3;color:#db2777">CL</div>
+                    <div class="client-info">
+                      <span class="client-name">Claire Lefebvre</span>
+                      <span class="client-company">Soci&eacute;t&eacute; G&eacute;n&eacute;rale</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">c.lefebvre@socgen.com</td>
+                <td class="demo-cell">D&eacute;mo Commerciale Q1 &mdash; Salesforce</td>
+                <td><span class="status-badge pending"><span class="dot"></span> En attente</span></td>
+                <td class="date-cell">24 f&eacute;v &middot; 14:20</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 4. L'Oreal -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#fef3c7;color:#b45309">NR</div>
+                    <div class="client-info">
+                      <span class="client-name">Nicolas Robert</span>
+                      <span class="client-company">L'Or&eacute;al</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">n.robert@loreal.com</td>
+                <td class="demo-cell">Support IT &mdash; ServiceNow</td>
+                <td><span class="status-badge opened"><span class="dot"></span> Lien ouvert</span></td>
+                <td class="date-cell">23 f&eacute;v &middot; 11:30</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 5. TotalEnergies -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#ccfbf1;color:#0d9488">SB</div>
+                    <div class="client-info">
+                      <span class="client-name">Sophie Bernard</span>
+                      <span class="client-company">TotalEnergies</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">s.bernard@total.com</td>
+                <td class="demo-cell">Onboarding RH &mdash; SAP</td>
+                <td><span class="status-badge expired"><span class="dot"></span> Expir&eacute;</span></td>
+                <td class="date-cell">20 f&eacute;v &middot; 09:00</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 6. Capgemini -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#e0e7ff;color:#4338ca">MT</div>
+                    <div class="client-info">
+                      <span class="client-name">Marc Thomas</span>
+                      <span class="client-company">Capgemini</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">m.thomas@capgemini.com</td>
+                <td class="demo-cell">Support IT &mdash; ServiceNow</td>
+                <td><span class="status-badge connected"><span class="dot"></span> Connect&eacute;</span></td>
+                <td class="date-cell">22 f&eacute;v &middot; 15:10</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 7. Danone -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#dbeafe;color:#1d4ed8">AG</div>
+                    <div class="client-info">
+                      <span class="client-name">Am&eacute;lie Garcia</span>
+                      <span class="client-company">Danone</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">a.garcia@danone.com</td>
+                <td class="demo-cell">D&eacute;mo Commerciale Q1 &mdash; Salesforce</td>
+                <td><span class="status-badge pending"><span class="dot"></span> En attente</span></td>
+                <td class="date-cell">21 f&eacute;v &middot; 17:30</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 8. Orange -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#ffedd5;color:#c2410c">LP</div>
+                    <div class="client-info">
+                      <span class="client-name">Laurent Petit</span>
+                      <span class="client-company">Orange</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">l.petit@orange.fr</td>
+                <td class="demo-cell">Support IT &mdash; ServiceNow</td>
+                <td><span class="status-badge opened"><span class="dot"></span> Lien ouvert</span></td>
+                <td class="date-cell">21 f&eacute;v &middot; 10:05</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 9. Acme Corp (2nd invite) -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#e0e7ff;color:#4338ca">VM</div>
+                    <div class="client-info">
+                      <span class="client-name">Val&eacute;rie Martin</span>
+                      <span class="client-company">Acme Corp</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">v.martin@acme.com</td>
+                <td class="demo-cell">Onboarding RH &mdash; SAP</td>
+                <td><span class="status-badge expired"><span class="dot"></span> Expir&eacute;</span></td>
+                <td class="date-cell">18 f&eacute;v &middot; 08:45</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 10. BNP Paribas (2nd invite) -->
+              <tr>
+                <td>
+                  <div class="client-cell">
+                    <div class="client-avatar" style="background:#d1fae5;color:#059669">FR</div>
+                    <div class="client-info">
+                      <span class="client-name">Fran&ccedil;ois Renaud</span>
+                      <span class="client-company">BNP Paribas</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="email-cell">f.renaud@bnp.fr</td>
+                <td class="demo-cell">D&eacute;mo Commerciale Q1 &mdash; Salesforce</td>
+                <td><span class="status-badge pending"><span class="dot"></span> En attente</span></td>
+                <td class="date-cell">17 f&eacute;v &middot; 14:00</td>
+                <td>
+                  <div class="table-row-actions">
+                    <div class="row-action-btn" data-tooltip="Renvoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="Copier le lien"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                    <div class="row-action-btn" data-tooltip="R&eacute;voquer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg></div>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="table-footer">
+            <span>Affichage 1-10 sur 24</span>
+            <div class="table-pagination">
+              <button class="page-btn nav" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn nav">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Invitation form -->
+      <div>
+        <div class="form-card">
+          <div class="form-card-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            <span class="form-card-title">G&eacute;n&eacute;rer un acc&egrave;s</span>
+          </div>
+          <div class="form-body">
+            <div class="form-group">
+              <label class="form-label">Nom du client</label>
+              <input type="text" class="form-input" placeholder="Ex : Jean Dupont" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Entreprise</label>
+              <input type="text" class="form-input" placeholder="Nom de l'entreprise" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Projet / D&eacute;mo</label>
+              <select class="form-input">
+                <option value="">S&eacute;lectionner un projet...</option>
+                <option value="sf-q1">D&eacute;mo Commerciale Q1 &mdash; Salesforce</option>
+                <option value="sap-rh">Onboarding RH &mdash; SAP</option>
+                <option value="sn-support">Support IT &mdash; ServiceNow</option>
+                <option value="wd-finance">Finance &amp; Paie &mdash; Workday</option>
+                <option value="hs-marketing">Pipeline Marketing &mdash; HubSpot</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Expiration de l'acc&egrave;s</label>
+              <select class="form-input" id="expiration-select">
+                <option value="7">7 jours</option>
+                <option value="14">14 jours</option>
+                <option value="30">1 mois</option>
+                <option value="90" selected>3 mois</option>
+                <option value="180">6 mois</option>
+                <option value="365">1 an</option>
+                <option value="730">2 ans</option>
+              </select>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" id="generate-btn" onclick="document.getElementById('credentials-result').style.display='block';this.textContent='Reg&eacute;n&eacute;rer';" >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                G&eacute;n&eacute;rer les identifiants
+              </button>
+            </div>
+
+            <!-- Credentials result (shown after generation) -->
+            <div id="credentials-result" style="display:block;">
+              <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <span style="font-size:13px;font-weight:600;color:var(--text);">Identifiants g&eacute;n&eacute;r&eacute;s</span>
+                  <span style="font-size:11px;color:var(--green);font-weight:500;display:flex;align-items:center;gap:4px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg> Actif</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:12px;color:var(--text-muted);">Utilisateur</span>
+                    <span style="font-size:13px;font-family:var(--mono);color:var(--text);font-weight:500;">jean.moreau@demo</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:12px;color:var(--text-muted);">Mot de passe</span>
+                    <span style="font-size:13px;font-family:var(--mono);color:var(--text);font-weight:500;">Kx7#mP2vQ9</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:12px;color:var(--text-muted);">URL</span>
+                    <span style="font-size:12px;font-family:var(--mono);color:var(--accent);font-weight:500;">salesforce.demo.lemonlearning.com</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <span style="font-size:12px;color:var(--text-muted);">Expire le</span>
+                    <span style="font-size:12px;color:var(--text-secondary);">25 mai 2026</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Email template block -->
+              <div style="position:relative;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <span style="font-size:12px;font-weight:500;color:var(--text-secondary);">Bloc &agrave; ins&eacute;rer dans votre mail</span>
+                  <div class="link-preview-copy" data-tooltip="Copier" style="width:24px;height:24px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  </div>
+                </div>
+                <div style="background:var(--bg-card);border:1px dashed var(--border);border-radius:var(--radius-sm);padding:14px 16px;font-size:13px;line-height:1.65;color:var(--text-secondary);">
+                  Vos identifiants d'acc&egrave;s &agrave; l'environnement de d&eacute;monstration :<br><br>
+                  <span style="color:var(--text-muted);font-size:12px;">Adresse :</span> <span style="font-family:var(--mono);color:var(--accent);font-size:12px;">salesforce.demo.lemonlearning.com</span><br>
+                  <span style="color:var(--text-muted);font-size:12px;">Utilisateur :</span> <span style="font-family:var(--mono);color:var(--text);font-size:12px;">jean.moreau@demo</span><br>
+                  <span style="color:var(--text-muted);font-size:12px;">Mot de passe :</span> <span style="font-family:var(--mono);color:var(--text);font-size:12px;">Kx7#mP2vQ9</span><br><br>
+                  <span style="font-size:12px;color:var(--text-muted);font-style:italic;">Cet acc&egrave;s est valable jusqu'au 25 mai 2026.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /two-col -->
+
+  </div><!-- /content -->
+
+</div><!-- /main -->
+
+<!-- Toast notification -->
+<div class="toast">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+  Identifiants g&eacute;n&eacute;r&eacute;s pour Jean Moreau
+  <svg class="toast-dismiss" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  <div class="toast-progress">
+    <div class="toast-progress-bar"></div>
+  </div>
+</div>
+
+<script>
+  // Toast dismiss
+  document.querySelector('.toast-dismiss').addEventListener('click', function() {
+    const toast = this.closest('.toast');
+    toast.style.animation = 'fadeOut .3s ease forwards';
+    setTimeout(() => toast.style.display = 'none', 300);
+  });
+
+  // Add fadeOut keyframe
+  const style = document.createElement('style');
+  style.textContent = '@keyframes fadeOut { to { opacity: 0; transform: translateY(10px) scale(.96); } }';
+  document.head.appendChild(style);
+
+  // Row click highlight
+  document.querySelectorAll('tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      tr.style.animation = 'rowHighlight .6s ease';
+      setTimeout(() => tr.style.animation = '', 600);
+    });
+  });
+
+  // Copy link button interactions
+  document.querySelectorAll('.row-action-btn[data-tooltip="Copier le lien"], .link-preview-copy').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const original = btn.getAttribute('data-tooltip');
+      btn.setAttribute('data-tooltip', 'Copi\u00e9 !');
+      setTimeout(() => btn.setAttribute('data-tooltip', original), 1500);
+    });
+  });
+</script>
+
+</body>
+</html>

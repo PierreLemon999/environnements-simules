@@ -2,7 +2,6 @@
 	import LoginView from './LoginView.svelte';
 	import MainView from './MainView.svelte';
 	import type { User } from '$lib/constants';
-	import { STORAGE_KEYS } from '$lib/constants';
 
 	let isAuthenticated = $state(false);
 	let user = $state<User | null>(null);
@@ -30,9 +29,9 @@
 		}
 	}
 
-	function handleLogin(event: CustomEvent<{ user: User }>) {
+	function handleLogin(data: { user: User }) {
 		isAuthenticated = true;
-		user = event.detail.user;
+		user = data.user;
 	}
 
 	async function handleLogout() {
@@ -52,7 +51,7 @@
 		</div>
 	</div>
 {:else if !isAuthenticated}
-	<LoginView on:login={handleLogin} />
+	<LoginView onLogin={handleLogin} />
 {:else}
-	<MainView {user} on:logout={handleLogout} />
+	<MainView {user} onLogout={handleLogout} />
 {/if}

@@ -1,0 +1,1061 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — Environnements Simulés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f8;
+    --bg-sidebar: #fafaf9;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0,0,0,.03);
+    --bg-active: #eff6ff;
+    --bg-input: #f5f5f4;
+    --border: #e7e5e4;
+    --border-light: #f0eeee;
+    --border-focus: #2563eb;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-white: #fafaf9;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-pale: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-md: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.06);
+    --shadow-panel: -4px 0 24px rgba(0,0,0,.1);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.2); }
+
+  /* ===== ICON SIDEBAR (48px) ===== */
+  .sidebar {
+    width: 48px; min-width: 48px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+    z-index: 20;
+  }
+  .sidebar-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .sidebar-icon {
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .sidebar-icon:hover { background: var(--bg-hover); color: var(--text); }
+  .sidebar-icon.active { background: var(--accent-light); color: var(--accent); }
+  .sidebar-icon svg { width: 18px; height: 18px; }
+  .sidebar-icon .sidebar-tooltip {
+    position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--text); color: var(--text-white);
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+  }
+  .sidebar-icon:hover .sidebar-tooltip { opacity: 1; }
+  .sidebar-spacer { flex: 1; }
+
+  /* ===== MAIN ===== */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; position: relative; }
+
+  /* Topbar */
+  .topbar {
+    min-height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; border-bottom: 1px solid var(--border);
+    background: var(--bg-card); flex-wrap: wrap; gap: 8px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 20px; }
+  .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar-tabs { display: flex; gap: 2px; }
+  .topbar-tab {
+    padding: 5px 13px; border-radius: 20px; font-size: 12px;
+    cursor: pointer; color: var(--text-muted); font-weight: 500;
+    transition: all var(--transition-fast);
+  }
+  .topbar-tab.active { background: var(--text); color: var(--text-white); }
+  .topbar-tab:hover:not(.active) { background: var(--bg-hover); color: var(--text-secondary); }
+
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .filter-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer;
+    color: var(--text-secondary); transition: all var(--transition-fast);
+    font-family: var(--font); font-weight: 500;
+  }
+  .filter-btn:hover { border-color: var(--border-focus); background: var(--bg-hover); }
+  .filter-btn svg { width: 14px; height: 14px; }
+  .date-range {
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; color: var(--text-secondary);
+    font-family: var(--mono); font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .date-range svg { width: 13px; height: 13px; color: var(--text-muted); }
+
+  /* ===== CONTENT ===== */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ===== STATS ROW ===== */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    transition: all var(--transition-fast);
+    animation: fadeUp .5s ease both;
+  }
+  .stat-card:nth-child(1) { animation-delay: .05s; }
+  .stat-card:nth-child(2) { animation-delay: .1s; }
+  .stat-card:nth-child(3) { animation-delay: .15s; }
+  .stat-card:nth-child(4) { animation-delay: .2s; }
+  .stat-card:hover { box-shadow: var(--shadow); border-color: #d4d4d4; transform: translateY(-2px); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .stat-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .stat-icon svg { width: 18px; height: 18px; }
+  .stat-icon.blue { background: var(--accent-light); color: var(--accent); }
+  .stat-icon.green { background: var(--green-bg); color: var(--green); }
+  .stat-icon.purple { background: var(--purple-bg); color: var(--purple); }
+  .stat-icon.amber { background: var(--amber-bg); color: var(--amber); }
+
+  .stat-value {
+    font-size: 30px; font-weight: 700; letter-spacing: -.5px;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  .stat-footer { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .stat-badge.up { background: var(--green-bg); color: var(--green); }
+  .stat-badge.down { background: var(--red-bg); color: var(--red); }
+  .stat-badge svg { width: 11px; height: 11px; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); }
+
+  /* ===== CHARTS GRID ===== */
+  .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    animation: fadeUp .5s ease .25s both;
+  }
+  .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-title { font-size: 14px; font-weight: 600; letter-spacing: -.1px; }
+
+  /* ===== BAR CHART (CSS-only) ===== */
+  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding: 0 2px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; height: 100%; justify-content: flex-end; }
+  .bar-stack { display: flex; flex-direction: column-reverse; align-items: stretch; width: 100%; gap: 1px; }
+  .bar {
+    width: 100%; border-radius: 3px 3px 0 0;
+    transform: scaleY(0); transform-origin: bottom;
+    animation: barGrow .6s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  .bar.primary { background: var(--accent); }
+  .bar.secondary { background: var(--accent-pale); border-radius: 0; }
+  .bar.primary + .bar.secondary { border-radius: 0 0 0 0; }
+  .bar-stack .bar.primary { border-radius: 3px 3px 0 0; }
+  .bar-stack .bar.secondary { border-radius: 0 0 3px 3px; }
+
+  @keyframes barGrow {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+
+  .bar-group:nth-child(1) .bar { animation-delay: .3s; }
+  .bar-group:nth-child(2) .bar { animation-delay: .33s; }
+  .bar-group:nth-child(3) .bar { animation-delay: .36s; }
+  .bar-group:nth-child(4) .bar { animation-delay: .39s; }
+  .bar-group:nth-child(5) .bar { animation-delay: .42s; }
+  .bar-group:nth-child(6) .bar { animation-delay: .45s; }
+  .bar-group:nth-child(7) .bar { animation-delay: .48s; }
+  .bar-group:nth-child(8) .bar { animation-delay: .51s; }
+  .bar-group:nth-child(9) .bar { animation-delay: .54s; }
+  .bar-group:nth-child(10) .bar { animation-delay: .57s; }
+  .bar-group:nth-child(11) .bar { animation-delay: .60s; }
+  .bar-group:nth-child(12) .bar { animation-delay: .63s; }
+  .bar-group:nth-child(13) .bar { animation-delay: .66s; }
+  .bar-group:nth-child(14) .bar { animation-delay: .69s; }
+
+  .bar-label {
+    font-size: 10px; color: var(--text-muted); margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .chart-legend {
+    display: flex; gap: 16px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border-light); font-size: 12px; color: var(--text-muted);
+  }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* ===== GUIDE LIST ===== */
+  .guide-list { display: flex; flex-direction: column; }
+  .guide-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-light);
+  }
+  .guide-item:last-child { border-bottom: none; }
+  .guide-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .guide-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .guide-count { font-family: var(--mono); font-size: 13px; font-weight: 600; min-width: 24px; text-align: right; }
+  .guide-bar-track { width: 72px; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+  .guide-bar-fill {
+    height: 100%; border-radius: 3px;
+    width: 0; animation: guideBarGrow .8s cubic-bezier(.4,0,.2,1) forwards;
+  }
+
+  @keyframes guideBarGrow {
+    from { width: 0; }
+  }
+
+  .guide-item:nth-child(1) .guide-bar-fill { animation-delay: .4s; }
+  .guide-item:nth-child(2) .guide-bar-fill { animation-delay: .48s; }
+  .guide-item:nth-child(3) .guide-bar-fill { animation-delay: .56s; }
+  .guide-item:nth-child(4) .guide-bar-fill { animation-delay: .64s; }
+  .guide-item:nth-child(5) .guide-bar-fill { animation-delay: .72s; }
+
+  /* ===== TABLE ===== */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-title { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+
+  .export-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer;
+    color: var(--text-secondary); font-weight: 500; font-family: var(--font);
+    transition: all var(--transition-fast); box-shadow: var(--shadow-xs);
+  }
+  .export-btn:hover { border-color: #d4d4d4; background: var(--bg-hover); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+  .export-btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); }
+  .export-btn svg { width: 14px; height: 14px; }
+
+  .table-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .5s ease .35s both;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 11px 16px; font-size: 12px; font-weight: 500;
+    color: var(--text-muted); background: var(--bg);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody td {
+    padding: 12px 16px; font-size: 13px; border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition-fast);
+  }
+  tbody tr { cursor: pointer; animation: fadeIn .4s ease both; }
+  tbody tr:nth-child(1) { animation-delay: .4s; }
+  tbody tr:nth-child(2) { animation-delay: .45s; }
+  tbody tr:nth-child(3) { animation-delay: .5s; }
+  tbody tr:nth-child(4) { animation-delay: .55s; }
+  tbody tr:nth-child(5) { animation-delay: .6s; }
+  tbody tr:nth-child(6) { animation-delay: .65s; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg-hover); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; flex-shrink: 0;
+  }
+  .user-avatar.prospect { background: var(--purple-bg); color: var(--purple); }
+  .user-avatar.commercial { background: var(--accent-light); color: var(--accent); }
+  .user-name { font-weight: 500; }
+
+  .role-tag {
+    display: inline-flex; align-items: center;
+    font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500;
+  }
+  .role-tag.prospect { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+  .role-tag.commercial { background: var(--accent-light); color: var(--accent); border: 1px solid #bfdbfe; }
+
+  .tool-cell { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .tool-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .duration-cell { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+  .pages-cell { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); text-align: center; }
+  .guides-cell { font-size: 13px; font-weight: 500; }
+  .date-cell { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+  .detail-link {
+    color: var(--accent); font-size: 12px; font-weight: 500; text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+  .detail-link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+  /* ===== SESSION DETAIL PANEL ===== */
+  .panel-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,.15);
+    backdrop-filter: blur(2px);
+    animation: overlayIn .3s ease both;
+  }
+
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .session-panel {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 380px; z-index: 60;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-panel);
+    display: flex; flex-direction: column;
+    animation: slideInRight .3s cubic-bezier(.4,0,.2,1) both;
+    overflow: hidden;
+  }
+
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  .panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-title { font-size: 15px; font-weight: 600; }
+  .panel-close {
+    width: 30px; height: 30px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast); border: none; background: none;
+  }
+  .panel-close:hover { background: var(--bg-hover); color: var(--text); }
+  .panel-close svg { width: 16px; height: 16px; }
+
+  .panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+  .panel-info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 24px;
+  }
+  .panel-info-item {
+    background: var(--bg); border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .panel-info-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .panel-info-value { font-size: 14px; font-weight: 600; }
+  .panel-info-value.mono { font-family: var(--mono); }
+
+  .panel-section-title {
+    font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: .5px;
+    margin-bottom: 16px;
+  }
+
+  /* ===== TIMELINE ===== */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--border);
+    border-radius: 1px;
+  }
+  .timeline-item {
+    position: relative; padding-bottom: 20px;
+    animation: fadeUp .4s ease both;
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item:nth-child(1) { animation-delay: .35s; }
+  .timeline-item:nth-child(2) { animation-delay: .4s; }
+  .timeline-item:nth-child(3) { animation-delay: .45s; }
+  .timeline-item:nth-child(4) { animation-delay: .5s; }
+  .timeline-item:nth-child(5) { animation-delay: .55s; }
+
+  .timeline-dot {
+    position: absolute; left: -20px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--bg-card); border: 2px solid var(--border);
+    z-index: 2;
+  }
+  .timeline-dot.active { border-color: var(--accent); background: var(--accent-light); }
+  .timeline-dot.guide { border-color: var(--green); background: var(--green-bg); }
+
+  .timeline-content {}
+  .timeline-page {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 2px;
+  }
+  .timeline-meta { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .timeline-duration { font-family: var(--mono); font-weight: 500; color: var(--text-secondary); }
+
+  .timeline-guide-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 6px; padding: 4px 10px;
+    background: var(--green-bg); color: var(--green);
+    border: 1px solid var(--green-border);
+    border-radius: var(--radius-sm); font-size: 11px; font-weight: 600;
+  }
+  .timeline-guide-tag svg { width: 12px; height: 12px; }
+
+  .timeline-arrow {
+    position: absolute; left: -14px; top: 22px;
+    color: var(--border); font-size: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR (48px icon rail) ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">ES</div>
+
+  <!-- Dashboard -->
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="sidebar-tooltip">Dashboard</span>
+  </div>
+
+  <!-- Projets -->
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    <span class="sidebar-tooltip">Projets</span>
+  </div>
+
+  <!-- Arborescence -->
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
+    <span class="sidebar-tooltip">Arborescence</span>
+  </div>
+
+  <!-- Analytics (ACTIVE) -->
+  <div class="sidebar-icon active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+    <span class="sidebar-tooltip">Analytics</span>
+  </div>
+
+  <!-- Utilisateurs -->
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <span class="sidebar-tooltip">Utilisateurs</span>
+  </div>
+
+  <div class="sidebar-spacer"></div>
+
+  <!-- Settings -->
+  <div class="sidebar-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span class="sidebar-tooltip">Parametres</span>
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 class="topbar-title">Analytics</h1>
+      <div class="topbar-tabs">
+        <div class="topbar-tab active">Vue generale</div>
+        <div class="topbar-tab">Par client</div>
+        <div class="topbar-tab">Par outil</div>
+        <div class="topbar-tab">Guides</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="filter-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Tous les projets
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;margin-left:2px"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="date-range">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        01 fev &mdash; 24 fev 2026
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content">
+
+    <!-- ===== STATS ROW ===== -->
+    <div class="stats-row">
+      <!-- Sessions totales -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Sessions totales</div>
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">84</div>
+        <div class="stat-footer">
+          <span class="stat-badge up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            +23%
+          </span>
+          <span class="stat-sub">vs mois dernier</span>
+        </div>
+      </div>
+
+      <!-- Utilisateurs uniques -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Utilisateurs uniques</div>
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">31</div>
+        <div class="stat-footer">
+          <span class="stat-sub">18 prospects &middot; 13 commerciaux</span>
+        </div>
+      </div>
+
+      <!-- Temps moyen -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Temps moyen / session</div>
+          <div class="stat-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">8m 42s</div>
+        <div class="stat-footer">
+          <span class="stat-badge up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            +12%
+          </span>
+          <span class="stat-sub">vs mois dernier</span>
+        </div>
+      </div>
+
+      <!-- Guides joues -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-label">Guides joues</div>
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+        <div class="stat-value">156</div>
+        <div class="stat-footer">
+          <span class="stat-badge up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+            +35%
+          </span>
+          <span class="stat-sub">vs mois dernier</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CHARTS GRID ===== -->
+    <div class="charts-grid">
+
+      <!-- BAR CHART: Sessions par jour -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Sessions par jour</div>
+        </div>
+        <div class="bar-chart">
+          <!-- 14 bars: Feb 1-14, stacked (prospects = blue, commercials = light blue) -->
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:24px"></div>
+              <div class="bar secondary" style="height:12px"></div>
+            </div>
+            <div class="bar-label">1</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:36px"></div>
+              <div class="bar secondary" style="height:16px"></div>
+            </div>
+            <div class="bar-label">2</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:18px"></div>
+              <div class="bar secondary" style="height:10px"></div>
+            </div>
+            <div class="bar-label">3</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:50px"></div>
+              <div class="bar secondary" style="height:24px"></div>
+            </div>
+            <div class="bar-label">4</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:32px"></div>
+              <div class="bar secondary" style="height:14px"></div>
+            </div>
+            <div class="bar-label">5</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:58px"></div>
+              <div class="bar secondary" style="height:22px"></div>
+            </div>
+            <div class="bar-label">6</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:44px"></div>
+              <div class="bar secondary" style="height:18px"></div>
+            </div>
+            <div class="bar-label">7</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:28px"></div>
+              <div class="bar secondary" style="height:10px"></div>
+            </div>
+            <div class="bar-label">8</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:66px"></div>
+              <div class="bar secondary" style="height:28px"></div>
+            </div>
+            <div class="bar-label">9</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:40px"></div>
+              <div class="bar secondary" style="height:20px"></div>
+            </div>
+            <div class="bar-label">10</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:74px"></div>
+              <div class="bar secondary" style="height:32px"></div>
+            </div>
+            <div class="bar-label">11</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:56px"></div>
+              <div class="bar secondary" style="height:24px"></div>
+            </div>
+            <div class="bar-label">12</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:82px"></div>
+              <div class="bar secondary" style="height:36px"></div>
+            </div>
+            <div class="bar-label">13</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-stack">
+              <div class="bar primary" style="height:68px"></div>
+              <div class="bar secondary" style="height:30px"></div>
+            </div>
+            <div class="bar-label">14</div>
+          </div>
+        </div>
+        <div class="chart-legend">
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background:var(--accent)"></div>
+            Prospects
+          </div>
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background:var(--accent-pale)"></div>
+            Commerciaux
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP GUIDES -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Top guides joues</div>
+        </div>
+        <div class="guide-list">
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--accent)"></div>
+            <div class="guide-name">Creer un contact</div>
+            <div class="guide-count">42</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:100%;background:var(--accent)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--purple)"></div>
+            <div class="guide-name">Gerer une opportunite</div>
+            <div class="guide-count">38</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:90%;background:var(--purple)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--green)"></div>
+            <div class="guide-name">Tableau de bord</div>
+            <div class="guide-count">31</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:74%;background:var(--green)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--amber)"></div>
+            <div class="guide-name">Valider une demande</div>
+            <div class="guide-count">24</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:57%;background:var(--amber)"></div></div>
+          </div>
+          <div class="guide-item">
+            <div class="guide-dot" style="background:var(--red)"></div>
+            <div class="guide-name">Generer un rapport</div>
+            <div class="guide-count">21</div>
+            <div class="guide-bar-track"><div class="guide-bar-fill" style="width:50%;background:var(--red)"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SESSIONS TABLE ===== -->
+    <div class="section-header">
+      <div class="section-title">Sessions recentes</div>
+      <button class="export-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Exporter CSV
+      </button>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Utilisateur</th>
+            <th>Role</th>
+            <th>Outil</th>
+            <th>Duree</th>
+            <th style="text-align:center">Pages</th>
+            <th>Guides joues</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">AC</div>
+                <span class="user-name">A. Chevalier</span>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration-cell">12m 34s</td>
+            <td class="pages-cell">14</td>
+            <td class="guides-cell">3</td>
+            <td class="date-cell">24 fev &middot; 14:20</td>
+            <td><a class="detail-link" href="javascript:void(0)" onclick="togglePanel()">Detail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar commercial">ML</div>
+                <span class="user-name">M. Laurent</span>
+              </div>
+            </td>
+            <td><span class="role-tag commercial">Commercial</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration-cell">8m 12s</td>
+            <td class="pages-cell">9</td>
+            <td class="guides-cell">2</td>
+            <td class="date-cell">24 fev &middot; 11:05</td>
+            <td><a class="detail-link" href="javascript:void(0)">Detail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">PB</div>
+                <span class="user-name">P. Bernard</span>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#0070f2"></span> SAP SF</span></td>
+            <td class="duration-cell">6m 45s</td>
+            <td class="pages-cell">8</td>
+            <td class="guides-cell">1</td>
+            <td class="date-cell">23 fev &middot; 16:30</td>
+            <td><a class="detail-link" href="javascript:void(0)">Detail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar commercial">TD</div>
+                <span class="user-name">T. Dupont</span>
+              </div>
+            </td>
+            <td><span class="role-tag commercial">Commercial</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#81b532"></span> ServiceNow</span></td>
+            <td class="duration-cell">15m 08s</td>
+            <td class="pages-cell">18</td>
+            <td class="guides-cell">4</td>
+            <td class="date-cell">23 fev &middot; 10:15</td>
+            <td><a class="detail-link" href="javascript:void(0)">Detail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">LM</div>
+                <span class="user-name">L. Martin</span>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#f5a623"></span> Workday</span></td>
+            <td class="duration-cell">4m 22s</td>
+            <td class="pages-cell">5</td>
+            <td class="guides-cell">1</td>
+            <td class="date-cell">22 fev &middot; 14:50</td>
+            <td><a class="detail-link" href="javascript:void(0)">Detail &rarr;</a></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar prospect">SV</div>
+                <span class="user-name">S. Vidal</span>
+              </div>
+            </td>
+            <td><span class="role-tag prospect">Prospect</span></td>
+            <td><span class="tool-cell"><span class="tool-dot" style="background:#00a1e0"></span> Salesforce</span></td>
+            <td class="duration-cell">9m 56s</td>
+            <td class="pages-cell">11</td>
+            <td class="guides-cell">2</td>
+            <td class="date-cell">22 fev &middot; 09:30</td>
+            <td><a class="detail-link" href="javascript:void(0)">Detail &rarr;</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ===== SESSION DETAIL PANEL (slide-out) ===== -->
+  <div class="panel-overlay" id="panelOverlay" onclick="togglePanel()"></div>
+  <aside class="session-panel" id="sessionPanel">
+    <div class="panel-header">
+      <div class="panel-title">Session de A. Chevalier</div>
+      <button class="panel-close" onclick="togglePanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="panel-body">
+
+      <!-- Info grid -->
+      <div class="panel-info-grid">
+        <div class="panel-info-item">
+          <div class="panel-info-label">Role</div>
+          <div class="panel-info-value"><span class="role-tag prospect" style="font-size:12px">Prospect</span></div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Outil</div>
+          <div class="panel-info-value" style="display:flex;align-items:center;gap:6px">
+            <span class="tool-dot" style="background:#00a1e0;width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+            Salesforce
+          </div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Duree</div>
+          <div class="panel-info-value mono">12m 34s</div>
+        </div>
+        <div class="panel-info-item">
+          <div class="panel-info-label">Date</div>
+          <div class="panel-info-value" style="font-size:13px">24 fev 2026, 14:20</div>
+        </div>
+      </div>
+
+      <!-- Parcours timeline -->
+      <div class="panel-section-title">Parcours</div>
+
+      <div class="timeline">
+        <!-- Step 1: Dashboard -->
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Dashboard</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">1m 12s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:20</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Contacts -->
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Contacts</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">2m 45s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:21</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Fiche Contact -->
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Fiche Contact</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">3m 08s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:24</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Guide played -->
+        <div class="timeline-item">
+          <div class="timeline-dot guide"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Fiche Contact</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">2m 15s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:27</span>
+            </div>
+            <div class="timeline-guide-tag">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Guide &laquo; Creer un contact &raquo;
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Opportunites -->
+        <div class="timeline-item">
+          <div class="timeline-dot active"></div>
+          <div class="timeline-content">
+            <div class="timeline-page">Opportunites</div>
+            <div class="timeline-meta">
+              <span class="timeline-duration">1m 42s</span>
+              <span style="color:var(--text-muted);font-size:11px">14:29</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+</div><!-- /main -->
+
+<script>
+  // Panel toggle
+  const panel = document.getElementById('sessionPanel');
+  const overlay = document.getElementById('panelOverlay');
+  let panelOpen = true;
+
+  function togglePanel() {
+    panelOpen = !panelOpen;
+    if (panelOpen) {
+      panel.style.display = 'flex';
+      overlay.style.display = 'block';
+      panel.style.animation = 'slideInRight .3s cubic-bezier(.4,0,.2,1) both';
+      overlay.style.animation = 'overlayIn .3s ease both';
+    } else {
+      panel.style.animation = 'slideOutRight .25s cubic-bezier(.4,0,.2,1) both';
+      overlay.style.animation = 'overlayOut .25s ease both';
+      setTimeout(() => {
+        if (!panelOpen) {
+          panel.style.display = 'none';
+          overlay.style.display = 'none';
+        }
+      }, 260);
+    }
+  }
+
+  // Add exit keyframes dynamically
+  const exitStyles = document.createElement('style');
+  exitStyles.textContent = `
+    @keyframes slideOutRight {
+      from { transform: translateX(0); }
+      to { transform: translateX(100%); }
+    }
+    @keyframes overlayOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(exitStyles);
+</script>
+
+</body>
+</html>

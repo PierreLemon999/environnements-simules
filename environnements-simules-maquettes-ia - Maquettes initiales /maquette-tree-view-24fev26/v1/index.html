@@ -1,0 +1,431 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arborescence — Environnements Simulés</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafafa; --bg-sidebar: #f5f5f4; --bg-card: #fff;
+    --border: #e5e5e5; --border-hover: #d4d4d4;
+    --text: #171717; --text-secondary: #737373; --text-muted: #a3a3a3;
+    --accent: #2563eb; --accent-light: #eff6ff;
+    --green: #16a34a; --green-bg: #f0fdf4;
+    --amber: #d97706; --amber-bg: #fffbeb;
+    --red: #dc2626; --red-bg: #fef2f2;
+    --radius: 8px; --radius-sm: 6px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'Fira Code', monospace;
+  }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar (collapsed) */
+  .sidebar {
+    width: 48px; min-width: 48px; background: var(--bg-sidebar);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+  }
+  .sidebar-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); transition: all .15s;
+  }
+  .sidebar-icon:hover { background: rgba(0,0,0,.06); color: var(--text); }
+  .sidebar-icon.active { background: var(--accent-light); color: var(--accent); }
+  .sidebar-icon svg { width: 18px; height: 18px; }
+  .sidebar-logo { width: 28px; height: 28px; background: var(--accent); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 11px; margin-bottom: 12px; }
+
+  /* Tree Panel */
+  .tree-panel {
+    width: 320px; min-width: 320px; background: var(--bg-card);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  }
+  .tree-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tree-header-title { font-size: 14px; font-weight: 600; }
+  .tree-tabs {
+    display: flex; gap: 2px; padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tree-tab {
+    padding: 5px 12px; font-size: 12px; border-radius: 20px;
+    cursor: pointer; color: var(--text-muted); font-weight: 500;
+  }
+  .tree-tab.active { background: var(--text); color: #fff; }
+  .tree-tab:hover:not(.active) { background: rgba(0,0,0,.04); }
+
+  .tree-search {
+    margin: 8px 16px; padding: 6px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; outline: none; background: var(--bg);
+    width: calc(100% - 32px);
+  }
+  .tree-search:focus { border-color: var(--accent); }
+
+  .tree-content { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+  /* Tree items */
+  .tree-group { margin-bottom: 4px; }
+  .tree-group-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 16px; cursor: pointer; font-size: 12px;
+    font-weight: 600; color: var(--text-secondary);
+  }
+  .tree-group-header:hover { background: rgba(0,0,0,.02); }
+  .tree-group-header .chevron { width: 12px; height: 12px; transition: transform .15s; color: var(--text-muted); }
+  .tree-group-header .chevron.open { transform: rotate(90deg); }
+  .tree-group-header .count { margin-left: auto; font-weight: 400; color: var(--text-muted); font-size: 11px; }
+
+  .tree-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 16px 5px 36px; cursor: pointer; font-size: 13px;
+  }
+  .tree-item:hover { background: rgba(0,0,0,.02); }
+  .tree-item.active { background: var(--accent-light); color: var(--accent); }
+  .tree-item .page-icon { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+  .tree-item .page-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree-item .health { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .tree-item .health.ok { background: var(--green); }
+  .tree-item .health.warn { background: var(--amber); }
+  .tree-item .health.error { background: var(--red); }
+
+  .tree-subgroup { margin-left: 16px; }
+  .tree-subgroup .tree-item { padding-left: 52px; }
+
+  /* Version bar */
+  .version-bar {
+    padding: 10px 16px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+    background: var(--bg);
+  }
+  .version-selector {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 10px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; font-weight: 500;
+  }
+  .version-nav { display: flex; gap: 2px; }
+  .version-nav button {
+    width: 24px; height: 24px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg-card); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; color: var(--text-secondary);
+  }
+  .version-nav button:hover { background: var(--bg); }
+  .version-status {
+    padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+  }
+  .version-status.active { background: var(--green-bg); color: var(--green); }
+
+  /* Main preview */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .preview-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; border-bottom: 1px solid var(--border);
+    background: var(--bg-card); font-size: 13px;
+  }
+  .preview-breadcrumb { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
+  .preview-breadcrumb span { color: var(--text); font-weight: 500; }
+  .preview-breadcrumb svg { width: 12px; height: 12px; }
+  .preview-actions { display: flex; gap: 6px; }
+  .preview-btn {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 12px; cursor: pointer; color: var(--text-secondary);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .preview-btn:hover { background: var(--bg); }
+  .preview-btn svg { width: 14px; height: 14px; }
+
+  /* Page preview area */
+  .preview-area { flex: 1; display: flex; background: #f0f0f0; overflow: hidden; }
+
+  .preview-frame {
+    flex: 1; margin: 20px; background: var(--bg-card);
+    border-radius: var(--radius); box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .preview-url-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .url-dots { display: flex; gap: 4px; }
+  .url-dots span { width: 8px; height: 8px; border-radius: 50%; }
+  .url-dots span:nth-child(1) { background: #ff5f57; }
+  .url-dots span:nth-child(2) { background: #ffbd2e; }
+  .url-dots span:nth-child(3) { background: #28c840; }
+  .url-input {
+    flex: 1; padding: 4px 10px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 12px; color: var(--text-secondary); font-family: var(--mono);
+  }
+
+  .preview-content { flex: 1; padding: 24px; overflow-y: auto; }
+
+  /* Fake Salesforce preview */
+  .sf-header { background: #032d60; color: #fff; padding: 10px 16px; border-radius: var(--radius-sm); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .sf-header-title { font-size: 14px; font-weight: 600; }
+  .sf-tabs { display: flex; gap: 0; margin-bottom: 16px; }
+  .sf-tab { padding: 8px 16px; font-size: 12px; border-bottom: 2px solid transparent; cursor: pointer; color: var(--text-secondary); }
+  .sf-tab.active { border-bottom-color: #0070d2; color: #0070d2; font-weight: 500; }
+  .sf-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px; }
+  .sf-card-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+  .sf-field { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+  .sf-field-label { color: var(--text-muted); }
+  .sf-field-value { font-weight: 500; }
+
+  /* Right detail panel */
+  .detail-panel {
+    width: 280px; min-width: 280px; background: var(--bg-card);
+    border-left: 1px solid var(--border); padding: 16px;
+    overflow-y: auto; font-size: 13px;
+  }
+  .detail-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .detail-thumb {
+    width: 100%; height: 120px; background: linear-gradient(135deg, #e0edff 0%, #f0f4ff 100%);
+    border-radius: var(--radius-sm); margin-bottom: 12px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 12px;
+  }
+  .detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { color: var(--text-muted); font-size: 12px; }
+  .detail-value { font-weight: 500; font-size: 12px; }
+  .detail-section { margin-top: 16px; }
+  .detail-section-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .detail-tag {
+    display: inline-block; padding: 2px 8px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; font-size: 11px; margin: 2px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Collapsed Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">ES</div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg></div>
+  <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg></div>
+  <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09"/></svg></div>
+</aside>
+
+<!-- Tree Panel -->
+<div class="tree-panel">
+  <div class="tree-header">
+    <div class="tree-header-title">Salesforce — Démo Q1</div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--text-muted);cursor:pointer"><path d="M12 5v14M5 12h14"/></svg>
+  </div>
+  <div class="tree-tabs">
+    <div class="tree-tab active">Par site</div>
+    <div class="tree-tab">Par guide</div>
+  </div>
+  <input class="tree-search" type="text" placeholder="Filtrer les pages...">
+
+  <div class="tree-content">
+    <!-- Home group -->
+    <div class="tree-group">
+      <div class="tree-group-header">
+        <svg class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:#00a1e0">●</span> Home
+        <span class="count">8 pages</span>
+      </div>
+      <div class="tree-item active">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>
+        <span class="page-name">Dashboard principal</span>
+        <span class="health ok"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Notifications</span>
+        <span class="health ok"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Recherche globale</span>
+        <span class="health ok"></span>
+      </div>
+    </div>
+
+    <!-- Contacts group -->
+    <div class="tree-group">
+      <div class="tree-group-header">
+        <svg class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:#00a1e0">●</span> Contacts
+        <span class="count">14 pages</span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Liste des contacts</span>
+        <span class="health ok"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Fiche contact — Jean Dupont</span>
+        <span class="health ok"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Nouveau contact</span>
+        <span class="health warn"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Historique activité</span>
+        <span class="health ok"></span>
+      </div>
+    </div>
+
+    <!-- Opportunities -->
+    <div class="tree-group">
+      <div class="tree-group-header">
+        <svg class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:#00a1e0">●</span> Opportunités
+        <span class="count">18 pages</span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Pipeline — Vue Kanban</span>
+        <span class="health ok"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Opportunité — Acme Corp</span>
+        <span class="health error"></span>
+      </div>
+      <div class="tree-item">
+        <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="page-name">Création opportunité</span>
+        <span class="health ok"></span>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="tree-group">
+      <div class="tree-group-header">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:#00a1e0">●</span> Rapports & Tableaux de bord
+        <span class="count">12 pages</span>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="tree-group">
+      <div class="tree-group-header">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:#00a1e0">●</span> Configuration
+        <span class="count">6 pages</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="version-bar">
+    <div class="version-selector">v3.2 ▾</div>
+    <div class="version-nav">
+      <button>◀</button>
+      <button>▶</button>
+    </div>
+    <span class="version-status active">À jour</span>
+    <span style="margin-left:auto;color:var(--text-muted)">86 pages</span>
+  </div>
+</div>
+
+<!-- Main Preview -->
+<div class="main">
+  <div class="preview-topbar">
+    <div class="preview-breadcrumb">
+      Salesforce
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      Home
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span>Dashboard principal</span>
+    </div>
+    <div class="preview-actions">
+      <div class="preview-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Live Edit
+      </div>
+      <div class="preview-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Obfuscation
+      </div>
+      <div class="preview-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        Ouvrir démo
+      </div>
+    </div>
+  </div>
+
+  <div class="preview-area">
+    <div class="preview-frame">
+      <div class="preview-url-bar">
+        <div class="url-dots"><span></span><span></span><span></span></div>
+        <div class="url-input">salesforce.env01.com/lightning/page/home</div>
+      </div>
+      <div class="preview-content">
+        <!-- Fake Salesforce content -->
+        <div class="sf-header">
+          <div class="sf-header-title">Sales Cloud</div>
+          <div style="font-size:12px;opacity:.7">salesforce.env01.com</div>
+        </div>
+        <div class="sf-tabs">
+          <div class="sf-tab active">Accueil</div>
+          <div class="sf-tab">Opportunités</div>
+          <div class="sf-tab">Contacts</div>
+          <div class="sf-tab">Comptes</div>
+          <div class="sf-tab">Rapports</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="sf-card">
+            <div class="sf-card-title">Performance ce trimestre</div>
+            <div class="sf-field"><span class="sf-field-label">Objectif</span><span class="sf-field-value">€250,000</span></div>
+            <div class="sf-field"><span class="sf-field-label">Réalisé</span><span class="sf-field-value" style="color:var(--green)">€187,500</span></div>
+            <div class="sf-field"><span class="sf-field-label">Progression</span><span class="sf-field-value">75%</span></div>
+          </div>
+          <div class="sf-card">
+            <div class="sf-card-title">Opportunités en cours</div>
+            <div class="sf-field"><span class="sf-field-label">Qualification</span><span class="sf-field-value">8</span></div>
+            <div class="sf-field"><span class="sf-field-label">Proposition</span><span class="sf-field-value">5</span></div>
+            <div class="sf-field"><span class="sf-field-label">Négociation</span><span class="sf-field-value">3</span></div>
+          </div>
+          <div class="sf-card" style="grid-column:1/3">
+            <div class="sf-card-title">Activités récentes</div>
+            <div class="sf-field"><span class="sf-field-label">Appel — ██████ Corp</span><span class="sf-field-value" style="color:var(--text-muted)">il y a 1h</span></div>
+            <div class="sf-field"><span class="sf-field-label">Email — ████ SAS</span><span class="sf-field-value" style="color:var(--text-muted)">il y a 3h</span></div>
+            <div class="sf-field"><span class="sf-field-label">RDV — ██████████</span><span class="sf-field-value" style="color:var(--text-muted)">demain 10h</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<aside class="detail-panel">
+  <div class="detail-title">Dashboard principal</div>
+  <div class="detail-thumb">Preview — 1200×800</div>
+  <div class="detail-row"><span class="detail-label">URL source</span><span class="detail-value" style="font-family:var(--mono)">/home</span></div>
+  <div class="detail-row"><span class="detail-label">Taille</span><span class="detail-value">2.4 Mo</span></div>
+  <div class="detail-row"><span class="detail-label">Capturée le</span><span class="detail-value">24 fév 2026</span></div>
+  <div class="detail-row"><span class="detail-label">Mode</span><span class="detail-value">Capture libre</span></div>
+  <div class="detail-row"><span class="detail-label">Liens sortants</span><span class="detail-value">12</span></div>
+  <div class="detail-row"><span class="detail-label">Liens cassés</span><span class="detail-value" style="color:var(--red)">0</span></div>
+  <div class="detail-row"><span class="detail-label">Santé</span><span class="detail-value" style="color:var(--green)">● OK</span></div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">Obfuscation active</div>
+    <div class="detail-tag">Acme Corp → ██████</div>
+    <div class="detail-tag">jean.dupont → ████</div>
+    <div class="detail-tag">+3 règles</div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">Guides associés</div>
+    <div style="padding:4px 0;font-size:12px">📘 Créer un contact</div>
+    <div style="padding:4px 0;font-size:12px">📘 Gérer une opportunité</div>
+  </div>
+</aside>
+
+</body>
+</html>

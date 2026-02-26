@@ -1,0 +1,885 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favicon Concepts — Environnements Simulés</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #F9FAFB;
+      color: #111827;
+      padding: 48px;
+      min-height: 100vh;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 15px;
+      color: #6B7280;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .concepts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .concept-card {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.2s ease;
+      cursor: default;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .concept-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #3B82F6, #60A5FA);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .concept-card:hover {
+      border-color: #BFDBFE;
+      box-shadow: 0 4px 24px rgba(59, 130, 246, 0.08);
+    }
+
+    .concept-card:hover::before {
+      opacity: 1;
+    }
+
+    .concept-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: #EFF6FF;
+      color: #3B82F6;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+
+    .concept-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+
+    .concept-desc {
+      font-size: 13px;
+      color: #6B7280;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .sizes-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .size-label {
+      font-size: 10px;
+      color: #9CA3AF;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .preview-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .preview-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .preview-light {
+      background: #F3F4F6;
+      color: #374151;
+    }
+
+    .preview-dark {
+      background: #1F2937;
+      color: #D1D5DB;
+    }
+
+    .preview-box .tab-mock {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .preview-light .tab-mock {
+      background: white;
+      border: 1px solid #E5E7EB;
+      color: #374151;
+    }
+
+    .preview-dark .tab-mock {
+      background: #374151;
+      border: 1px solid #4B5563;
+      color: #E5E7EB;
+    }
+
+    .tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #F3F4F6;
+      color: #6B7280;
+      font-weight: 500;
+    }
+
+    .tag.recommended {
+      background: #DBEAFE;
+      color: #1D4ED8;
+    }
+
+    .section-divider {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .section-divider h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #9CA3AF;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .concepts-grid { grid-template-columns: 1fr; }
+      body { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Favicon & App Icon — Concepts</h1>
+    <p>8 propositions de favicon pour Environnements Simulés. Chaque concept est affiché en 4 tailles (16, 32, 64, 192px) avec une simulation d'onglet navigateur.</p>
+  </div>
+
+  <div class="concepts-grid">
+
+    <!-- ===== Concept 1: ES Monogram ===== -->
+    <div class="concept-card">
+      <div class="concept-number">1</div>
+      <div class="concept-name">ES Monogram</div>
+      <div class="concept-desc">Le monogramme "ES" dans un carré arrondi bleu. Reprend directement l'avatar utilisé dans la sidebar de l'app. Lisible, reconnaissable, cohérent avec l'identité existante.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="7" fill="#3B82F6"/>
+            <text x="16" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="white">ES</text>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="7" fill="#3B82F6"/>
+            <text x="16" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="white">ES</text>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect width="64" height="64" rx="14" fill="#3B82F6"/>
+            <text x="32" y="42" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="30" fill="white">ES</text>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <rect width="192" height="192" rx="40" fill="#3B82F6"/>
+            <text x="96" y="124" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="90" fill="white">ES</text>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#3B82F6"/><text x="16" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="white">ES</text></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="#3B82F6"/><text x="16" y="22" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="white">ES</text></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag recommended">Recommandé</span>
+        <span class="tag">Cohérent sidebar</span>
+        <span class="tag">Lisible petit</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 2: Layered Windows ===== -->
+    <div class="concept-card">
+      <div class="concept-number">2</div>
+      <div class="concept-name">Fenêtres Superposées</div>
+      <div class="concept-desc">Deux fenêtres de navigateur superposées, évoquant la capture et la simulation d'environnements. La fenêtre avant a un accent bleu. Symbolise le concept de "clonage" d'interfaces.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <rect x="0" y="4" width="22" height="18" rx="3" fill="#93C5FD" stroke="#3B82F6" stroke-width="1.5"/>
+            <rect x="3" y="7" width="16" height="1.5" rx="0.75" fill="#3B82F6" opacity="0.5"/>
+            <rect x="8" y="10" width="24" height="18" rx="3" fill="#3B82F6"/>
+            <rect x="11" y="13" width="18" height="1.5" rx="0.75" fill="white" opacity="0.5"/>
+            <circle cx="10.5" cy="13.75" r="0.8" fill="#EF4444"/>
+            <circle cx="12.5" cy="13.75" r="0.8" fill="#F59E0B"/>
+            <circle cx="14.5" cy="13.75" r="0.8" fill="#10B981"/>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="0" y="4" width="22" height="18" rx="3" fill="#93C5FD" stroke="#3B82F6" stroke-width="1.5"/>
+            <rect x="3" y="7" width="16" height="1.5" rx="0.75" fill="#3B82F6" opacity="0.5"/>
+            <rect x="8" y="10" width="24" height="18" rx="3" fill="#3B82F6"/>
+            <rect x="11" y="13" width="18" height="1.5" rx="0.75" fill="white" opacity="0.5"/>
+            <circle cx="10.5" cy="13.75" r="0.8" fill="#EF4444"/>
+            <circle cx="12.5" cy="13.75" r="0.8" fill="#F59E0B"/>
+            <circle cx="14.5" cy="13.75" r="0.8" fill="#10B981"/>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="0" y="8" width="44" height="36" rx="5" fill="#DBEAFE" stroke="#3B82F6" stroke-width="2"/>
+            <rect x="4" y="13" width="36" height="3" rx="1.5" fill="#93C5FD"/>
+            <circle cx="7" cy="14.5" r="1.5" fill="#EF4444"/>
+            <circle cx="11" cy="14.5" r="1.5" fill="#F59E0B"/>
+            <circle cx="15" cy="14.5" r="1.5" fill="#10B981"/>
+            <rect x="18" y="20" width="48" height="36" rx="5" fill="#3B82F6"/>
+            <rect x="22" y="25" width="40" height="3" rx="1.5" fill="white" opacity="0.3"/>
+            <circle cx="25" cy="26.5" r="1.5" fill="#EF4444" opacity="0.8"/>
+            <circle cx="29" cy="26.5" r="1.5" fill="#F59E0B" opacity="0.8"/>
+            <circle cx="33" cy="26.5" r="1.5" fill="#10B981" opacity="0.8"/>
+            <rect x="22" y="31" width="32" height="2" rx="1" fill="white" opacity="0.2"/>
+            <rect x="22" y="35" width="24" height="2" rx="1" fill="white" opacity="0.15"/>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <rect x="4" y="24" width="128" height="104" rx="14" fill="#DBEAFE" stroke="#3B82F6" stroke-width="4"/>
+            <rect x="14" y="36" width="108" height="8" rx="4" fill="#93C5FD"/>
+            <circle cx="22" cy="40" r="4" fill="#EF4444"/>
+            <circle cx="34" cy="40" r="4" fill="#F59E0B"/>
+            <circle cx="46" cy="40" r="4" fill="#10B981"/>
+            <rect x="14" y="52" width="80" height="5" rx="2.5" fill="#93C5FD" opacity="0.4"/>
+            <rect x="14" y="62" width="60" height="5" rx="2.5" fill="#93C5FD" opacity="0.3"/>
+            <rect x="56" y="64" width="136" height="104" rx="14" fill="#3B82F6"/>
+            <rect x="66" y="76" width="116" height="8" rx="4" fill="white" opacity="0.2"/>
+            <circle cx="74" cy="80" r="4" fill="#EF4444" opacity="0.8"/>
+            <circle cx="86" cy="80" r="4" fill="#F59E0B" opacity="0.8"/>
+            <circle cx="98" cy="80" r="4" fill="#10B981" opacity="0.8"/>
+            <rect x="66" y="92" width="96" height="5" rx="2.5" fill="white" opacity="0.15"/>
+            <rect x="66" y="102" width="72" height="5" rx="2.5" fill="white" opacity="0.1"/>
+            <rect x="66" y="112" width="84" height="5" rx="2.5" fill="white" opacity="0.1"/>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="0" y="4" width="22" height="18" rx="3" fill="#93C5FD" stroke="#3B82F6" stroke-width="1.5"/><rect x="8" y="10" width="24" height="18" rx="3" fill="#3B82F6"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="0" y="4" width="22" height="18" rx="3" fill="#93C5FD" stroke="#3B82F6" stroke-width="1.5"/><rect x="8" y="10" width="24" height="18" rx="3" fill="#3B82F6"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag">Métaphore forte</span>
+        <span class="tag">Évocateur</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 3: Globe Mirror ===== -->
+    <div class="concept-card">
+      <div class="concept-number">3</div>
+      <div class="concept-name">Globe Miroir</div>
+      <div class="concept-desc">Un globe avec une ligne de symétrie et un reflet, symbolisant la simulation et la réplication d'environnements web. Le demi-globe reflété est plus clair, suggérant une copie virtuelle.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="#3B82F6"/>
+            <ellipse cx="16" cy="16" rx="6" ry="14" fill="none" stroke="white" stroke-width="1.2" opacity="0.4"/>
+            <line x1="2" y1="16" x2="30" y2="16" stroke="white" stroke-width="1.2" opacity="0.4"/>
+            <path d="M4 10 Q16 8 28 10" stroke="white" stroke-width="1" fill="none" opacity="0.3"/>
+            <path d="M4 22 Q16 24 28 22" stroke="white" stroke-width="1" fill="none" opacity="0.3"/>
+            <clipPath id="c3-top"><rect x="0" y="0" width="32" height="16"/></clipPath>
+            <circle cx="16" cy="16" r="14" fill="#60A5FA" opacity="0.4" clip-path="url(#c3-top)"/>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="#3B82F6"/>
+            <ellipse cx="16" cy="16" rx="6" ry="14" fill="none" stroke="white" stroke-width="1.2" opacity="0.4"/>
+            <line x1="2" y1="16" x2="30" y2="16" stroke="white" stroke-width="1.2" opacity="0.4"/>
+            <path d="M4 10 Q16 8 28 10" stroke="white" stroke-width="1" fill="none" opacity="0.3"/>
+            <path d="M4 22 Q16 24 28 22" stroke="white" stroke-width="1" fill="none" opacity="0.3"/>
+            <circle cx="16" cy="16" r="14" fill="#60A5FA" opacity="0.3" clip-path="url(#c3-top)"/>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <defs>
+              <clipPath id="c3-top-64"><rect x="0" y="0" width="64" height="32"/></clipPath>
+              <linearGradient id="c3-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#60A5FA"/>
+                <stop offset="100%" stop-color="#3B82F6"/>
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="28" fill="url(#c3-grad)"/>
+            <ellipse cx="32" cy="32" rx="12" ry="28" fill="none" stroke="white" stroke-width="1.5" opacity="0.35"/>
+            <ellipse cx="32" cy="32" rx="20" ry="28" fill="none" stroke="white" stroke-width="1" opacity="0.2"/>
+            <line x1="4" y1="32" x2="60" y2="32" stroke="white" stroke-width="1.5" opacity="0.35"/>
+            <path d="M8 20 Q32 16 56 20" stroke="white" stroke-width="1.2" fill="none" opacity="0.25"/>
+            <path d="M8 44 Q32 48 56 44" stroke="white" stroke-width="1.2" fill="none" opacity="0.25"/>
+            <circle cx="32" cy="32" r="28" fill="white" opacity="0.15" clip-path="url(#c3-top-64)"/>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <defs>
+              <clipPath id="c3-top-192"><rect x="0" y="0" width="192" height="96"/></clipPath>
+              <linearGradient id="c3-grad2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#93C5FD"/>
+                <stop offset="100%" stop-color="#2563EB"/>
+              </linearGradient>
+            </defs>
+            <circle cx="96" cy="96" r="84" fill="url(#c3-grad2)"/>
+            <ellipse cx="96" cy="96" rx="36" ry="84" fill="none" stroke="white" stroke-width="2.5" opacity="0.3"/>
+            <ellipse cx="96" cy="96" rx="60" ry="84" fill="none" stroke="white" stroke-width="2" opacity="0.2"/>
+            <line x1="12" y1="96" x2="180" y2="96" stroke="white" stroke-width="2.5" opacity="0.3"/>
+            <path d="M24 60 Q96 48 168 60" stroke="white" stroke-width="2" fill="none" opacity="0.2"/>
+            <path d="M24 132 Q96 144 168 132" stroke="white" stroke-width="2" fill="none" opacity="0.2"/>
+            <circle cx="96" cy="96" r="84" fill="white" opacity="0.12" clip-path="url(#c3-top-192)"/>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#3B82F6"/><ellipse cx="16" cy="16" rx="6" ry="14" fill="none" stroke="white" stroke-width="1.2" opacity="0.4"/><line x1="2" y1="16" x2="30" y2="16" stroke="white" stroke-width="1.2" opacity="0.4"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="#3B82F6"/><ellipse cx="16" cy="16" rx="6" ry="14" fill="none" stroke="white" stroke-width="1.2" opacity="0.4"/><line x1="2" y1="16" x2="30" y2="16" stroke="white" stroke-width="1.2" opacity="0.4"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag">Web/Global</span>
+        <span class="tag">Élégant</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 4: Capture Frame ===== -->
+    <div class="concept-card">
+      <div class="concept-number">4</div>
+      <div class="concept-name">Cadre de Capture</div>
+      <div class="concept-desc">Un viseur/cadre de capture avec un point central, évoquant directement l'action de capturer des pages web. Les coins du cadre rappellent un viewfinder photo/vidéo. Simple et immédiatement compréhensible.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <rect x="2" y="2" width="28" height="28" rx="6" fill="#EFF6FF"/>
+            <path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="3" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="2" y="2" width="28" height="28" rx="6" fill="#EFF6FF"/>
+            <path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="3" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="4" y="4" width="56" height="56" rx="12" fill="#EFF6FF"/>
+            <path d="M8 20 L8 12 Q8 8 12 8 L20 8" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M44 8 L52 8 Q56 8 56 12 L56 20" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M56 44 L56 52 Q56 56 52 56 L44 56" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M20 56 L12 56 Q8 56 8 52 L8 44" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="6" fill="#3B82F6"/>
+            <circle cx="32" cy="32" r="10" stroke="#3B82F6" stroke-width="1.5" opacity="0.3"/>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <rect x="12" y="12" width="168" height="168" rx="32" fill="#EFF6FF"/>
+            <path d="M24 60 L24 36 Q24 24 36 24 L60 24" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M132 24 L156 24 Q168 24 168 36 L168 60" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M168 132 L168 156 Q168 168 156 168 L132 168" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M60 168 L36 168 Q24 168 24 156 L24 132" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="96" cy="96" r="18" fill="#3B82F6"/>
+            <circle cx="96" cy="96" r="30" stroke="#3B82F6" stroke-width="3" opacity="0.25"/>
+            <circle cx="96" cy="96" r="42" stroke="#3B82F6" stroke-width="2" opacity="0.12"/>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="6" fill="#EFF6FF"/><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="3" fill="#3B82F6"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="6" fill="#1E3A5F"/><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="3" fill="#60A5FA"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag recommended">Recommandé</span>
+        <span class="tag">Capture</span>
+        <span class="tag">Distinctif</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 5: Isometric Cubes ===== -->
+    <div class="concept-card">
+      <div class="concept-number">5</div>
+      <div class="concept-name">Cubes Isométriques</div>
+      <div class="concept-desc">Deux cubes empilés en perspective isométrique, évoquant les "environnements" comme des espaces virtuels construits. Le cube supérieur est plus clair, suggérant la copie/simulation.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4 L28 11 L28 21 L16 28 L4 21 L4 11 Z" fill="#3B82F6"/>
+            <path d="M16 4 L28 11 L16 18 L4 11 Z" fill="#60A5FA"/>
+            <path d="M16 18 L28 11 L28 21 L16 28 Z" fill="#2563EB"/>
+            <path d="M16 18 L4 11 L4 21 L16 28 Z" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path d="M16 4 L28 11 L28 21 L16 28 L4 21 L4 11 Z" fill="#3B82F6"/>
+            <path d="M16 4 L28 11 L16 18 L4 11 Z" fill="#60A5FA"/>
+            <path d="M16 18 L28 11 L28 21 L16 28 Z" fill="#2563EB"/>
+            <path d="M16 18 L4 11 L4 21 L16 28 Z" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <!-- Bottom cube -->
+            <path d="M32 24 L52 35 L52 49 L32 60 L12 49 L12 35 Z" fill="#93C5FD" opacity="0.6"/>
+            <path d="M32 24 L52 35 L32 46 L12 35 Z" fill="#BFDBFE" opacity="0.6"/>
+            <path d="M32 46 L52 35 L52 49 L32 60 Z" fill="#60A5FA" opacity="0.6"/>
+            <path d="M32 46 L12 35 L12 49 L32 60 Z" fill="#93C5FD" opacity="0.6"/>
+            <!-- Top cube -->
+            <path d="M32 4 L52 15 L52 29 L32 40 L12 29 L12 15 Z" fill="#3B82F6"/>
+            <path d="M32 4 L52 15 L32 26 L12 15 Z" fill="#60A5FA"/>
+            <path d="M32 26 L52 15 L52 29 L32 40 Z" fill="#2563EB"/>
+            <path d="M32 26 L12 15 L12 29 L32 40 Z" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <!-- Bottom cube -->
+            <path d="M96 72 L156 105 L156 147 L96 180 L36 147 L36 105 Z" fill="#93C5FD" opacity="0.5"/>
+            <path d="M96 72 L156 105 L96 138 L36 105 Z" fill="#BFDBFE" opacity="0.5"/>
+            <path d="M96 138 L156 105 L156 147 L96 180 Z" fill="#60A5FA" opacity="0.5"/>
+            <path d="M96 138 L36 105 L36 147 L96 180 Z" fill="#93C5FD" opacity="0.5"/>
+            <!-- Top cube -->
+            <path d="M96 12 L156 45 L156 87 L96 120 L36 87 L36 45 Z" fill="#3B82F6"/>
+            <path d="M96 12 L156 45 L96 78 L36 45 Z" fill="#60A5FA"/>
+            <path d="M96 78 L156 45 L156 87 L96 120 Z" fill="#2563EB"/>
+            <path d="M96 78 L36 45 L36 87 L96 120 Z" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><path d="M16 4 L28 11 L28 21 L16 28 L4 21 L4 11 Z" fill="#3B82F6"/><path d="M16 4 L28 11 L16 18 L4 11 Z" fill="#60A5FA"/><path d="M16 18 L28 11 L28 21 L16 28 Z" fill="#2563EB"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><path d="M16 4 L28 11 L28 21 L16 28 L4 21 L4 11 Z" fill="#3B82F6"/><path d="M16 4 L28 11 L16 18 L4 11 Z" fill="#60A5FA"/><path d="M16 18 L28 11 L28 21 L16 28 Z" fill="#2563EB"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag">3D</span>
+        <span class="tag">Moderne</span>
+        <span class="tag">Tech</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 6: Play Window ===== -->
+    <div class="concept-card">
+      <div class="concept-number">6</div>
+      <div class="concept-name">Play Window</div>
+      <div class="concept-desc">Une fenêtre de navigateur avec un bouton play au centre. Combine le concept de "démo" (play) et d'environnement web (fenêtre). Évoque directement l'usage principal : jouer des démos.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <rect x="2" y="2" width="28" height="28" rx="5" fill="#3B82F6"/>
+            <rect x="2" y="2" width="28" height="8" rx="5" fill="#2563EB"/>
+            <rect x="2" y="7" width="28" height="3" fill="#2563EB"/>
+            <circle cx="6" cy="6" r="1.2" fill="#EF4444" opacity="0.7"/>
+            <circle cx="9.5" cy="6" r="1.2" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="13" cy="6" r="1.2" fill="#10B981" opacity="0.7"/>
+            <path d="M14 15 L21 19.5 L14 24 Z" fill="white"/>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="2" y="2" width="28" height="28" rx="5" fill="#3B82F6"/>
+            <rect x="2" y="2" width="28" height="8" rx="5" fill="#2563EB"/>
+            <rect x="2" y="7" width="28" height="3" fill="#2563EB"/>
+            <circle cx="6" cy="6" r="1.2" fill="#EF4444" opacity="0.7"/>
+            <circle cx="9.5" cy="6" r="1.2" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="13" cy="6" r="1.2" fill="#10B981" opacity="0.7"/>
+            <path d="M14 15 L21 19.5 L14 24 Z" fill="white"/>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="4" y="4" width="56" height="56" rx="10" fill="#3B82F6"/>
+            <rect x="4" y="4" width="56" height="16" rx="10" fill="#2563EB"/>
+            <rect x="4" y="14" width="56" height="6" fill="#2563EB"/>
+            <circle cx="12" cy="12" r="2.5" fill="#EF4444" opacity="0.7"/>
+            <circle cx="19" cy="12" r="2.5" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="26" cy="12" r="2.5" fill="#10B981" opacity="0.7"/>
+            <path d="M26 32 L42 40 L26 48 Z" fill="white"/>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <rect x="12" y="12" width="168" height="168" rx="28" fill="#3B82F6"/>
+            <rect x="12" y="12" width="168" height="48" rx="28" fill="#2563EB"/>
+            <rect x="12" y="40" width="168" height="20" fill="#2563EB"/>
+            <circle cx="32" cy="36" r="7" fill="#EF4444" opacity="0.7"/>
+            <circle cx="52" cy="36" r="7" fill="#F59E0B" opacity="0.7"/>
+            <circle cx="72" cy="36" r="7" fill="#10B981" opacity="0.7"/>
+            <path d="M76 96 L124 124 L76 152 Z" fill="white"/>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="5" fill="#3B82F6"/><rect x="2" y="2" width="28" height="8" rx="5" fill="#2563EB"/><rect x="2" y="7" width="28" height="3" fill="#2563EB"/><path d="M14 15 L21 19.5 L14 24 Z" fill="white"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="5" fill="#3B82F6"/><rect x="2" y="2" width="28" height="8" rx="5" fill="#2563EB"/><rect x="2" y="7" width="28" height="3" fill="#2563EB"/><path d="M14 15 L21 19.5 L14 24 Z" fill="white"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag">Démo</span>
+        <span class="tag">Intuitif</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 7: ES Circuit ===== -->
+    <div class="concept-card">
+      <div class="concept-number">7</div>
+      <div class="concept-name">ES Gradient</div>
+      <div class="concept-desc">Le monogramme "ES" dans un cercle avec un gradient bleu subtil et un anneau extérieur fin. Plus moderne et tech que le carré arrondi. Fonctionne bien comme PWA icon et favicon.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <defs>
+              <linearGradient id="c7-grad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#3B82F6"/>
+                <stop offset="100%" stop-color="#1D4ED8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="16" cy="16" r="14" fill="url(#c7-grad)"/>
+            <circle cx="16" cy="16" r="14" stroke="#93C5FD" stroke-width="1" opacity="0.5"/>
+            <text x="16" y="21" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="white">ES</text>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="14" fill="url(#c7-grad)"/>
+            <circle cx="16" cy="16" r="14" stroke="#93C5FD" stroke-width="1" opacity="0.5"/>
+            <text x="16" y="21" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="white">ES</text>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <defs>
+              <linearGradient id="c7-grad2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#60A5FA"/>
+                <stop offset="50%" stop-color="#3B82F6"/>
+                <stop offset="100%" stop-color="#1D4ED8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="32" cy="32" r="28" fill="url(#c7-grad2)"/>
+            <circle cx="32" cy="32" r="28" stroke="#93C5FD" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="32" cy="32" r="24" stroke="white" stroke-width="0.8" opacity="0.15"/>
+            <text x="32" y="40" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="24" fill="white">ES</text>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <defs>
+              <linearGradient id="c7-grad3" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#60A5FA"/>
+                <stop offset="50%" stop-color="#3B82F6"/>
+                <stop offset="100%" stop-color="#1D4ED8"/>
+              </linearGradient>
+            </defs>
+            <circle cx="96" cy="96" r="84" fill="url(#c7-grad3)"/>
+            <circle cx="96" cy="96" r="84" stroke="#93C5FD" stroke-width="3" opacity="0.3"/>
+            <circle cx="96" cy="96" r="72" stroke="white" stroke-width="1.5" opacity="0.1"/>
+            <text x="96" y="118" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="72" fill="white">ES</text>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="url(#c7-grad)"/><circle cx="16" cy="16" r="14" stroke="#93C5FD" stroke-width="1" opacity="0.5"/><text x="16" y="21" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="white">ES</text></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" fill="url(#c7-grad)"/><circle cx="16" cy="16" r="14" stroke="#93C5FD" stroke-width="1" opacity="0.5"/><text x="16" y="21" text-anchor="middle" font-family="Inter,sans-serif" font-weight="600" font-size="13" fill="white">ES</text></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag">Moderne</span>
+        <span class="tag">PWA-ready</span>
+      </div>
+    </div>
+
+    <!-- ===== Concept 8: Abstract Layers ===== -->
+    <div class="concept-card">
+      <div class="concept-number">8</div>
+      <div class="concept-name">Couches Abstraites</div>
+      <div class="concept-desc">Trois couches empilées avec un décalage, symbolisant les environnements simulés comme des copies superposées. Le dégradé de transparence suggère la profondeur. Rappelle les calques Figma/Photoshop.</div>
+
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <rect x="6" y="2" width="20" height="14" rx="3" fill="#93C5FD" opacity="0.5"/>
+            <rect x="3" y="7" width="20" height="14" rx="3" fill="#60A5FA" opacity="0.7"/>
+            <rect x="8" y="14" width="22" height="14" rx="3" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">16px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <rect x="6" y="2" width="20" height="14" rx="3" fill="#93C5FD" opacity="0.5"/>
+            <rect x="3" y="7" width="20" height="14" rx="3" fill="#60A5FA" opacity="0.7"/>
+            <rect x="8" y="14" width="22" height="14" rx="3" fill="#3B82F6"/>
+          </svg>
+          <span class="size-label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <rect x="14" y="4" width="38" height="26" rx="6" fill="#BFDBFE" opacity="0.5"/>
+            <rect x="4" y="8" width="42" height="26" rx="6" fill="#93C5FD" opacity="0.4"/>
+            <rect x="8" y="16" width="38" height="26" rx="6" fill="#60A5FA" opacity="0.7"/>
+            <rect x="16" y="28" width="44" height="28" rx="6" fill="#3B82F6"/>
+            <rect x="22" y="34" width="24" height="2" rx="1" fill="white" opacity="0.3"/>
+            <rect x="22" y="39" width="18" height="2" rx="1" fill="white" opacity="0.2"/>
+            <rect x="22" y="44" width="30" height="2" rx="1" fill="white" opacity="0.15"/>
+          </svg>
+          <span class="size-label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <rect x="40" y="10" width="116" height="76" rx="14" fill="#BFDBFE" opacity="0.4"/>
+            <rect x="12" y="24" width="124" height="76" rx="14" fill="#93C5FD" opacity="0.35"/>
+            <rect x="24" y="48" width="116" height="76" rx="14" fill="#60A5FA" opacity="0.6"/>
+            <rect x="48" y="84" width="132" height="84" rx="14" fill="#3B82F6"/>
+            <rect x="62" y="98" width="80" height="6" rx="3" fill="white" opacity="0.25"/>
+            <rect x="62" y="112" width="56" height="6" rx="3" fill="white" opacity="0.18"/>
+            <rect x="62" y="126" width="96" height="6" rx="3" fill="white" opacity="0.12"/>
+            <rect x="62" y="140" width="40" height="6" rx="3" fill="white" opacity="0.08"/>
+          </svg>
+          <span class="size-label">192px</span>
+        </div>
+      </div>
+
+      <div class="preview-row">
+        <div class="preview-box preview-light">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="6" y="2" width="20" height="14" rx="3" fill="#93C5FD" opacity="0.5"/><rect x="3" y="7" width="20" height="14" rx="3" fill="#60A5FA" opacity="0.7"/><rect x="8" y="14" width="22" height="14" rx="3" fill="#3B82F6"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+        <div class="preview-box preview-dark">
+          <div class="tab-mock">
+            <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="6" y="2" width="20" height="14" rx="3" fill="#93C5FD" opacity="0.5"/><rect x="3" y="7" width="20" height="14" rx="3" fill="#60A5FA" opacity="0.7"/><rect x="8" y="14" width="22" height="14" rx="3" fill="#3B82F6"/></svg>
+            Env. Simulés
+          </div>
+        </div>
+      </div>
+
+      <div class="tags">
+        <span class="tag recommended">Recommandé</span>
+        <span class="tag">Couches</span>
+        <span class="tag">Abstrait</span>
+        <span class="tag">Unique</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Summary -->
+  <div style="max-width: 1200px; margin: 56px auto 0; background: white; border: 1px solid #E5E7EB; border-radius: 16px; padding: 32px;">
+    <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.3px;">Recommandations</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+      <div>
+        <div style="font-size: 13px; font-weight: 600; color: #3B82F6; margin-bottom: 6px;">Top 1 — Cadre de Capture (#4)</div>
+        <div style="font-size: 13px; color: #6B7280; line-height: 1.5;">Le plus distinctif et le plus pertinent pour le produit. Immédiatement compréhensible : on capture des pages web. Reste lisible en 16px grâce aux formes simples.</div>
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 600; color: #3B82F6; margin-bottom: 6px;">Top 2 — ES Monogram (#1)</div>
+        <div style="font-size: 13px; color: #6B7280; line-height: 1.5;">Le choix sûr et cohérent. Reprend directement l'identité existante de la sidebar. Pas original mais efficace et professionnel.</div>
+      </div>
+      <div>
+        <div style="font-size: 13px; font-weight: 600; color: #3B82F6; margin-bottom: 6px;">Top 3 — Couches Abstraites (#8)</div>
+        <div style="font-size: 13px; color: #6B7280; line-height: 1.5;">Le plus élégant et conceptuellement riche. Les couches superposées évoquent parfaitement les environnements simulés. Se démarque des favicons textuels classiques.</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

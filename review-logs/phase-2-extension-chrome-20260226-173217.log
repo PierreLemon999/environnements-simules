@@ -1,0 +1,15 @@
+Phase 2 is complete. Here's a summary of what was done:
+
+**4 issues fixed:**
+
+1. **api.ts — Retry logic** (critical): Added 3-attempt retry with exponential backoff for network errors and 5xx responses. 4xx errors fail immediately.
+
+2. **auto-capture.ts — Backend capture job** (critical): `startAutoCrawl()` now creates a capture job via `POST /versions/:id/capture-jobs` with mode, targetPageCount, and startUrl. Progress is updated after each page capture, and the job is finalized when the crawl completes or is stopped.
+
+3. **Svelte 5 event patterns** (critical): Migrated all 5 components from Svelte 4 `createEventDispatcher`/`on:event` to Svelte 5 `$props()` callback pattern (`onLogin`, `onLogout`, `onRemove`, `onRecapture`).
+
+4. **capture.ts — Iframe handling** (medium): Added `inlineIframes()` that captures same-origin iframe content into `srcdoc` and converts cross-origin iframe `src` to absolute URLs.
+
+**Build: PASS** (694ms, 0 errors)
+
+**Report written to**: `review-logs/phase-2-report.md`

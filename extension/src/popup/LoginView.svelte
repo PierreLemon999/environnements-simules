@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { STORAGE_KEYS, API_BASE_URL, type User } from '$lib/constants';
 
-	const dispatch = createEventDispatcher<{ login: { user: User } }>();
+	let { onLogin }: { onLogin: (data: { user: User }) => void } = $props();
 
 	let email = $state('');
 	let error = $state('');
@@ -49,7 +48,7 @@
 				[STORAGE_KEYS.USER]: user
 			});
 
-			dispatch('login', { user });
+			onLogin({ user });
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Erreur de connexion';
 		} finally {

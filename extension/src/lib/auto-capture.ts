@@ -7,6 +7,7 @@ import {
 	getCaptureState,
 	updateCaptureState
 } from './capture';
+import api from './api';
 import { v4 as uuidv4 } from './uuid';
 
 // ---------------------------------------------------------------------------
@@ -111,11 +112,29 @@ export async function startAutoCrawl(tabId: number, config: AutoCaptureConfig): 
 		targetPageCount: config.targetPageCount
 	});
 
-	// Create capture job on backend
+	// Get active version
 	const versionResult = await chrome.storage.local.get(STORAGE_KEYS.ACTIVE_VERSION);
 	const version = versionResult[STORAGE_KEYS.ACTIVE_VERSION];
 	if (!version?.id) {
 		throw new Error('Aucune version sélectionnée');
+	}
+
+	// Create capture job on backend
+	try {
+		const jobResult = await api.post<{ data: { id: string } }>(
+			`/versions/${version.id}/capture-jobs`,
+			{
+				mode: 'auto',
+				targetPageCount: config.targetPageCount,
+				startUrl: tab.url
+			}
+		);
+		if (jobResult?.data?.id) {
+			await updateCaptureState({ jobId: jobResult.data.id });
+		}
+	} catch (err) {
+		console.error('[Auto Capture] Failed to create capture job:', err);
+		// Non-critical: continue crawling even if job creation fails
 	}
 
 	// Start crawl loop
@@ -133,7 +152,20 @@ export async function stopAutoCrawl(): Promise<void> {
 	isRunning = false;
 	crawlQueue = [];
 	currentTabId = null;
-	await updateCaptureState({ isRunning: false, isPaused: false });
+
+	// Finalize capture job on backend
+	const state = await getCaptureState();
+	if (state.jobId) {
+		const doneCount = state.pages.filter((p) => p.status === PAGE_STATUS.DONE).length;
+		await api.put(`/capture-jobs/${state.jobId}`, {
+			status: 'done',
+			pagesCaptured: doneCount
+		}).catch(() => {
+			// Non-critical
+		});
+	}
+
+	await updateCaptureState({ isRunning: false, isPaused: false, jobId: undefined });
 }
 
 /**
@@ -168,7 +200,14 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 		// Check if we reached target
 		const doneCount = state.pages.filter((p) => p.status === PAGE_STATUS.DONE).length;
 		if (doneCount >= config.targetPageCount) {
-			await updateCaptureState({ isRunning: false });
+			// Finalize capture job
+			if (state.jobId) {
+				await api.put(`/capture-jobs/${state.jobId}`, {
+					status: 'done',
+					pagesCaptured: doneCount
+				}).catch(() => {});
+			}
+			await updateCaptureState({ isRunning: false, jobId: undefined });
 			isRunning = false;
 			break;
 		}
@@ -214,6 +253,18 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 			// Capture the page
 			if (currentTabId !== null) {
 				await captureAndUploadPage(currentTabId, versionId, config);
+
+				// Update capture job progress on backend
+				const postCaptureState = await getCaptureState();
+				if (postCaptureState.jobId) {
+					const capturedCount = postCaptureState.pages.filter(
+						(p) => p.status === PAGE_STATUS.DONE
+					).length;
+					await api.put(`/capture-jobs/${postCaptureState.jobId}`, {
+						pagesCaptured: capturedCount,
+						status: capturedCount >= config.targetPageCount ? 'done' : 'running'
+					}).catch(() => {});
+				}
 			}
 
 			// Extract links for BFS

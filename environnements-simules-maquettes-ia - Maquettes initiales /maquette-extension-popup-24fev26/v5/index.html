@@ -1,0 +1,863 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extension Capture — Env. Simulés v5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #fafafa; --bg-card: #fff; --bg-hover: rgba(0,0,0,.02); --border: #e5e5e5;
+    --border-hover: #d4d4d4; --border-light: #f0eeee; --text: #0c0a09; --text-secondary: #57534e;
+    --text-muted: #a8a29e; --accent: #2563eb; --accent-hover: #1d4ed8; --accent-light: #eff6ff;
+    --accent-lighter: #f0f5ff; --accent-pale: #bfdbfe; --green: #16a34a; --green-bg: #f0fdf4;
+    --green-border: #bbf7d0; --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fde68a;
+    --red: #dc2626; --red-bg: #fef2f2; --red-border: #fecaca; --radius: 8px; --radius-sm: 6px;
+    --radius-xs: 4px; --mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.03); --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --transition: .2s cubic-bezier(.4,0,.2,1); --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+  }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; width: 380px;
+    min-height: 580px; overflow-x: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  @keyframes statusPulse { 0%, 100% { opacity: 0; transform: scale(.7); } 50% { opacity: .3; transform: scale(1.2); } }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeInItem { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes progressPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); } 50% { box-shadow: 0 0 8px 2px rgba(37,99,235,.15); } }
+  @keyframes dotBounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+  @keyframes successPop { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+  .ext-header {
+    background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 11px 14px; display: flex;
+    align-items: center; gap: 10px; animation: slideDown .3s ease both;
+  }
+  .ext-logo {
+    width: 28px; height: 28px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+    border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: #fff;
+    font-weight: 700; font-size: 11px; letter-spacing: -0.3px; box-shadow: 0 1px 3px rgba(37,99,235,.3);
+    flex-shrink: 0; transition: transform var(--transition), box-shadow var(--transition);
+  }
+  .ext-logo:hover { transform: scale(1.08) rotate(-2deg); box-shadow: 0 2px 8px rgba(37,99,235,.4); }
+  .ext-title { font-weight: 600; font-size: 14px; flex: 1; letter-spacing: -0.2px; }
+  .ext-status {
+    display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green); font-weight: 500;
+    white-space: nowrap; cursor: default; position: relative;
+  }
+  .ext-status-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green); position: relative; flex-shrink: 0;
+  }
+  .ext-status-dot::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%; background: var(--green); opacity: 0;
+    animation: statusPulse 2s ease-in-out infinite;
+  }
+  .ext-status .tooltip {
+    position: absolute; top: calc(100% + 8px); right: 0; background: var(--text); color: #fafafa;
+    padding: 6px 10px; border-radius: var(--radius-sm); font-size: 10.5px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity var(--transition-fast), transform var(--transition-fast);
+    transform: translateY(-2px); z-index: 50;
+  }
+  .ext-status .tooltip::before {
+    content: ''; position: absolute; bottom: 100%; right: 16px; border: 4px solid transparent; border-bottom-color: var(--text);
+  }
+  .ext-status:hover .tooltip { opacity: 1; transform: translateY(0); }
+
+  .ext-section { padding: 10px 14px; animation: fadeInUp .35s ease both; }
+  .ext-section:nth-child(2) { animation-delay: .05s; }
+  .ext-section:nth-child(3) { animation-delay: .1s; }
+  .ext-section + .ext-section { padding-top: 0; }
+  .ext-section-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+
+  .ext-project-row { display: flex; gap: 6px; align-items: stretch; }
+  .ext-select-wrapper { position: relative; flex: 1; min-width: 0; }
+  .ext-select {
+    width: 100%; padding: 7px 32px 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-family: inherit; font-size: 12.5px; font-weight: 500; color: var(--text);
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a8a29e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+  }
+  .ext-select:hover { border-color: var(--border-hover); background: #fefefe; }
+  .ext-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+  .ext-new-project-btn {
+    display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 11px;
+    border: 1.5px dashed var(--accent-pale); border-radius: var(--radius-sm); background: var(--accent-light);
+    color: var(--accent); font-family: inherit; font-size: 11.5px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; transition: all var(--transition); box-shadow: none; flex-shrink: 0; position: relative; overflow: hidden;
+  }
+  .ext-new-project-btn::before {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 30%, rgba(37,99,235,.06) 100%);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .ext-new-project-btn:hover {
+    border-color: var(--accent); background: rgba(37,99,235,.1); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(37,99,235,.15);
+  }
+  .ext-new-project-btn:hover::before { opacity: 1; }
+  .ext-new-project-btn:active { transform: translateY(0); box-shadow: none; }
+  .ext-new-project-btn svg { width: 14px; height: 14px; stroke-width: 2.2; flex-shrink: 0; position: relative; z-index: 1; transition: transform var(--transition); }
+  .ext-new-project-btn:hover svg { transform: rotate(90deg); }
+  .ext-new-project-btn span { position: relative; z-index: 1; }
+
+  /* Logo Settings */
+  .logo-settings {
+    margin: 6px 14px 0; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); animation: scaleIn .25s ease both;
+  }
+  .logo-settings-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;
+  }
+  .logo-settings-title {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+  }
+  .logo-settings-title svg { width: 14px; height: 14px; flex-shrink: 0; stroke-width: 2; }
+  .logo-preview-container {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg); border: 1px solid var(--border-light);
+    border-radius: var(--radius-xs); transition: all var(--transition-fast);
+  }
+  .logo-preview-container:hover { border-color: var(--border-hover); background: #fefefe; }
+  .logo-preview {
+    width: 32px; height: 32px; border-radius: var(--radius-xs); overflow: hidden; flex-shrink: 0;
+    background: linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%); display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 11px; color: var(--text-muted);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.08);
+  }
+  .logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+  .logo-info { flex: 1; min-width: 0; }
+  .logo-name { font-size: 11.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .logo-hint { font-size: 9.5px; color: var(--text-muted); line-height: 1.2; }
+  .logo-edit-btn {
+    padding: 4px 9px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: var(--bg-card);
+    color: var(--text-secondary); font-family: inherit; font-size: 10.5px; font-weight: 500; cursor: pointer;
+    transition: all var(--transition-fast); white-space: nowrap; flex-shrink: 0;
+  }
+  .logo-edit-btn:hover { background: var(--bg); border-color: var(--border-hover); transform: translateY(-1px); }
+  .logo-edit-btn:active { transform: translateY(0); }
+
+  /* Replace/Skip Options */
+  .replace-options {
+    margin: 6px 14px 0; padding: 10px 12px; background: var(--accent-lighter); border: 1px solid rgba(37,99,235,.12);
+    border-radius: var(--radius); animation: scaleIn .25s ease both;
+  }
+  .replace-options-title {
+    font-size: 10.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 7px; display: flex;
+    align-items: center; gap: 5px;
+  }
+  .replace-options-title svg { width: 12px; height: 12px; stroke-width: 2; flex-shrink: 0; color: var(--accent); }
+  .replace-option-group { display: flex; flex-direction: column; gap: 5px; }
+  .replace-option {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: rgba(255,255,255,.7);
+    border: 1px solid rgba(37,99,235,.08); border-radius: var(--radius-xs); cursor: pointer;
+    transition: all var(--transition-fast); position: relative;
+  }
+  .replace-option:hover { background: rgba(255,255,255,.9); border-color: rgba(37,99,235,.15); }
+  .replace-option input[type="radio"] { position: absolute; opacity: 0; pointer-events: none; }
+  .replace-option-radio {
+    width: 14px; height: 14px; border: 2px solid var(--border-hover); border-radius: 50%; flex-shrink: 0;
+    position: relative; transition: all var(--transition-fast);
+  }
+  .replace-option-radio::after {
+    content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--accent); opacity: 0;
+    transform: scale(0); transition: all var(--transition-fast);
+  }
+  .replace-option input:checked ~ .replace-option-radio { border-color: var(--accent); }
+  .replace-option input:checked ~ .replace-option-radio::after { opacity: 1; transform: scale(1); }
+  .replace-option-label { font-size: 11.5px; font-weight: 500; color: var(--text-secondary); flex: 1; }
+  .replace-option-desc { font-size: 9.5px; color: var(--text-muted); line-height: 1.3; }
+
+  .capture-modes {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 0 14px; margin-bottom: 2px;
+    animation: fadeInUp .35s ease .12s both;
+  }
+  .capture-mode {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 9px;
+    border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 11px;
+    color: var(--text-secondary); background: var(--bg-card); transition: all var(--transition); text-align: center;
+    box-shadow: var(--shadow-sm); user-select: none; position: relative; overflow: hidden;
+  }
+  .capture-mode::before {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 40%, rgba(37,99,235,.03) 100%);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .capture-mode:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: var(--shadow); }
+  .capture-mode:hover::before { opacity: 1; }
+  .capture-mode:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+  .capture-mode.active {
+    border-color: var(--accent); background: var(--accent-light); color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.08), var(--shadow-sm);
+  }
+  .capture-mode.active::before { opacity: 0; }
+  .capture-mode.active::after {
+    content: ''; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; background: var(--accent);
+    border-radius: 50%; animation: dotBounce .4s ease;
+  }
+  .capture-mode svg { width: 18px; height: 18px; stroke-width: 1.8; transition: transform var(--transition); position: relative; z-index: 1; }
+  .capture-mode:hover svg { transform: scale(1.1); }
+  .capture-mode-label { font-weight: 500; line-height: 1.2; position: relative; z-index: 1; }
+  .capture-mode-desc { font-size: 9.5px; color: var(--text-muted); line-height: 1.2; position: relative; z-index: 1; }
+  .capture-mode.active .capture-mode-desc { color: rgba(37,99,235,.6); }
+
+  .auto-capture-panel {
+    margin: 6px 14px 0; padding: 10px 12px; background: var(--green-bg); border: 1px solid var(--green-border);
+    border-radius: var(--radius); animation: scaleIn .25s ease both; position: relative; overflow: hidden;
+  }
+  .auto-capture-panel::before {
+    content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, transparent 60%, rgba(22,163,74,.04) 100%);
+    pointer-events: none;
+  }
+  .auto-capture-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .auto-capture-title { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--green); }
+  .auto-capture-title svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .auto-capture-toggle { position: relative; width: 34px; height: 18px; flex-shrink: 0; }
+  .auto-capture-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0; background: #d4d4d4; border-radius: 9px; cursor: pointer; transition: background var(--transition);
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff;
+    border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform var(--transition);
+  }
+  .auto-capture-toggle input:checked + .toggle-slider { background: var(--green); }
+  .auto-capture-toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+  .auto-capture-options { display: flex; flex-direction: column; gap: 5px; }
+  .auto-capture-option {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 8px;
+    background: rgba(255,255,255,.7); border: 1px solid rgba(22,163,74,.12); border-radius: var(--radius-xs);
+    transition: all var(--transition-fast);
+  }
+  .auto-capture-option:hover { background: rgba(255,255,255,.9); border-color: rgba(22,163,74,.2); }
+  .auto-capture-option-label { font-size: 11px; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+  .auto-capture-option-label svg { width: 12px; height: 12px; color: var(--green); flex-shrink: 0; stroke-width: 2; }
+  .auto-capture-option-value {
+    font-size: 11px; font-family: var(--mono); font-weight: 600; color: var(--green); background: rgba(22,163,74,.08);
+    padding: 1px 7px; border-radius: 10px; white-space: nowrap;
+  }
+  .auto-capture-hint {
+    margin-top: 6px; font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; line-height: 1.3;
+  }
+  .auto-capture-hint svg { width: 11px; height: 11px; flex-shrink: 0; stroke-width: 2; }
+
+  .depth-config {
+    display: flex; align-items: center; gap: 6px; padding: 8px 14px 4px; flex-wrap: wrap; animation: fadeInUp .35s ease .15s both;
+  }
+  .depth-tag {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; background: var(--accent-lighter);
+    border: 1px solid rgba(37,99,235,.12); border-radius: 20px; font-size: 10.5px; font-weight: 500; color: var(--accent);
+    white-space: nowrap; transition: all var(--transition-fast); cursor: default;
+  }
+  .depth-tag:hover { background: rgba(37,99,235,.1); border-color: rgba(37,99,235,.2); transform: translateY(-1px); }
+  .depth-tag svg { width: 11px; height: 11px; stroke-width: 2; flex-shrink: 0; }
+  .depth-link {
+    font-size: 10.5px; color: var(--accent); text-decoration: none; font-weight: 500;
+    border-bottom: 1px dashed rgba(37,99,235,.3); padding-bottom: 0px; transition: all var(--transition-fast); white-space: nowrap;
+  }
+  .depth-link:hover { border-bottom-color: var(--accent); border-bottom-style: solid; }
+
+  /* Generation Results Panel */
+  .gen-results-panel {
+    margin: 6px 14px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); animation: scaleIn .3s ease both; box-shadow: var(--shadow);
+  }
+  .gen-results-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px;
+  }
+  .gen-results-title {
+    font-size: 12.5px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px;
+  }
+  .gen-results-title svg { width: 15px; height: 15px; stroke-width: 2; flex-shrink: 0; color: var(--accent); }
+  .gen-results-close {
+    width: 20px; height: 20px; border-radius: var(--radius-xs); display: flex; align-items: center;
+    justify-content: center; border: none; background: none; cursor: pointer; color: var(--text-muted);
+    transition: all var(--transition-fast);
+  }
+  .gen-results-close:hover { background: var(--bg-hover); color: var(--text-secondary); }
+  .gen-results-close svg { width: 14px; height: 14px; stroke-width: 2; }
+  .gen-results-summary {
+    padding: 8px 10px; background: var(--accent-light); border: 1px solid rgba(37,99,235,.15);
+    border-radius: var(--radius-sm); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .gen-results-summary svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--accent); stroke-width: 2; }
+  .gen-results-summary-text { flex: 1; font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+  .gen-results-summary-text strong { color: var(--accent); font-weight: 600; }
+  .gen-results-list { display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto; }
+  .gen-result-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg);
+    border: 1px solid var(--border-light); border-radius: var(--radius-xs); transition: all var(--transition-fast);
+    cursor: default;
+  }
+  .gen-result-item:hover { background: var(--bg-hover); border-color: var(--border); }
+  .gen-result-status {
+    width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: transform var(--transition-fast);
+  }
+  .gen-result-item:hover .gen-result-status { transform: scale(1.1); }
+  .gen-result-status.success { background: var(--green-bg); color: var(--green); }
+  .gen-result-status.error { background: var(--red-bg); color: var(--red); }
+  .gen-result-status.warning { background: var(--amber-bg); color: var(--amber); }
+  .gen-result-status svg { width: 10px; height: 10px; stroke-width: 3; }
+  .gen-result-info { flex: 1; min-width: 0; }
+  .gen-result-name { font-size: 11.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gen-result-detail { font-size: 9.5px; color: var(--text-muted); line-height: 1.3; }
+  .gen-result-retry-btn {
+    padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--radius-xs); background: var(--bg-card);
+    color: var(--text-secondary); font-family: inherit; font-size: 9.5px; font-weight: 500; cursor: pointer;
+    transition: all var(--transition-fast); white-space: nowrap; flex-shrink: 0; opacity: 0;
+  }
+  .gen-result-item:hover .gen-result-retry-btn { opacity: 1; }
+  .gen-result-retry-btn:hover { background: var(--bg); border-color: var(--border-hover); transform: translateY(-1px); }
+  .gen-result-retry-btn:active { transform: translateY(0); }
+
+  .progress-section {
+    padding: 10px 14px 10px; animation: fadeInUp .35s ease .18s both;
+  }
+  .progress-header {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px;
+  }
+  .progress-title { font-weight: 600; font-size: 12.5px; letter-spacing: -0.1px; }
+  .progress-count { font-family: var(--mono); font-size: 11.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .progress-percent {
+    font-family: var(--mono); font-size: 10px; color: var(--accent); font-weight: 600; margin-left: 6px;
+    background: var(--accent-light); padding: 1px 5px; border-radius: 4px;
+  }
+  .progress-bar-track { width: 100%; height: 8px; background: #e7e5e4; border-radius: 4px; overflow: hidden; position: relative; }
+  .progress-bar-fill {
+    height: 100%; width: 72%; background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 50%, #60a5fa 100%);
+    border-radius: 4px; position: relative; overflow: hidden; transition: width .6s cubic-bezier(.4,0,.2,1);
+    animation: progressPulse 3s ease-in-out infinite;
+  }
+  .progress-bar-fill::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.15) 20%, rgba(255,255,255,.45) 50%, rgba(255,255,255,.15) 80%, transparent 100%);
+    width: 50%; animation: shimmer 1.8s ease-in-out infinite;
+  }
+  .progress-segments { display: flex; gap: 2px; margin-top: 6px; height: 3px; }
+  .progress-segment { flex: 1; border-radius: 2px; transition: background var(--transition); }
+  .progress-segment.done { background: var(--green); }
+  .progress-segment.active { background: var(--accent); animation: dotBounce 1s ease infinite; }
+  .progress-segment.error { background: var(--red); }
+  .progress-segment.pending { background: #e7e5e4; }
+  .progress-stats { display: flex; gap: 10px; margin-top: 8px; font-size: 10.5px; color: var(--text-muted); flex-wrap: wrap; }
+  .progress-stat { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; transition: color var(--transition-fast); cursor: default; }
+  .progress-stat:hover { color: var(--text-secondary); }
+  .stat-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; transition: transform var(--transition-fast); }
+  .progress-stat:hover .stat-dot { transform: scale(1.4); }
+  .stat-dot.sent { background: var(--green); }
+  .stat-dot.pending { background: var(--accent); }
+  .stat-dot.error { background: var(--red); }
+  .stat-dot.queue { background: var(--text-muted); }
+
+  .pages-section { border-top: 1px solid var(--border); animation: fadeInUp .35s ease .22s both; }
+  .pages-header {
+    display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; font-size: 10px;
+    font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px;
+  }
+  .pages-header-right { display: flex; align-items: center; gap: 8px; }
+  .pages-header-count { font-weight: 500; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .pages-filter { display: flex; gap: 2px; }
+  .pages-filter-btn {
+    padding: 2px 6px; border-radius: var(--radius-xs); font-size: 9.5px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; border: none; background: none; font-family: inherit; transition: all var(--transition-fast);
+  }
+  .pages-filter-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+  .pages-filter-btn.active { background: var(--text); color: #fafafa; }
+  .pages-list { max-height: 224px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .pages-list::-webkit-scrollbar { width: 4px; }
+  .pages-list::-webkit-scrollbar-track { background: transparent; }
+  .pages-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .pages-list::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+  .page-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-bottom: 1px solid #f5f5f4;
+    font-size: 12px; transition: background var(--transition-fast); opacity: 0; animation: fadeInItem .35s ease forwards;
+    cursor: default; position: relative;
+  }
+  .page-item:nth-child(1) { animation-delay: .25s; } .page-item:nth-child(2) { animation-delay: .30s; }
+  .page-item:nth-child(3) { animation-delay: .35s; } .page-item:nth-child(4) { animation-delay: .40s; }
+  .page-item:nth-child(5) { animation-delay: .45s; } .page-item:nth-child(6) { animation-delay: .50s; }
+  .page-item:nth-child(7) { animation-delay: .55s; } .page-item:nth-child(8) { animation-delay: .60s; }
+  .page-item:last-child { border-bottom: none; }
+  .page-item:hover { background: var(--bg-hover); }
+  .page-item-action { position: absolute; right: 10px; opacity: 0; transition: opacity var(--transition-fast); display: flex; gap: 4px; }
+  .page-item:hover .page-item-action { opacity: 1; }
+  .page-action-btn {
+    width: 22px; height: 22px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center;
+    border: none; background: none; cursor: pointer; color: var(--text-muted); transition: all var(--transition-fast);
+  }
+  .page-action-btn:hover { background: var(--bg); color: var(--text-secondary); }
+  .page-action-btn svg { width: 12px; height: 12px; }
+  .page-status-icon {
+    width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: transform var(--transition-fast);
+  }
+  .page-item:hover .page-status-icon { transform: scale(1.1); }
+  .page-status-icon.sent { background: var(--green-bg); color: var(--green); }
+  .page-status-icon.sent svg { animation: successPop .3s ease both; }
+  .page-status-icon.sending { background: var(--accent-light); color: var(--accent); }
+  .page-status-icon.error { background: var(--red-bg); color: var(--red); }
+  .page-status-icon.queued { background: none; border: 1.5px dashed var(--border); }
+  .page-status-icon svg { width: 10px; height: 10px; }
+  .page-spinner {
+    width: 12px; height: 12px; border: 2px solid rgba(37,99,235,.15); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .6s linear infinite;
+  }
+  .page-info { flex: 1; min-width: 0; }
+  .page-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 1.3; }
+  .page-url { font-size: 10px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+  .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .page-size { font-size: 10px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .page-time { font-size: 9px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; opacity: 0; transition: opacity var(--transition-fast); }
+  .page-item:hover .page-time { opacity: 1; }
+  .page-error .page-name { color: var(--red); }
+  .page-error .page-url { color: rgba(220,38,38,.55); }
+  .page-error .page-size { color: var(--red); }
+  .page-queued .page-name { color: var(--text-muted); }
+  .page-queued .page-size { color: var(--text-muted); }
+
+  .speed-bar {
+    display: flex; align-items: center; gap: 8px; padding: 6px 14px 8px; font-size: 10.5px; color: var(--text-muted);
+    animation: fadeInUp .35s ease .2s both;
+  }
+  .speed-label { white-space: nowrap; font-weight: 500; }
+  .speed-indicator { display: flex; gap: 2px; align-items: center; }
+  .speed-dot { width: 4px; height: 10px; border-radius: 2px; background: #e7e5e4; transition: background var(--transition); }
+  .speed-dot.active { background: var(--green); }
+  .speed-dot.active:nth-child(3) { background: var(--amber); }
+  .speed-dot.active:nth-child(4) { background: var(--amber); }
+  .speed-dot.active:nth-child(5) { background: var(--red); }
+  .speed-value { font-family: var(--mono); font-weight: 600; font-size: 10.5px; color: var(--text-secondary); }
+
+  .ext-actions {
+    padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; background: var(--bg-card);
+    position: sticky; bottom: 0; animation: fadeInUp .35s ease .28s both;
+  }
+  .ext-btn {
+    flex: 1; padding: 8px 14px; border-radius: var(--radius-sm); font-family: inherit; font-size: 12.5px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: var(--bg-card); color: var(--text);
+    text-align: center; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center;
+    gap: 6px; box-shadow: var(--shadow-sm); user-select: none; position: relative; overflow: hidden;
+  }
+  .ext-btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.4) 50%, transparent 100%);
+    transform: translateX(-100%); transition: transform .5s;
+  }
+  .ext-btn:hover::after { transform: translateX(100%); }
+  .ext-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .ext-btn:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+  .ext-btn svg { width: 14px; height: 14px; flex-shrink: 0; position: relative; z-index: 1; }
+  .ext-btn span { position: relative; z-index: 1; }
+  .ext-btn-outline { background: var(--bg-card); color: var(--text-secondary); border-color: var(--border); }
+  .ext-btn-outline:hover { background: var(--bg); border-color: var(--border-hover); }
+  .ext-btn-primary {
+    background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 1px 3px rgba(37,99,235,.2);
+  }
+  .ext-btn-primary::after {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.2) 50%, transparent 100%);
+  }
+  .ext-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 3px 10px rgba(37,99,235,.3); }
+  .ext-btn-primary:active { box-shadow: 0 1px 2px rgba(37,99,235,.2); }
+  .ext-btn .kbd {
+    font-family: var(--mono); font-size: 9px; padding: 1px 4px; background: rgba(255,255,255,.15); border-radius: 3px;
+    font-weight: 600; margin-left: 2px; position: relative; z-index: 1;
+  }
+  .ext-btn-outline .kbd { background: rgba(0,0,0,.06); color: var(--text-muted); }
+
+  .ext-footer {
+    padding: 8px 14px 10px; text-align: center; font-size: 10.5px; color: var(--text-muted); border-top: 1px solid var(--border);
+    background: var(--bg-card); display: flex; align-items: center; justify-content: center; gap: 4px;
+    animation: fadeInUp .35s ease .32s both;
+  }
+  .ext-footer a { color: var(--text-secondary); text-decoration: none; transition: color var(--transition-fast); padding: 1px 2px; border-radius: 2px; }
+  .ext-footer a:hover { color: var(--accent); background: var(--accent-light); }
+  .ext-footer-sep { color: var(--border); font-size: 9px; }
+  .ext-footer-version { font-family: var(--mono); font-size: 9px; color: var(--text-muted); opacity: .5; margin-left: 4px; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="ext-header">
+  <div class="ext-logo">ES</div>
+  <div class="ext-title">Env. Simul&eacute;s</div>
+  <div class="ext-status">
+    <span class="ext-status-dot"></span>
+    Capture en cours
+    <span class="tooltip">Connect&eacute; &middot; Salesforce Demo Q1</span>
+  </div>
+</div>
+
+<div class="ext-section">
+  <div class="ext-section-label">Projet</div>
+  <div class="ext-project-row">
+    <div class="ext-select-wrapper">
+      <select class="ext-select">
+        <option>Salesforce &mdash; D&eacute;mo Commerciale Q1 (v3.2)</option>
+        <option>HubSpot &mdash; Onboarding Marketing (v1.4)</option>
+        <option>Workday &mdash; Formation RH (v2.0)</option>
+        <option>ServiceNow &mdash; Gestion Incidents (v1.1)</option>
+      </select>
+    </div>
+    <button class="ext-new-project-btn" title="Cr&eacute;er un nouveau projet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      <span>Nouveau</span>
+    </button>
+  </div>
+</div>
+
+<!-- NEW FEATURE 1: Logo Settings -->
+<div class="logo-settings">
+  <div class="logo-settings-header">
+    <div class="logo-settings-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      Logo &agrave; remplacer
+    </div>
+  </div>
+  <div class="logo-preview-container">
+    <div class="logo-preview">
+      ACME
+    </div>
+    <div class="logo-info">
+      <div class="logo-name">Logo Acme (par d&eacute;faut)</div>
+      <div class="logo-hint">D&eacute;tect&eacute; et substitu&eacute; automatiquement</div>
+    </div>
+    <button class="logo-edit-btn">Modifier</button>
+  </div>
+</div>
+
+<!-- NEW FEATURE 3: Replace/Skip Options -->
+<div class="replace-options">
+  <div class="replace-options-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    Pages existantes
+  </div>
+  <div class="replace-option-group">
+    <label class="replace-option">
+      <input type="radio" name="replace-mode" value="replace" checked>
+      <span class="replace-option-radio"></span>
+      <div style="flex:1">
+        <div class="replace-option-label">Remplacer les pages existantes</div>
+        <div class="replace-option-desc">Capture m&ecirc;me si la page existe d&eacute;j&agrave;</div>
+      </div>
+    </label>
+    <label class="replace-option">
+      <input type="radio" name="replace-mode" value="skip">
+      <span class="replace-option-radio"></span>
+      <div style="flex:1">
+        <div class="replace-option-label">Ignorer si la page existe d&eacute;j&agrave;</div>
+        <div class="replace-option-desc">Passe les pages d&eacute;j&agrave; captur&eacute;es</div>
+      </div>
+    </label>
+  </div>
+</div>
+
+<div class="ext-section" style="padding-bottom: 4px;">
+  <div class="ext-section-label">Mode de capture</div>
+</div>
+<div class="capture-modes">
+  <div class="capture-mode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span class="capture-mode-label">Libre</span>
+    <span class="capture-mode-desc">Navigation manuelle</span>
+  </div>
+  <div class="capture-mode active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    <span class="capture-mode-label">Guid&eacute;e</span>
+    <span class="capture-mode-desc">Pas &agrave; pas</span>
+  </div>
+  <div class="capture-mode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    <span class="capture-mode-label">Auto</span>
+    <span class="capture-mode-desc">Crawl automatique</span>
+  </div>
+</div>
+
+<!-- NEW FEATURE 2: Generation Results Panel (shown after guided mode completion) -->
+<div class="gen-results-panel">
+  <div class="gen-results-header">
+    <div class="gen-results-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+      R&eacute;sultats de g&eacute;n&eacute;ration
+    </div>
+    <button class="gen-results-close" title="Fermer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="gen-results-summary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    <div class="gen-results-summary-text">
+      Rapport : <strong>12/15 guides r&eacute;ussis</strong>, 3 en erreur
+    </div>
+  </div>
+  <div class="gen-results-list">
+    <div class="gen-result-item">
+      <div class="gen-result-status success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="gen-result-info">
+        <div class="gen-result-name">01 - Connexion et Dashboard</div>
+        <div class="gen-result-detail">4 pages captur&eacute;es</div>
+      </div>
+    </div>
+    <div class="gen-result-item">
+      <div class="gen-result-status success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="gen-result-info">
+        <div class="gen-result-name">02 - Gestion des contacts</div>
+        <div class="gen-result-detail">3 pages captur&eacute;es</div>
+      </div>
+    </div>
+    <div class="gen-result-item">
+      <div class="gen-result-status warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="gen-result-info">
+        <div class="gen-result-name">03 - Pipeline des ventes</div>
+        <div class="gen-result-detail">2/3 pages - Timeout sur rapport</div>
+      </div>
+      <button class="gen-result-retry-btn">Compl&eacute;ter</button>
+    </div>
+    <div class="gen-result-item">
+      <div class="gen-result-status error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </div>
+      <div class="gen-result-info">
+        <div class="gen-result-name">04 - Rapports avanc&eacute;s</div>
+        <div class="gen-result-detail">0/5 pages - Erreur permission</div>
+      </div>
+      <button class="gen-result-retry-btn">R&eacute;essayer</button>
+    </div>
+    <div class="gen-result-item">
+      <div class="gen-result-status success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="gen-result-info">
+        <div class="gen-result-name">05 - Param&egrave;tres utilisateur</div>
+        <div class="gen-result-detail">2 pages captur&eacute;es</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="depth-config">
+  <span class="depth-tag">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    15 guides
+  </span>
+  <span class="depth-tag">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    Mode guid&eacute;
+  </span>
+  <a href="#" class="depth-link">
+    2 zones d&rsquo;int&eacute;r&ecirc;t
+  </a>
+</div>
+
+<div class="speed-bar">
+  <span class="speed-label">D&eacute;bit</span>
+  <span class="speed-indicator">
+    <span class="speed-dot active"></span>
+    <span class="speed-dot active"></span>
+    <span class="speed-dot"></span>
+    <span class="speed-dot"></span>
+    <span class="speed-dot"></span>
+  </span>
+  <span class="speed-value">1.2 p/min</span>
+</div>
+
+<div class="progress-section">
+  <div class="progress-header">
+    <div class="progress-title">Progression</div>
+    <div style="display:flex;align-items:baseline;gap:4px">
+      <div class="progress-count">12/15 guides</div>
+      <div class="progress-percent">80%</div>
+    </div>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" style="width:80%"></div>
+  </div>
+  <div class="progress-segments">
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment done"></div>
+    <div class="progress-segment error"></div>
+    <div class="progress-segment pending"></div>
+    <div class="progress-segment pending"></div>
+  </div>
+  <div class="progress-stats">
+    <div class="progress-stat"><span class="stat-dot sent"></span> 12 r&eacute;ussis</div>
+    <div class="progress-stat"><span class="stat-dot error"></span> 3 erreurs</div>
+  </div>
+</div>
+
+<div class="pages-section">
+  <div class="pages-header">
+    <span>Pages captur&eacute;es</span>
+    <div class="pages-header-right">
+      <div class="pages-filter">
+        <button class="pages-filter-btn active">Tout</button>
+        <button class="pages-filter-btn">OK</button>
+        <button class="pages-filter-btn">Err</button>
+      </div>
+      <span class="pages-header-count">18 pages</span>
+    </div>
+  </div>
+  <div class="pages-list">
+
+    <div class="page-item">
+      <div class="page-status-icon sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-name">Dashboard principal</div>
+        <div class="page-url">/lightning/page/home</div>
+      </div>
+      <div class="page-meta">
+        <div class="page-time">14:02</div>
+        <div class="page-size">2.4 Mo</div>
+      </div>
+      <div class="page-item-action">
+        <button class="page-action-btn" title="Recapturer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-item">
+      <div class="page-status-icon sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-name">Liste des contacts</div>
+        <div class="page-url">/lightning/o/Contact/list</div>
+      </div>
+      <div class="page-meta">
+        <div class="page-time">14:04</div>
+        <div class="page-size">3.1 Mo</div>
+      </div>
+      <div class="page-item-action">
+        <button class="page-action-btn" title="Recapturer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-item">
+      <div class="page-status-icon sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-name">Fiche Contact &mdash; J. Dupont</div>
+        <div class="page-url">/lightning/r/Contact/003xx.../view</div>
+      </div>
+      <div class="page-meta">
+        <div class="page-time">14:06</div>
+        <div class="page-size">2.8 Mo</div>
+      </div>
+      <div class="page-item-action">
+        <button class="page-action-btn" title="Recapturer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-item">
+      <div class="page-status-icon sent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-name">Cr&eacute;ation rapide contact</div>
+        <div class="page-url">/lightning/o/Contact/new</div>
+      </div>
+      <div class="page-meta">
+        <div class="page-time">14:08</div>
+        <div class="page-size">1.9 Mo</div>
+      </div>
+      <div class="page-item-action">
+        <button class="page-action-btn" title="Recapturer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-item">
+      <div class="page-status-icon sending">
+        <div class="page-spinner"></div>
+      </div>
+      <div class="page-info">
+        <div class="page-name">Pipeline Kanban</div>
+        <div class="page-url">/lightning/o/Opportunity/list</div>
+      </div>
+      <div class="page-meta">
+        <div class="page-time">14:12</div>
+        <div class="page-size">4.2 Mo</div>
+      </div>
+    </div>
+
+    <div class="page-item page-error">
+      <div class="page-status-icon error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+      </div>
+      <div class="page-info">
+        <div class="page-name">Rapport trimestriel</div>
+        <div class="page-url">/lightning/r/Report/00Oxx... &middot; Timeout 30s</div>
+      </div>
+      <div class="page-meta">
+        <div class="page-size">&mdash;</div>
+      </div>
+      <div class="page-item-action" style="opacity:1">
+        <button class="page-action-btn" title="R&eacute;essayer" style="color:var(--red)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ext-actions">
+  <button class="ext-btn ext-btn-outline">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    <span>Pause</span>
+    <span class="kbd">P</span>
+  </button>
+  <button class="ext-btn ext-btn-primary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <span>Capturer</span>
+    <span class="kbd">C</span>
+  </button>
+</div>
+
+<div class="ext-footer">
+  <a href="#">Param&egrave;tres</a>
+  <span class="ext-footer-sep">&middot;</span>
+  <a href="#">Zones d&rsquo;int&eacute;r&ecirc;t</a>
+  <span class="ext-footer-sep">&middot;</span>
+  <a href="#">Liste noire</a>
+  <span class="ext-footer-version">v5.0.0</span>
+</div>
+
+</body>
+</html>

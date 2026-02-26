@@ -1,0 +1,676 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Favicon — Capture Dot Citron</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #F9FAFB;
+      color: #111827;
+      padding: 48px;
+      min-height: 100vh;
+    }
+
+    .header {
+      max-width: 960px;
+      margin: 0 auto 48px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #6B7280;
+      line-height: 1.6;
+    }
+
+    .content {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .section {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 32px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6B7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 24px;
+    }
+
+    /* Hero icon */
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+    }
+
+    .hero-icon {
+      flex-shrink: 0;
+    }
+
+    .hero-meta h2 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+    }
+
+    .hero-meta p {
+      font-size: 14px;
+      color: #6B7280;
+      line-height: 1.6;
+    }
+
+    /* Sizes row */
+    .sizes-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 40px;
+    }
+
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .size-label {
+      font-size: 11px;
+      color: #9CA3AF;
+      font-weight: 500;
+    }
+
+    /* Tab previews */
+    .previews-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .preview-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-radius: 10px;
+    }
+
+    .preview-light {
+      background: #F3F4F6;
+    }
+
+    .preview-dark {
+      background: #1F2937;
+    }
+
+    .preview-label {
+      font-size: 11px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .preview-light .preview-label { color: #9CA3AF; }
+    .preview-dark .preview-label { color: #6B7280; }
+
+    .tab-mock {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .preview-light .tab-mock {
+      background: white;
+      border: 1px solid #E5E7EB;
+      color: #374151;
+    }
+
+    .preview-dark .tab-mock {
+      background: #374151;
+      border: 1px solid #4B5563;
+      color: #E5E7EB;
+    }
+
+    .tab-row {
+      display: flex;
+      gap: 2px;
+    }
+
+    .tab-inactive {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .preview-light .tab-inactive {
+      color: #9CA3AF;
+    }
+
+    .preview-dark .tab-inactive {
+      color: #6B7280;
+    }
+
+    /* Context previews */
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .context-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 12px;
+      border-radius: 10px;
+      border: 1px solid #E5E7EB;
+    }
+
+    .context-item.dark {
+      background: #111827;
+      border-color: #1F2937;
+    }
+
+    .context-label {
+      font-size: 11px;
+      color: #9CA3AF;
+      font-weight: 500;
+    }
+
+    .context-item.dark .context-label {
+      color: #6B7280;
+    }
+
+    /* Bookmark bar mock */
+    .bookmark-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+    }
+
+    .preview-light .bookmark-bar {
+      background: #F9FAFB;
+      color: #6B7280;
+    }
+
+    .preview-dark .bookmark-bar {
+      background: #111827;
+      color: #9CA3AF;
+    }
+
+    .bookmark-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .bookmark-item.active {
+      font-weight: 500;
+    }
+
+    .preview-light .bookmark-item { color: #6B7280; }
+    .preview-dark .bookmark-item { color: #9CA3AF; }
+
+    /* Sidebar mock */
+    .sidebar-mock {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px;
+      border-radius: 8px;
+      width: fit-content;
+    }
+
+    .preview-light .sidebar-mock {
+      background: #F9FAFB;
+    }
+
+    .preview-dark .sidebar-mock {
+      background: #111827;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .preview-light .sidebar-item { color: #374151; }
+    .preview-dark .sidebar-item { color: #D1D5DB; }
+
+    .sidebar-item.active-item {
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    .preview-dark .sidebar-item.active-item {
+      background: rgba(96, 165, 250, 0.1);
+    }
+
+    /* Export section */
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .export-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 12px;
+      border: 1px dashed #D1D5DB;
+      border-radius: 10px;
+      cursor: default;
+    }
+
+    .export-item .format {
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+      background: #F3F4F6;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .export-item .dimensions {
+      font-size: 11px;
+      color: #9CA3AF;
+    }
+
+    /* Colors */
+    .colors-row {
+      display: flex;
+      gap: 24px;
+    }
+
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .color-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .color-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #111827;
+    }
+
+    .color-hex {
+      font-size: 12px;
+      color: #9CA3AF;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 24px; }
+      .hero { flex-direction: column; text-align: center; }
+      .sizes-row { flex-wrap: wrap; justify-content: center; }
+      .previews-grid { grid-template-columns: 1fr; }
+      .context-grid { grid-template-columns: repeat(2, 1fr); }
+      .export-grid { grid-template-columns: repeat(2, 1fr); }
+      .colors-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Favicon — Capture Dot Citron</h1>
+    <p>Cadre de capture bleu avec point central jaune citron. Identité Lemon Learning + capture d'environnements.</p>
+  </div>
+
+  <div class="content">
+
+    <!-- Hero -->
+    <div class="section">
+      <div class="hero">
+        <div class="hero-icon">
+          <svg width="128" height="128" viewBox="0 0 192 192" fill="none">
+            <defs>
+              <radialGradient id="yg" cx="0.4" cy="0.4" r="0.6">
+                <stop offset="0%" stop-color="#FDE68A"/>
+                <stop offset="100%" stop-color="#F59E0B"/>
+              </radialGradient>
+            </defs>
+            <path d="M24 60 L24 36 Q24 24 36 24 L60 24" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M132 24 L156 24 Q168 24 168 36 L168 60" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M168 132 L168 156 Q168 168 156 168 L132 168" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M60 168 L36 168 Q24 168 24 156 L24 132" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="96" cy="96" r="24" fill="url(#yg)"/>
+            <circle cx="96" cy="96" r="24" stroke="#F59E0B" stroke-width="2"/>
+            <circle cx="96" cy="96" r="38" stroke="#3B82F6" stroke-width="3" opacity="0.15"/>
+            <circle cx="96" cy="96" r="52" stroke="#3B82F6" stroke-width="2" opacity="0.08"/>
+          </svg>
+        </div>
+        <div class="hero-meta">
+          <h2>Capture Dot Citron</h2>
+          <p>Cadre de capture (viewfinder) bleu avec un point central jaune citron. Le bleu porte l'identité tech/capture, le jaune porte Lemon Learning. Changement minimal par rapport au concept original (point bleu → jaune), impact maximal. Le plus lisible en 16px, le plus professionnel.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toutes les tailles -->
+    <div class="section">
+      <div class="section-title">Tailles</div>
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+            <path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="4" fill="#FACC15"/>
+          </svg>
+          <span class="size-label">16×16</span>
+        </div>
+        <div class="size-item">
+          <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+            <path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="4" fill="#FACC15"/>
+          </svg>
+          <span class="size-label">24×24</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="16" cy="16" r="4" fill="#FACC15"/>
+            <circle cx="16" cy="16" r="4" stroke="#F59E0B" stroke-width="0.8"/>
+          </svg>
+          <span class="size-label">32×32</span>
+        </div>
+        <div class="size-item">
+          <svg width="48" height="48" viewBox="0 0 64 64" fill="none">
+            <path d="M8 20 L8 12 Q8 8 12 8 L20 8" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M44 8 L52 8 Q56 8 56 12 L56 20" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M56 44 L56 52 Q56 56 52 56 L44 56" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M20 56 L12 56 Q8 56 8 52 L8 44" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="8" fill="#FACC15"/>
+            <circle cx="32" cy="32" r="8" stroke="#F59E0B" stroke-width="1.2"/>
+            <circle cx="32" cy="32" r="13" stroke="#3B82F6" stroke-width="1.5" opacity="0.2"/>
+          </svg>
+          <span class="size-label">48×48</span>
+        </div>
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <path d="M8 20 L8 12 Q8 8 12 8 L20 8" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M44 8 L52 8 Q56 8 56 12 L56 20" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M56 44 L56 52 Q56 56 52 56 L44 56" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <path d="M20 56 L12 56 Q8 56 8 52 L8 44" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="8" fill="#FACC15"/>
+            <circle cx="32" cy="32" r="8" stroke="#F59E0B" stroke-width="1.2"/>
+            <circle cx="32" cy="32" r="13" stroke="#3B82F6" stroke-width="1.5" opacity="0.2"/>
+          </svg>
+          <span class="size-label">64×64</span>
+        </div>
+        <div class="size-item">
+          <svg width="96" height="96" viewBox="0 0 192 192" fill="none">
+            <defs>
+              <radialGradient id="yg96" cx="0.4" cy="0.4" r="0.6">
+                <stop offset="0%" stop-color="#FDE68A"/>
+                <stop offset="100%" stop-color="#F59E0B"/>
+              </radialGradient>
+            </defs>
+            <path d="M24 60 L24 36 Q24 24 36 24 L60 24" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M132 24 L156 24 Q168 24 168 36 L168 60" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M168 132 L168 156 Q168 168 156 168 L132 168" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M60 168 L36 168 Q24 168 24 156 L24 132" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="96" cy="96" r="24" fill="url(#yg96)"/>
+            <circle cx="96" cy="96" r="24" stroke="#F59E0B" stroke-width="2"/>
+            <circle cx="96" cy="96" r="38" stroke="#3B82F6" stroke-width="3" opacity="0.15"/>
+            <circle cx="96" cy="96" r="52" stroke="#3B82F6" stroke-width="2" opacity="0.08"/>
+          </svg>
+          <span class="size-label">192×192</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet navigateur -->
+    <div class="section">
+      <div class="section-title">Onglet navigateur</div>
+      <div class="previews-grid">
+        <div>
+          <div class="preview-label" style="font-size:11px;font-weight:500;color:#9CA3AF;margin-bottom:8px;">Fond clair</div>
+          <div class="preview-box preview-light" style="flex-direction:column;align-items:flex-start;gap:10px;">
+            <div class="tab-row">
+              <div class="tab-mock">
+                <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+                Environnements Simulés
+              </div>
+              <div class="tab-inactive">
+                <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="4" fill="#E5E7EB"/></svg>
+                Autre onglet
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="preview-label" style="font-size:11px;font-weight:500;color:#6B7280;margin-bottom:8px;">Fond sombre</div>
+          <div class="preview-box preview-dark" style="flex-direction:column;align-items:flex-start;gap:10px;">
+            <div class="tab-row">
+              <div class="tab-mock">
+                <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+                Environnements Simulés
+              </div>
+              <div class="tab-inactive">
+                <svg width="14" height="14" viewBox="0 0 32 32" fill="none"><rect x="4" y="4" width="24" height="24" rx="4" fill="#4B5563"/></svg>
+                Autre onglet
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contexte d'utilisation -->
+    <div class="section">
+      <div class="section-title">Contexte d'utilisation</div>
+      <div class="context-grid">
+        <div class="context-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/><circle cx="16" cy="16" r="4" stroke="#F59E0B" stroke-width="0.8"/></svg>
+          <span class="context-label">Favicon</span>
+        </div>
+        <div class="context-item">
+          <svg width="48" height="48" viewBox="0 0 64 64" fill="none"><path d="M8 20 L8 12 Q8 8 12 8 L20 8" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/><path d="M44 8 L52 8 Q56 8 56 12 L56 20" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/><path d="M56 44 L56 52 Q56 56 52 56 L44 56" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/><path d="M20 56 L12 56 Q8 56 8 52 L8 44" stroke="#3B82F6" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="8" fill="#FACC15"/><circle cx="32" cy="32" r="8" stroke="#F59E0B" stroke-width="1.2"/><circle cx="32" cy="32" r="13" stroke="#3B82F6" stroke-width="1.5" opacity="0.2"/></svg>
+          <span class="context-label">Extension Chrome</span>
+        </div>
+        <div class="context-item dark">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+          <span class="context-label">Taskbar sombre</span>
+        </div>
+        <div class="context-item">
+          <svg width="64" height="64" viewBox="0 0 192 192" fill="none">
+            <defs><radialGradient id="ygctx" cx="0.4" cy="0.4" r="0.6"><stop offset="0%" stop-color="#FDE68A"/><stop offset="100%" stop-color="#F59E0B"/></radialGradient></defs>
+            <path d="M24 60 L24 36 Q24 24 36 24 L60 24" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M132 24 L156 24 Q168 24 168 36 L168 60" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M168 132 L168 156 Q168 168 156 168 L132 168" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <path d="M60 168 L36 168 Q24 168 24 156 L24 132" stroke="#3B82F6" stroke-width="8" stroke-linecap="round"/>
+            <circle cx="96" cy="96" r="24" fill="url(#ygctx)"/>
+            <circle cx="96" cy="96" r="24" stroke="#F59E0B" stroke-width="2"/>
+            <circle cx="96" cy="96" r="38" stroke="#3B82F6" stroke-width="3" opacity="0.15"/>
+          </svg>
+          <span class="context-label">App Icon (PWA)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar / App context -->
+    <div class="section">
+      <div class="section-title">Dans l'application</div>
+      <div class="previews-grid">
+        <div>
+          <div class="preview-label" style="font-size:11px;font-weight:500;color:#9CA3AF;margin-bottom:8px;">Sidebar admin</div>
+          <div class="preview-box preview-light" style="padding:0;">
+            <div class="sidebar-mock">
+              <div class="sidebar-item active-item">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+                Env. Simulés
+              </div>
+              <div class="sidebar-item" style="color:#9CA3AF;">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect x="6" y="6" width="20" height="20" rx="4" stroke="#D1D5DB" stroke-width="2" fill="none"/></svg>
+                Projets
+              </div>
+              <div class="sidebar-item" style="color:#9CA3AF;">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" stroke="#D1D5DB" stroke-width="2" fill="none"/></svg>
+                Analytics
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="preview-label" style="font-size:11px;font-weight:500;color:#6B7280;margin-bottom:8px;">Sidebar sombre</div>
+          <div class="preview-box preview-dark" style="padding:0;">
+            <div class="sidebar-mock">
+              <div class="sidebar-item active-item">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+                Env. Simulés
+              </div>
+              <div class="sidebar-item" style="color:#6B7280;">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect x="6" y="6" width="20" height="20" rx="4" stroke="#4B5563" stroke-width="2" fill="none"/></svg>
+                Projets
+              </div>
+              <div class="sidebar-item" style="color:#6B7280;">
+                <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" stroke="#4B5563" stroke-width="2" fill="none"/></svg>
+                Analytics
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Couleurs -->
+    <div class="section">
+      <div class="section-title">Couleurs</div>
+      <div class="colors-row">
+        <div class="color-item">
+          <div class="color-swatch" style="background:#3B82F6;"></div>
+          <div class="color-info">
+            <span class="color-name">Blue 500</span>
+            <span class="color-hex">#3B82F6</span>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-swatch" style="background:#60A5FA;"></div>
+          <div class="color-info">
+            <span class="color-name">Blue 400 (dark)</span>
+            <span class="color-hex">#60A5FA</span>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-swatch" style="background:#FACC15;"></div>
+          <div class="color-info">
+            <span class="color-name">Yellow 400</span>
+            <span class="color-hex">#FACC15</span>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-swatch" style="background:#F59E0B;"></div>
+          <div class="color-info">
+            <span class="color-name">Amber 500</span>
+            <span class="color-hex">#F59E0B</span>
+          </div>
+        </div>
+        <div class="color-item">
+          <div class="color-swatch" style="background:#FDE68A;"></div>
+          <div class="color-info">
+            <span class="color-name">Yellow 200</span>
+            <span class="color-hex">#FDE68A</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div class="section">
+      <div class="section-title">Formats d'export</div>
+      <div class="export-grid">
+        <div class="export-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+          <span class="format">SVG</span>
+          <span class="dimensions">Vectoriel</span>
+        </div>
+        <div class="export-item">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+          <span class="format">ICO</span>
+          <span class="dimensions">16 / 32 / 48</span>
+        </div>
+        <div class="export-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+          <span class="format">PNG</span>
+          <span class="dimensions">192×192</span>
+        </div>
+        <div class="export-item">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M4 10 L4 6 Q4 4 6 4 L10 4" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M22 4 L26 4 Q28 4 28 6 L28 10" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 22 L28 26 Q28 28 26 28 L22 28" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><path d="M10 28 L6 28 Q4 28 4 26 L4 22" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/><circle cx="16" cy="16" r="4" fill="#FACC15"/></svg>
+          <span class="format">PNG</span>
+          <span class="dimensions">512×512</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

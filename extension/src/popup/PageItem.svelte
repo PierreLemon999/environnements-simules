@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { PAGE_STATUS, type CapturedPage } from '$lib/constants';
 
-	let { page, formatSize }: { page: CapturedPage; formatSize: (bytes: number) => string } = $props();
-	const dispatch = createEventDispatcher<{ remove: void; recapture: void }>();
+	let { page, formatSize, onRemove, onRecapture }: {
+		page: CapturedPage;
+		formatSize: (bytes: number) => string;
+		onRemove: () => void;
+		onRecapture: () => void;
+	} = $props();
 
 	let showActions = $state(false);
 
@@ -61,7 +64,7 @@
 		{#if showActions}
 			{#if page.status === PAGE_STATUS.ERROR}
 				<button
-					onclick={() => dispatch('recapture')}
+					onclick={onRecapture}
 					class="p-1 text-gray-400 hover:text-primary rounded transition"
 					title="Recapturer"
 				>
@@ -71,7 +74,7 @@
 				</button>
 			{/if}
 			<button
-				onclick={() => dispatch('remove')}
+				onclick={onRemove}
 				class="p-1 text-gray-400 hover:text-error rounded transition"
 				title="Supprimer"
 			>

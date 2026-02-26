@@ -1,10 +1,7 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import type { AutoCaptureConfig, InterestZone } from '$lib/auto-capture';
 
 	let { config = $bindable(), onStart }: { config: AutoCaptureConfig; onStart: (config: AutoCaptureConfig) => void } = $props();
-
-	const dispatch = createEventDispatcher();
 
 	let activeTab = $state<'config' | 'zones' | 'blacklist'>('config');
 

@@ -1,0 +1,1983 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editeur de Pages v3 — Environnements Simules</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f8f8f8;
+    --bg-sidebar: #fafaf9;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0,0,0,.03);
+    --bg-active: #eff6ff;
+    --bg-input: #f5f5f4;
+    --border: #e7e5e4;
+    --border-light: #f0eeee;
+    --border-focus: #2563eb;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-white: #fafaf9;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-pale: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-md: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+    --shadow-lg: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.04);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+    --code-bg: #1e1e1e;
+    --code-gutter: #3c3c3c;
+    --code-line-num: #858585;
+    --code-tag: #569cd6;
+    --code-attr: #9cdcfe;
+    --code-string: #ce9178;
+    --code-text: #d4d4d4;
+    --code-comment: #6a9955;
+    --code-keyword: #c586c0;
+    --code-number: #b5cea8;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.12); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.2); }
+
+  ::selection { background: rgba(37,99,235,.15); color: var(--text); }
+
+  /* ===== ICON SIDEBAR (48px) ===== */
+  .icon-sidebar {
+    width: 48px; min-width: 48px;
+    background: #1c1917;
+    border-right: 1px solid rgba(255,255,255,.06);
+    display: flex; flex-direction: column;
+    align-items: center; padding: 12px 0; gap: 4px;
+    z-index: 20;
+  }
+  .icon-sidebar-logo {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .icon-sidebar-item {
+    width: 34px; height: 34px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: rgba(255,255,255,.4);
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .icon-sidebar-item:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.8); }
+  .icon-sidebar-item.active { background: rgba(37,99,235,.2); color: #60a5fa; }
+  .icon-sidebar-item svg { width: 18px; height: 18px; }
+  .icon-sidebar-item .sidebar-tooltip {
+    position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+    background: var(--text); color: var(--text-white);
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 11px; font-weight: 500; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--transition-fast);
+    z-index: 100;
+  }
+  .icon-sidebar-item:hover .sidebar-tooltip { opacity: 1; }
+  .icon-sidebar-spacer { flex: 1; }
+
+  /* ===== PAGE LIST PANEL (280px) ===== */
+  .page-list-panel {
+    width: 280px; min-width: 280px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .page-list-header {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .page-list-header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .page-list-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .project-selector {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-card); font-size: 11px; cursor: pointer;
+    color: var(--text-secondary); font-weight: 500; font-family: var(--font);
+    transition: all var(--transition-fast); width: 100%;
+  }
+  .project-selector:hover { border-color: var(--border-focus); background: var(--bg-hover); }
+  .project-selector svg { width: 12px; height: 12px; color: var(--text-muted); margin-left: auto; }
+  .project-selector .proj-dot { width: 7px; height: 7px; border-radius: 50%; background: #00a1e0; flex-shrink: 0; }
+
+  .page-search {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-input); transition: all var(--transition-fast);
+  }
+  .page-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); background: var(--bg-card); }
+  .page-search svg { width: 13px; height: 13px; color: var(--text-muted); flex-shrink: 0; }
+  .page-search input {
+    border: none; outline: none; background: transparent;
+    font-family: var(--font); font-size: 12px; color: var(--text); width: 100%;
+  }
+  .page-search input::placeholder { color: var(--text-muted); }
+
+  .page-list {
+    flex: 1; overflow-y: auto; padding: 4px 0;
+  }
+  .page-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    border-left: 3px solid transparent;
+  }
+  .page-item:hover { background: var(--bg-hover); }
+  .page-item.active {
+    background: var(--bg-active);
+    border-left-color: var(--accent);
+  }
+  .page-thumb {
+    width: 40px; height: 30px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xs);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .page-thumb svg { width: 14px; height: 14px; color: var(--text-muted); opacity: .5; }
+  .page-item-info { flex: 1; min-width: 0; }
+  .page-item-name {
+    font-size: 12px; font-weight: 500; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .page-item-date { font-size: 10px; color: var(--text-muted); }
+  .page-status {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .page-status.clean { background: var(--green); }
+  .page-status.modified { background: var(--amber); }
+  .page-status.has-js { background: var(--accent); }
+
+  /* ===== MAIN AREA ===== */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  /* ===== R001: Back Navigation Bar ===== */
+  .editor-back-nav {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 20px;
+    min-height: 36px; height: 36px;
+    background: #fafaf9;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--accent); font-weight: 500; font-size: 12px;
+    cursor: pointer; text-decoration: none;
+    transition: color var(--transition-fast);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .back-link:hover { color: var(--accent-hover); }
+  .back-link svg { width: 14px; height: 14px; }
+  .back-breadcrumb {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+    overflow: hidden;
+  }
+  .back-crumb {
+    color: var(--text-muted);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+  }
+  .back-crumb:hover { color: var(--text-secondary); }
+  .back-sep {
+    color: var(--text-muted);
+    opacity: .5;
+    flex-shrink: 0;
+  }
+  .back-crumb-active {
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  /* Editor Tabs */
+  .editor-tabs {
+    display: flex; align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    padding: 0 20px;
+    gap: 0;
+    min-height: 42px;
+  }
+  .editor-tab {
+    padding: 10px 18px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all var(--transition-fast);
+    display: flex; align-items: center; gap: 7px;
+    white-space: nowrap;
+  }
+  .editor-tab:hover { color: var(--text-secondary); }
+  .editor-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .editor-tab svg { width: 15px; height: 15px; }
+  .editor-tab .tab-badge {
+    font-size: 10px; font-weight: 600; padding: 1px 6px;
+    border-radius: 8px; background: rgba(0,0,0,.06); color: var(--text-muted);
+  }
+  .editor-tab.active .tab-badge { background: rgba(37,99,235,.1); color: var(--accent); }
+
+  .editor-tab-spacer { flex: 1; }
+  .editor-page-name {
+    font-size: 12px; color: var(--text-muted); font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .editor-page-name svg { width: 14px; height: 14px; }
+
+  /* ===== TAB CONTENT ===== */
+  .tab-content { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+  .tab-content.active { display: flex; }
+
+  /* ===== TAB 1: HTML EDITOR ===== */
+  .html-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 20px; background: var(--bg-card);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .toolbar-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-secondary);
+    font-family: var(--font); transition: all var(--transition-fast);
+  }
+  .toolbar-btn:hover { background: var(--bg-hover); border-color: #d4d4d4; color: var(--text); }
+  .toolbar-btn:active { transform: scale(.97); }
+  .toolbar-btn svg { width: 13px; height: 13px; }
+  .toolbar-sep { width: 1px; height: 20px; background: var(--border-light); margin: 0 4px; }
+
+  /* Smart link button (special accent style) */
+  .toolbar-btn-smart {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 600; cursor: pointer; border: 1px solid var(--purple-border);
+    background: var(--purple-bg); color: var(--purple);
+    font-family: var(--font); transition: all var(--transition-fast);
+    position: relative;
+  }
+  .toolbar-btn-smart:hover { background: #ede9fe; border-color: #c4b5fd; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(124,58,237,.15); }
+  .toolbar-btn-smart:active { transform: scale(.97); }
+  .toolbar-btn-smart svg { width: 14px; height: 14px; }
+  .toolbar-btn-smart .ai-sparkle { color: var(--purple); }
+
+  /* Smart link dropdown */
+  .smart-link-dropdown {
+    position: absolute; top: calc(100% + 6px); left: 0;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow-lg);
+    min-width: 320px; z-index: 200;
+    display: none; animation: fadeUp .2s ease;
+    overflow: hidden;
+  }
+  .smart-link-dropdown.visible { display: block; }
+  .smart-link-dropdown-header {
+    padding: 10px 14px; border-bottom: 1px solid var(--border-light);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .smart-link-dropdown-header svg { width: 14px; height: 14px; color: var(--purple); flex-shrink: 0; }
+  .smart-link-dropdown-title { font-size: 12px; font-weight: 600; color: var(--text); }
+  .smart-link-dropdown-desc { font-size: 10px; color: var(--text-muted); }
+  .smart-link-search {
+    padding: 8px 14px; border-bottom: 1px solid var(--border-light);
+  }
+  .smart-link-search input {
+    width: 100%; padding: 6px 10px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; font-family: var(--font);
+    background: var(--bg-input); color: var(--text); outline: none;
+  }
+  .smart-link-search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+  .smart-link-search input::placeholder { color: var(--text-muted); }
+  .smart-link-list {
+    max-height: 240px; overflow-y: auto; padding: 4px 0;
+  }
+  .smart-link-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; cursor: pointer; transition: all var(--transition-fast);
+  }
+  .smart-link-item:hover { background: var(--bg-hover); }
+  .smart-link-item-icon {
+    width: 28px; height: 28px; border-radius: var(--radius-sm);
+    background: var(--bg-input); border: 1px solid var(--border-light);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .smart-link-item-icon svg { width: 13px; height: 13px; color: var(--text-muted); }
+  .smart-link-item-info { flex: 1; min-width: 0; }
+  .smart-link-item-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .smart-link-item-url { font-size: 10px; color: var(--text-muted); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .smart-link-item-badge {
+    font-size: 9px; font-weight: 600; padding: 1px 5px;
+    border-radius: 6px; background: var(--purple-bg); color: var(--purple);
+    flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px;
+  }
+  .smart-link-item-badge svg { width: 9px; height: 9px; }
+  .smart-link-footer {
+    padding: 8px 14px; border-top: 1px solid var(--border-light);
+    font-size: 11px; color: var(--text-muted); background: var(--bg-sidebar);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .smart-link-footer svg { width: 12px; height: 12px; color: var(--purple); }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .toolbar-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-secondary);
+    font-family: var(--font); transition: all var(--transition-fast);
+  }
+  .toolbar-toggle:hover { background: var(--bg-hover); }
+  .toolbar-toggle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar-toggle svg { width: 13px; height: 13px; }
+
+  /* Code editor */
+  .code-editor {
+    flex: 1; background: var(--code-bg); overflow: auto;
+    display: flex; position: relative;
+  }
+  .code-gutter {
+    padding: 12px 0; text-align: right; user-select: none;
+    min-width: 50px; flex-shrink: 0;
+    background: var(--code-bg);
+    border-right: 1px solid #2d2d2d;
+  }
+  .code-line-num {
+    display: block; padding: 0 12px 0 8px;
+    font-family: var(--mono); font-size: 12px; line-height: 20px;
+    color: var(--code-line-num);
+  }
+  .code-line-num.active { color: #c6c6c6; background: rgba(255,255,255,.04); }
+  .code-body {
+    flex: 1; padding: 12px 16px; overflow-x: auto;
+  }
+  .code-line {
+    font-family: var(--mono); font-size: 12px; line-height: 20px;
+    white-space: pre; color: var(--code-text);
+  }
+  .code-line .tag { color: var(--code-tag); }
+  .code-line .attr { color: var(--code-attr); }
+  .code-line .str { color: var(--code-string); }
+  .code-line .txt { color: var(--code-text); }
+  .code-line .cmt { color: var(--code-comment); font-style: italic; }
+  .code-line .kw { color: var(--code-keyword); }
+  .code-line .num { color: var(--code-number); }
+
+  /* Cursor blink */
+  .code-cursor {
+    display: inline-block; width: 2px; height: 14px;
+    background: #aeafad; vertical-align: middle;
+    animation: cursorBlink 1s step-end infinite;
+  }
+  @keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Editor bottom bar */
+  .editor-bottombar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px; background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    min-height: 44px;
+  }
+  .editor-info {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: var(--text-muted);
+  }
+  .editor-info-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 8px;
+    border-radius: var(--radius-xs); background: var(--bg-input); color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+  .editor-actions { display: flex; align-items: center; gap: 8px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text);
+    transition: all var(--transition-fast); white-space: nowrap;
+    box-shadow: var(--shadow-xs); font-family: var(--font);
+  }
+  .btn:hover { background: var(--bg-hover); border-color: #d4d4d4; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+  .btn:active { transform: translateY(0); box-shadow: var(--shadow-xs); }
+  .btn-primary {
+    background: var(--accent); color: var(--text-white); border-color: var(--accent);
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); box-shadow: 0 4px 12px rgba(37,99,235,.3); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* ===== TAB 2: LINKS & NAVIGATION ===== */
+  .links-container {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; gap: 20px;
+  }
+  .links-left { flex: 1; min-width: 0; }
+  .links-right { width: 280px; flex-shrink: 0; }
+
+  .links-source-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .links-source-icon {
+    width: 36px; height: 36px; border-radius: var(--radius);
+    background: var(--accent-light); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .links-source-icon svg { width: 18px; height: 18px; }
+  .links-source-name { font-size: 15px; font-weight: 600; }
+  .links-source-url { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+
+  /* ===== R002: Smart Links Bar ===== */
+  .smart-links-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--accent-light);
+    border: 1px solid var(--accent-pale);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    animation: fadeUp .4s ease both;
+  }
+  .smart-links-info {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .smart-links-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    background: rgba(37,99,235,.1);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .smart-links-icon svg { width: 18px; height: 18px; }
+  .smart-links-title {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 1px;
+  }
+  .smart-links-desc {
+    font-size: 11px; color: var(--text-secondary); line-height: 1.4;
+  }
+
+  /* AI Badge for auto-detected links */
+  .ai-badge {
+    font-size: 9px;
+    background: var(--purple-bg);
+    color: var(--purple);
+    padding: 1px 5px;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .ai-badge svg { width: 8px; height: 8px; }
+
+  /* ===== R003: Links Search ===== */
+  .links-search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    margin-bottom: 16px;
+    transition: all var(--transition-fast);
+  }
+  .links-search:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+    background: var(--bg-card);
+  }
+  .links-search svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+  .links-search input {
+    border: none; outline: none; background: transparent;
+    font-family: var(--font); font-size: 12px; color: var(--text); width: 100%;
+  }
+  .links-search input::placeholder { color: var(--text-muted); }
+
+  /* ===== R003: Links Groups (Tree Organization) ===== */
+  .links-group {
+    margin-bottom: 12px;
+    animation: fadeUp .4s ease both;
+  }
+  .links-group:nth-child(2) { animation-delay: .05s; }
+  .links-group:nth-child(3) { animation-delay: .1s; }
+  .links-group-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast);
+    user-select: none;
+  }
+  .links-group-header:hover { background: var(--bg-hover); }
+  .links-chevron {
+    width: 14px; height: 14px;
+    color: var(--text-muted);
+    transition: transform var(--transition);
+    flex-shrink: 0;
+  }
+  .links-chevron.open { transform: rotate(90deg); }
+  .links-group-name {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  }
+  .links-group-count {
+    font-size: 10px; color: var(--text-muted); font-weight: 500;
+    margin-left: auto;
+  }
+  .links-group-items {
+    padding-left: 4px;
+    overflow: hidden;
+    transition: max-height .3s ease;
+  }
+  .links-group-items.collapsed {
+    max-height: 0 !important;
+    overflow: hidden;
+  }
+
+  .link-item {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    margin-bottom: 8px; transition: all var(--transition-fast);
+    animation: fadeUp .4s ease both;
+  }
+  .link-item:nth-child(2) { animation-delay: .05s; }
+  .link-item:nth-child(3) { animation-delay: .1s; }
+  .link-item:nth-child(4) { animation-delay: .15s; }
+  .link-item:nth-child(5) { animation-delay: .2s; }
+  .link-item:nth-child(6) { animation-delay: .25s; }
+  .link-item:hover { box-shadow: var(--shadow-sm); border-color: #d4d4d4; }
+  .link-item.external { opacity: .7; }
+
+  .link-item-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .link-item-top-left {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .link-text { font-size: 13px; font-weight: 500; color: var(--text); }
+  .link-status {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500; padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .link-status.mapped { background: var(--green-bg); color: var(--green); }
+  .link-status.unmapped { background: var(--amber-bg); color: var(--amber); }
+  .link-status.broken { background: var(--red-bg); color: var(--red); }
+  .link-status.external-badge { background: var(--bg-input); color: var(--text-muted); }
+  .link-status svg { width: 12px; height: 12px; }
+
+  .link-item-bottom {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .link-url-label { font-size: 11px; color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+  .link-target-select {
+    flex: 1; padding: 5px 28px 5px 8px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 12px; font-family: var(--font);
+    background: var(--bg-card); color: var(--text); cursor: pointer; outline: none;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a8a29e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    transition: border-color var(--transition-fast);
+  }
+  .link-target-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+  .link-target-select:disabled { background: var(--bg-input); color: var(--text-muted); cursor: not-allowed; }
+
+  .link-external-note {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text-muted); font-style: italic;
+  }
+  .link-external-note svg { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; }
+
+  /* Mini map */
+  .links-minimap {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+    position: sticky; top: 0;
+  }
+  .minimap-title { font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 16px; }
+  .minimap-graph {
+    position: relative; min-height: 260px;
+  }
+  .minimap-node {
+    position: absolute;
+    padding: 6px 12px; border-radius: var(--radius-sm);
+    font-size: 10px; font-weight: 600; white-space: nowrap;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-xs);
+    transition: all var(--transition-fast);
+    z-index: 2;
+  }
+  .minimap-node:hover { box-shadow: var(--shadow-sm); transform: scale(1.05); }
+  .minimap-node.center {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(37,99,235,.3);
+  }
+  .minimap-node.external-node {
+    border-style: dashed; color: var(--text-muted);
+  }
+  /* SVG arrows */
+  .minimap-svg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 1; pointer-events: none;
+  }
+  .minimap-svg line {
+    stroke: var(--border); stroke-width: 1.5;
+    marker-end: url(#arrowhead);
+  }
+  .minimap-svg .active-link { stroke: var(--accent); stroke-width: 1.5; }
+
+  /* Links bottom bar */
+  .links-bottombar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    min-height: 44px;
+  }
+  .links-summary {
+    font-size: 12px; color: var(--text-muted); font-weight: 500;
+  }
+  .links-summary strong { color: var(--text-secondary); font-weight: 600; }
+
+  /* ===== TAB 3: JAVASCRIPT ===== */
+  .js-container {
+    flex: 1; overflow-y: auto; padding: 20px;
+  }
+  .js-warning {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; border-radius: var(--radius);
+    background: var(--amber-bg); border: 1px solid var(--amber-border);
+    margin-bottom: 20px;
+    animation: fadeUp .4s ease both;
+  }
+  .js-warning-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    background: rgba(217,119,6,.15); color: var(--amber);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .js-warning-icon svg { width: 18px; height: 18px; }
+  .js-warning-text { font-size: 12px; color: #92400e; line-height: 1.5; }
+
+  .js-scripts-list { margin-bottom: 20px; }
+
+  .js-script-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    margin-bottom: 10px; transition: all var(--transition-fast);
+    animation: fadeUp .4s ease both;
+  }
+  .js-script-card:nth-child(2) { animation-delay: .08s; }
+  .js-script-card:hover { box-shadow: var(--shadow-sm); }
+
+  .js-script-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .js-script-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .js-script-actions { display: flex; align-items: center; gap: 8px; }
+
+  .js-verified {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500; padding: 2px 8px;
+    border-radius: 10px; background: var(--green-bg); color: var(--green);
+  }
+
+  .js-toggle {
+    position: relative; width: 36px; height: 20px;
+    background: var(--border); border-radius: 10px;
+    cursor: pointer; transition: background var(--transition);
+    flex-shrink: 0;
+  }
+  .js-toggle.on { background: var(--green); }
+  .js-toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: #fff;
+    border-radius: 50%; transition: transform var(--transition);
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  }
+  .js-toggle.on::after { transform: translateX(16px); }
+
+  .js-script-desc {
+    font-size: 12px; color: var(--text-muted); margin-bottom: 8px;
+  }
+  .js-script-bottom {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 11px; color: var(--text-muted);
+  }
+  .js-script-bottom .edit-btn {
+    cursor: pointer; color: var(--accent); font-weight: 500;
+    transition: color var(--transition-fast);
+  }
+  .js-script-bottom .edit-btn:hover { color: var(--accent-hover); text-decoration: underline; }
+  .js-script-bottom .del-btn {
+    cursor: pointer; color: var(--red); font-weight: 500;
+    transition: color var(--transition-fast);
+  }
+  .js-script-bottom .del-btn:hover { text-decoration: underline; }
+
+  /* Add script section */
+  .js-add-section {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); overflow: hidden;
+    animation: fadeUp .4s ease .15s both;
+  }
+  .js-add-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+  }
+  .js-add-header-title {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .js-add-header-title svg { width: 16px; height: 16px; color: var(--accent); }
+  .js-add-chevron {
+    width: 16px; height: 16px; color: var(--text-muted);
+    transition: transform var(--transition);
+  }
+  .js-add-section.expanded .js-add-chevron { transform: rotate(180deg); }
+
+  .js-add-body {
+    display: none; padding: 16px;
+  }
+  .js-add-section.expanded .js-add-body { display: flex; gap: 16px; }
+
+  .js-add-left { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .js-add-right { width: 260px; flex-shrink: 0; }
+
+  .js-form-group { display: flex; flex-direction: column; gap: 4px; }
+  .js-form-label { font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  .js-form-input {
+    padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--font); background: var(--bg-card);
+    color: var(--text); outline: none; width: 100%;
+    transition: border-color var(--transition-fast);
+  }
+  .js-form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.08); }
+
+  /* JS code editor */
+  .js-code-editor {
+    background: var(--code-bg); border-radius: var(--radius-sm);
+    overflow: hidden; border: 1px solid #333;
+    min-height: 160px;
+  }
+  .js-code-body {
+    padding: 12px 16px; overflow-x: auto;
+  }
+  .js-code-line {
+    font-family: var(--mono); font-size: 12px; line-height: 20px;
+    white-space: pre; color: var(--code-text);
+  }
+
+  /* Security panel */
+  .security-panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .security-title {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+  }
+  .security-title svg { width: 14px; height: 14px; color: var(--accent); }
+
+  .security-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--border-light);
+    font-size: 12px;
+    animation: fadeIn .3s ease both;
+  }
+  .security-item:last-child { border-bottom: none; }
+  .security-item:nth-child(2) { animation-delay: .1s; }
+  .security-item:nth-child(3) { animation-delay: .2s; }
+  .security-item:nth-child(4) { animation-delay: .3s; }
+
+  .security-icon {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .security-icon.pass { background: var(--green-bg); color: var(--green); }
+  .security-icon.warn { background: var(--amber-bg); color: var(--amber); }
+  .security-icon.fail { background: var(--red-bg); color: var(--red); }
+  .security-icon svg { width: 10px; height: 10px; }
+
+  .security-text { color: var(--text-secondary); line-height: 1.4; }
+  .security-note { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 2px; }
+
+  .security-result {
+    margin-top: 12px; padding: 8px 12px; border-radius: var(--radius-sm);
+    font-size: 12px; font-weight: 600; text-align: center;
+  }
+  .security-result.approved { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .security-result.warning { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 200;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px; background: var(--text);
+    color: var(--text-white); border-radius: var(--radius);
+    font-size: 13px; box-shadow: var(--shadow-lg);
+    transform: translateY(80px); opacity: 0;
+    transition: all .4s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+  }
+  .toast.show {
+    transform: translateY(0); opacity: 1;
+    pointer-events: auto;
+  }
+  .toast .toast-icon { width: 18px; height: 18px; color: var(--green); flex-shrink: 0; }
+  .toast .toast-dismiss {
+    margin-left: 8px; opacity: .5; cursor: pointer;
+    transition: opacity var(--transition-fast);
+  }
+  .toast .toast-dismiss:hover { opacity: 1; }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 1100px) {
+    .links-right { display: none; }
+  }
+  @media (max-width: 900px) {
+    .page-list-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== ICON SIDEBAR (48px) ===== -->
+<aside class="icon-sidebar">
+  <div class="icon-sidebar-logo">ES</div>
+
+  <div class="icon-sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="sidebar-tooltip">Dashboard</span>
+  </div>
+  <div class="icon-sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    <span class="sidebar-tooltip">Projets</span>
+  </div>
+  <div class="icon-sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
+    <span class="sidebar-tooltip">Arborescence</span>
+  </div>
+  <div class="icon-sidebar-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <span class="sidebar-tooltip">Editeur</span>
+  </div>
+  <div class="icon-sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+    <span class="sidebar-tooltip">Analytics</span>
+  </div>
+
+  <div class="icon-sidebar-spacer"></div>
+
+  <div class="icon-sidebar-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span class="sidebar-tooltip">Parametres</span>
+  </div>
+</aside>
+
+<!-- ===== PAGE LIST PANEL (280px) ===== -->
+<div class="page-list-panel">
+  <div class="page-list-header">
+    <div class="page-list-header-top">
+      <span class="page-list-title">Pages du projet</span>
+    </div>
+    <div class="project-selector" style="margin-bottom:10px">
+      <span class="proj-dot"></span>
+      Salesforce &mdash; Demo Q1
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="page-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Filtrer les pages..." />
+    </div>
+  </div>
+
+  <div class="page-list" id="pageList">
+    <div class="page-item" data-page="accueil">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Accueil</div>
+        <div class="page-item-date">Modifie il y a 2h</div>
+      </div>
+      <span class="page-status modified"></span>
+    </div>
+    <div class="page-item active" data-page="fiche-contact">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Fiche Contact</div>
+        <div class="page-item-date">Modifie il y a 30min</div>
+      </div>
+      <span class="page-status has-js"></span>
+    </div>
+    <div class="page-item" data-page="liste-opportunites">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Liste Opportunites</div>
+        <div class="page-item-date">Modifie il y a 1h</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="dashboard">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Dashboard</div>
+        <div class="page-item-date">Modifie hier</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="parametres-crm">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Parametres CRM</div>
+        <div class="page-item-date">Modifie hier</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="fiche-societe">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Fiche Societe</div>
+        <div class="page-item-date">Modifie il y a 2j</div>
+      </div>
+      <span class="page-status modified"></span>
+    </div>
+    <div class="page-item" data-page="pipeline">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Pipeline Commercial</div>
+        <div class="page-item-date">Modifie il y a 3j</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="rapports">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Rapports</div>
+        <div class="page-item-date">Modifie il y a 3j</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="calendrier">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Calendrier</div>
+        <div class="page-item-date">Modifie il y a 4j</div>
+      </div>
+      <span class="page-status has-js"></span>
+    </div>
+    <div class="page-item" data-page="taches">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Taches</div>
+        <div class="page-item-date">Modifie il y a 5j</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="emails">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Emails</div>
+        <div class="page-item-date">Modifie il y a 1sem</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="notes">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Notes</div>
+        <div class="page-item-date">Modifie il y a 1sem</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+    <div class="page-item" data-page="historique">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Historique activites</div>
+        <div class="page-item-date">Modifie il y a 1sem</div>
+      </div>
+      <span class="page-status modified"></span>
+    </div>
+    <div class="page-item" data-page="profil-utilisateur">
+      <div class="page-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="page-item-info">
+        <div class="page-item-name">Profil Utilisateur</div>
+        <div class="page-item-date">Modifie il y a 2sem</div>
+      </div>
+      <span class="page-status clean"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN EDITOR AREA ===== -->
+<div class="main">
+
+  <!-- R001: Back Navigation Bar -->
+  <div class="editor-back-nav">
+    <a class="back-link" onclick="showToast('Retour a l\'arborescence')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+      Retour a l'arborescence
+    </a>
+    <div class="back-breadcrumb">
+      <span class="back-crumb">Salesforce &mdash; Demo Q1</span>
+      <span class="back-sep">/</span>
+      <span class="back-crumb">Contacts</span>
+      <span class="back-sep">/</span>
+      <span class="back-crumb">Fiche Contact</span>
+      <span class="back-sep">/</span>
+      <span class="back-crumb-active">Editeur</span>
+    </div>
+  </div>
+
+  <!-- Editor Tabs -->
+  <div class="editor-tabs">
+    <div class="editor-tab active" data-tab="html" onclick="switchTab('html')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Editeur HTML
+    </div>
+    <div class="editor-tab" data-tab="links" onclick="switchTab('links')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Liens &amp; Navigation
+      <span class="tab-badge">5</span>
+    </div>
+    <div class="editor-tab" data-tab="js" onclick="switchTab('js')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+      JavaScript
+      <span class="tab-badge">2</span>
+    </div>
+    <div class="editor-tab-spacer"></div>
+    <div class="editor-page-name">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+      <span id="currentPageName">Fiche Contact</span>
+    </div>
+  </div>
+
+  <!-- ===== TAB 1: HTML EDITOR ===== -->
+  <div class="tab-content active" id="tab-html">
+    <div class="html-toolbar">
+      <button class="toolbar-btn" onclick="showToast('Code formate')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H3M21 6H3M21 14H3M21 18H3"/></svg>
+        Formater
+      </button>
+      <button class="toolbar-btn" onclick="showToast('Action annulee')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h4a2 2 0 012 2v0a2 2 0 01-2 2H3l3-7z"/><path d="M9 14c0 0 3 4 7 4s5-2 5-5-2-5-5-5H9"/></svg>
+        Annuler
+      </button>
+      <button class="toolbar-btn" onclick="showToast('Action retablie')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10h-4a2 2 0 00-2 2v0a2 2 0 002 2h4l-3-7z"/><path d="M15 14c0 0-3 4-7 4s-5-2-5-5 2-5 5-5h6"/></svg>
+        Retablir
+      </button>
+      <div class="toolbar-sep"></div>
+      <button class="toolbar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        Rechercher
+      </button>
+      <div class="toolbar-sep"></div>
+      <div style="position:relative">
+        <button class="toolbar-btn-smart" id="smartLinkBtn" onclick="toggleSmartLinkDropdown(event)">
+          <svg class="ai-sparkle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 13l.75 2.25L22 16l-2.25.75L19 19l-.75-2.25L16 16l2.25-.75L19 13z"/></svg>
+          Lien intelligent
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;opacity:.6"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="smart-link-dropdown" id="smartLinkDropdown">
+          <div class="smart-link-dropdown-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+            <div>
+              <div class="smart-link-dropdown-title">Inserer un lien intelligent</div>
+              <div class="smart-link-dropdown-desc">Le lien sera insere a la position du curseur</div>
+            </div>
+          </div>
+          <div class="smart-link-search">
+            <input type="text" placeholder="Rechercher une page..." id="smartLinkSearch" oninput="filterSmartLinkPages(this.value)">
+          </div>
+          <div class="smart-link-list" id="smartLinkList">
+            <div class="smart-link-item" onclick="insertSmartLink('Accueil', '/pages/accueil.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Accueil</div>
+                <div class="smart-link-item-url">/pages/accueil.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Liste Opportunites', '/pages/opportunites.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Liste Opportunites</div>
+                <div class="smart-link-item-url">/pages/opportunites.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Dashboard', '/pages/dashboard.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Dashboard</div>
+                <div class="smart-link-item-url">/pages/dashboard.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Fiche Societe', '/pages/fiche-societe.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Fiche Societe</div>
+                <div class="smart-link-item-url">/pages/fiche-societe.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Pipeline Commercial', '/pages/pipeline.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Pipeline Commercial</div>
+                <div class="smart-link-item-url">/pages/pipeline.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Parametres CRM', '/pages/parametres-crm.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Parametres CRM</div>
+                <div class="smart-link-item-url">/pages/parametres-crm.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Rapports', '/pages/rapports.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Rapports</div>
+                <div class="smart-link-item-url">/pages/rapports.html</div>
+              </div>
+              <span class="smart-link-item-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>IA</span>
+            </div>
+            <div class="smart-link-item" onclick="insertSmartLink('Calendrier', '/pages/calendrier.html')">
+              <div class="smart-link-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+              <div class="smart-link-item-info">
+                <div class="smart-link-item-name">Calendrier</div>
+                <div class="smart-link-item-url">/pages/calendrier.html</div>
+              </div>
+            </div>
+          </div>
+          <div class="smart-link-footer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>
+            Les liens IA sont detectes automatiquement entre les pages capturees
+          </div>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <button class="toolbar-toggle" id="previewToggle" onclick="togglePreview()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Previsualiser
+      </button>
+    </div>
+
+    <div class="code-editor">
+      <div class="code-gutter" id="codeGutter"></div>
+      <div class="code-body" id="codeBody"></div>
+    </div>
+
+    <div class="editor-bottombar">
+      <div class="editor-info">
+        <span>Ligne 24, Col 8</span>
+        <span class="editor-info-badge">HTML</span>
+        <span style="color:var(--text-muted)">UTF-8</span>
+      </div>
+      <div class="editor-actions">
+        <button class="btn" onclick="showToast('Page enregistree et apercu ouvert')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Enregistrer et previsualiser
+        </button>
+        <button class="btn btn-primary" onclick="showToast('Page enregistree avec succes')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB 2: LINKS & NAVIGATION ===== -->
+  <div class="tab-content" id="tab-links">
+    <div class="links-container">
+      <div class="links-left">
+        <div class="links-source-header">
+          <div class="links-source-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <div>
+            <div class="links-source-name">Fiche Contact</div>
+            <div class="links-source-url">/pages/fiche-contact.html</div>
+          </div>
+        </div>
+
+        <!-- R002: Smart Links Bar -->
+        <div class="smart-links-bar" id="smartLinksBar">
+          <div class="smart-links-info">
+            <div class="smart-links-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+            </div>
+            <div>
+              <div class="smart-links-title">Liens intelligents</div>
+              <div class="smart-links-desc">Les liens entre pages capturees sont detectes et mappes automatiquement</div>
+            </div>
+          </div>
+          <span class="js-toggle on" onclick="toggleSmartLinks(this)"></span>
+        </div>
+
+        <!-- R003: Links Search Bar -->
+        <div class="links-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" placeholder="Rechercher un lien..." oninput="filterLinks(this.value)" />
+        </div>
+
+        <!-- R003: Links organized by groups/tree -->
+        <div id="linksGroups">
+
+          <!-- Group 1: Navigation principale -->
+          <div class="links-group" data-group="navigation">
+            <div class="links-group-header" onclick="toggleLinksGroup(this)">
+              <svg class="links-chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+              <span class="links-group-name">Navigation principale</span>
+              <span class="links-group-count">2 liens</span>
+            </div>
+            <div class="links-group-items">
+
+              <!-- Link 1: Retour a l'accueil -->
+              <div class="link-item" data-link-name="retour accueil">
+                <div class="link-item-top">
+                  <div class="link-item-top-left">
+                    <span class="link-text">Retour a l'accueil</span>
+                    <span class="ai-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+                      IA
+                    </span>
+                  </div>
+                  <span class="link-status mapped">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    Mappe
+                  </span>
+                </div>
+                <div class="link-item-bottom">
+                  <span class="link-url-label">Cible :</span>
+                  <select class="link-target-select">
+                    <option selected>Accueil</option>
+                    <option>Fiche Contact</option>
+                    <option>Liste Opportunites</option>
+                    <option>Dashboard</option>
+                    <option>Parametres CRM</option>
+                    <option>Fiche Societe</option>
+                    <option>Pipeline Commercial</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Link 2: Tableau de bord -->
+              <div class="link-item" data-link-name="tableau de bord">
+                <div class="link-item-top">
+                  <div class="link-item-top-left">
+                    <span class="link-text">Tableau de bord</span>
+                    <span class="ai-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+                      IA
+                    </span>
+                  </div>
+                  <span class="link-status mapped">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    Mappe
+                  </span>
+                </div>
+                <div class="link-item-bottom">
+                  <span class="link-url-label">Cible :</span>
+                  <select class="link-target-select">
+                    <option>Accueil</option>
+                    <option>Fiche Contact</option>
+                    <option>Liste Opportunites</option>
+                    <option selected>Dashboard</option>
+                    <option>Parametres CRM</option>
+                    <option>Fiche Societe</option>
+                    <option>Pipeline Commercial</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Group 2: Contacts & Relations -->
+          <div class="links-group" data-group="contacts">
+            <div class="links-group-header" onclick="toggleLinksGroup(this)">
+              <svg class="links-chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+              <span class="links-group-name">Contacts &amp; Relations</span>
+              <span class="links-group-count">2 liens</span>
+            </div>
+            <div class="links-group-items">
+
+              <!-- Link 3: Voir opportunites -->
+              <div class="link-item" data-link-name="voir opportunites">
+                <div class="link-item-top">
+                  <div class="link-item-top-left">
+                    <span class="link-text">Voir opportunites</span>
+                    <span class="ai-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+                      IA
+                    </span>
+                  </div>
+                  <span class="link-status mapped">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    Mappe
+                  </span>
+                </div>
+                <div class="link-item-bottom">
+                  <span class="link-url-label">Cible :</span>
+                  <select class="link-target-select">
+                    <option>Accueil</option>
+                    <option>Fiche Contact</option>
+                    <option selected>Liste Opportunites</option>
+                    <option>Dashboard</option>
+                    <option>Parametres CRM</option>
+                    <option>Fiche Societe</option>
+                    <option>Pipeline Commercial</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Link 4: Entreprise Acme Corp -->
+              <div class="link-item" data-link-name="entreprise acme corp">
+                <div class="link-item-top">
+                  <div class="link-item-top-left">
+                    <span class="link-text">Entreprise Acme Corp</span>
+                    <span class="ai-badge">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6L12 2z"/></svg>
+                      IA
+                    </span>
+                  </div>
+                  <span class="link-status mapped">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                    Mappe
+                  </span>
+                </div>
+                <div class="link-item-bottom">
+                  <span class="link-url-label">Cible :</span>
+                  <select class="link-target-select">
+                    <option>Accueil</option>
+                    <option>Fiche Contact</option>
+                    <option>Liste Opportunites</option>
+                    <option>Dashboard</option>
+                    <option>Parametres CRM</option>
+                    <option selected>Fiche Societe</option>
+                    <option>Pipeline Commercial</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Group 3: Liens externes -->
+          <div class="links-group" data-group="externe">
+            <div class="links-group-header" onclick="toggleLinksGroup(this)">
+              <svg class="links-chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+              <span class="links-group-name">Liens externes</span>
+              <span class="links-group-count">1 lien</span>
+            </div>
+            <div class="links-group-items">
+
+              <!-- Link 5: docs.salesforce.com (external) -->
+              <div class="link-item external" data-link-name="docs salesforce">
+                <div class="link-item-top">
+                  <div class="link-item-top-left">
+                    <span class="link-text">docs.salesforce.com</span>
+                  </div>
+                  <span class="link-status external-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    Externe
+                  </span>
+                </div>
+                <div class="link-item-bottom">
+                  <span class="link-url-label">URL :</span>
+                  <select class="link-target-select" disabled>
+                    <option>Lien externe</option>
+                  </select>
+                </div>
+                <div class="link-external-note" style="margin-top:8px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Les liens externes sont conserves tels quels
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mini map -->
+      <div class="links-right">
+        <div class="links-minimap">
+          <div class="minimap-title">Carte des liens</div>
+          <div class="minimap-graph">
+            <svg class="minimap-svg" viewBox="0 0 240 260">
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#d4d4d4"/>
+                </marker>
+                <marker id="arrowhead-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="#2563eb"/>
+                </marker>
+              </defs>
+              <!-- Lines from center to targets -->
+              <line x1="110" y1="120" x2="110" y2="30" class="active-link" marker-end="url(#arrowhead-blue)"/>
+              <line x1="130" y1="108" x2="210" y2="58" class="active-link" marker-end="url(#arrowhead-blue)"/>
+              <line x1="130" y1="132" x2="210" y2="168" class="active-link" marker-end="url(#arrowhead-blue)"/>
+              <line x1="110" y1="140" x2="110" y2="210" class="active-link" marker-end="url(#arrowhead-blue)"/>
+              <line x1="90" y1="132" x2="30" y2="195" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrowhead)"/>
+            </svg>
+
+            <div class="minimap-node center" style="left:70px;top:110px">Fiche Contact</div>
+            <div class="minimap-node" style="left:72px;top:12px">Accueil</div>
+            <div class="minimap-node" style="left:160px;top:44px">Opportunites</div>
+            <div class="minimap-node" style="left:168px;top:158px">Fiche Societe</div>
+            <div class="minimap-node" style="left:68px;top:210px">Dashboard</div>
+            <div class="minimap-node external-node" style="left:2px;top:188px;font-size:9px">docs.sf.com</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="links-bottombar">
+      <div class="links-summary">
+        <strong>5</strong> liens detectes &middot; <strong>4</strong> mappes &middot; <strong>1</strong> externe
+      </div>
+      <button class="btn btn-primary" onclick="showToast('Modifications des liens appliquees')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        Appliquer les modifications
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== TAB 3: JAVASCRIPT ===== -->
+  <div class="tab-content" id="tab-js">
+    <div class="js-container">
+      <!-- Warning banner -->
+      <div class="js-warning">
+        <div class="js-warning-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="js-warning-text">
+          Les scripts injectes sont verifies automatiquement. Les operations reseau, l'acces aux cookies et les modifications du DOM parent sont restreints.
+        </div>
+      </div>
+
+      <!-- Script list -->
+      <div class="js-scripts-list">
+        <div class="js-script-card">
+          <div class="js-script-top">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="js-script-name">Tracking personnalise</span>
+              <span class="js-verified">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                Verifie
+              </span>
+            </div>
+            <div class="js-script-actions">
+              <span class="js-toggle on" onclick="toggleJsScript(this)"></span>
+            </div>
+          </div>
+          <div class="js-script-desc">Enregistre les clics et interactions utilisateur pour le suivi analytique interne.</div>
+          <div class="js-script-bottom">
+            <span>Modifie il y a 2j</span>
+            <span class="edit-btn">Modifier</span>
+            <span class="del-btn">Supprimer</span>
+          </div>
+        </div>
+
+        <div class="js-script-card">
+          <div class="js-script-top">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="js-script-name">Animation de bienvenue</span>
+              <span class="js-verified">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                Verifie
+              </span>
+            </div>
+            <div class="js-script-actions">
+              <span class="js-toggle on" onclick="toggleJsScript(this)"></span>
+            </div>
+          </div>
+          <div class="js-script-desc">Affiche une animation d'accueil lors du premier chargement de la page de demo.</div>
+          <div class="js-script-bottom">
+            <span>Modifie il y a 5j</span>
+            <span class="edit-btn">Modifier</span>
+            <span class="del-btn">Supprimer</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add script section -->
+      <div class="js-add-section expanded" id="jsAddSection">
+        <div class="js-add-header" onclick="toggleAddScript()">
+          <div class="js-add-header-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter un script
+          </div>
+          <svg class="js-add-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="js-add-body">
+          <div class="js-add-left">
+            <div class="js-form-group">
+              <label class="js-form-label">Nom du script</label>
+              <input class="js-form-input" type="text" placeholder="Ex: Animation de transition" value="Personnalisation du formulaire" />
+            </div>
+            <div class="js-form-group">
+              <label class="js-form-label">Description</label>
+              <input class="js-form-input" type="text" placeholder="Description courte..." value="Ajoute des placeholders et styles personnalises aux champs du formulaire de contact" />
+            </div>
+            <div class="js-form-group">
+              <label class="js-form-label">Code JavaScript</label>
+              <div class="js-code-editor">
+                <div class="js-code-body" id="jsCodeBody"></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn" onclick="toggleAddScript()">Annuler</button>
+              <button class="btn btn-primary" onclick="showToast('Script enregistre avec succes')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Enregistrer le script
+              </button>
+            </div>
+          </div>
+
+          <!-- Security panel -->
+          <div class="js-add-right">
+            <div class="security-panel">
+              <div class="security-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Verification de securite
+              </div>
+
+              <div class="security-item">
+                <div class="security-icon pass">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div>
+                  <div class="security-text">Pas d'appels reseau (fetch, XMLHttpRequest)</div>
+                </div>
+              </div>
+
+              <div class="security-item">
+                <div class="security-icon pass">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div>
+                  <div class="security-text">Pas d'acces aux cookies</div>
+                </div>
+              </div>
+
+              <div class="security-item">
+                <div class="security-icon warn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <div>
+                  <div class="security-text">Modification du DOM detectee</div>
+                  <div class="security-note">Autorise dans le contexte de la page</div>
+                </div>
+              </div>
+
+              <div class="security-item">
+                <div class="security-icon pass">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                </div>
+                <div>
+                  <div class="security-text">Pas d'acces au localStorage parent</div>
+                </div>
+              </div>
+
+              <div class="security-result approved">Script approuve</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+  <span id="toastMessage">Message</span>
+  <svg class="toast-dismiss" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px" onclick="hideToast()"><path d="M18 6L6 18M6 6l12 12"/></svg>
+</div>
+
+<script>
+  // ===== HTML Code Lines =====
+  var htmlLines = [
+    '<span class="cmt">&lt;!-- Fiche Contact - Salesforce Demo --&gt;</span>',
+    '<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-page-header"</span><span class="tag">&gt;</span>',
+    '  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-page-header__row"</span><span class="tag">&gt;</span>',
+    '    <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-page-header__col-title"</span><span class="tag">&gt;</span>',
+    '      <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-media"</span><span class="tag">&gt;</span>',
+    '        <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-media__figure"</span><span class="tag">&gt;</span>',
+    '          <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="str">"slds-icon_container slds-icon-standard-contact"</span><span class="tag">&gt;</span>',
+    '            <span class="tag">&lt;svg</span> <span class="attr">class</span>=<span class="str">"slds-icon"</span> <span class="attr">aria-hidden</span>=<span class="str">"true"</span><span class="tag">&gt;</span>',
+    '              <span class="tag">&lt;use</span> <span class="attr">href</span>=<span class="str">"/icons/standard-sprite.svg#contact"</span><span class="tag">&gt;&lt;/use&gt;</span>',
+    '            <span class="tag">&lt;/svg&gt;</span>',
+    '          <span class="tag">&lt;/span&gt;</span>',
+    '        <span class="tag">&lt;/div&gt;</span>',
+    '        <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-media__body"</span><span class="tag">&gt;</span>',
+    '          <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-page-header__name"</span><span class="tag">&gt;</span>',
+    '            <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-page-header__name-title"</span><span class="tag">&gt;</span>',
+    '              <span class="tag">&lt;h1&gt;</span>',
+    '                <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="str">"slds-page-header__title"</span>',
+    '                  <span class="attr">title</span>=<span class="str">"Jean Dupont"</span><span class="tag">&gt;</span>',
+    '                  <span class="txt">Jean Dupont</span>',
+    '                <span class="tag">&lt;/span&gt;</span>',
+    '              <span class="tag">&lt;/h1&gt;</span>',
+    '            <span class="tag">&lt;/div&gt;</span>',
+    '          <span class="tag">&lt;/div&gt;</span>',
+    '          <span class="cmt">&lt;!-- Contact details section --&gt;</span><span class="code-cursor"></span>',
+    '          <span class="tag">&lt;p</span> <span class="attr">class</span>=<span class="str">"slds-page-header__meta-text"</span><span class="tag">&gt;</span>',
+    '            <span class="txt">Acme Corporation &bull; Directeur Commercial</span>',
+    '          <span class="tag">&lt;/p&gt;</span>',
+    '        <span class="tag">&lt;/div&gt;</span>',
+    '      <span class="tag">&lt;/div&gt;</span>',
+    '    <span class="tag">&lt;/div&gt;</span>',
+    '    <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-page-header__col-actions"</span><span class="tag">&gt;</span>',
+    '      <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-button-group"</span><span class="tag">&gt;</span>',
+    '        <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/pages/accueil.html"</span> <span class="attr">class</span>=<span class="str">"slds-button"</span><span class="tag">&gt;</span>',
+    '          <span class="txt">Retour a l\'accueil</span>',
+    '        <span class="tag">&lt;/a&gt;</span>',
+    '        <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/pages/opportunites.html"</span> <span class="attr">class</span>=<span class="str">"slds-button"</span><span class="tag">&gt;</span>',
+    '          <span class="txt">Voir opportunites</span>',
+    '        <span class="tag">&lt;/a&gt;</span>',
+    '      <span class="tag">&lt;/div&gt;</span>',
+    '    <span class="tag">&lt;/div&gt;</span>',
+    '  <span class="tag">&lt;/div&gt;</span>',
+    '<span class="tag">&lt;/div&gt;</span>',
+    '',
+    '<span class="cmt">&lt;!-- Record Detail --&gt;</span>',
+    '<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-card"</span><span class="tag">&gt;</span>',
+    '  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-card__header"</span><span class="tag">&gt;</span>',
+    '    <span class="tag">&lt;h2</span> <span class="attr">class</span>=<span class="str">"slds-card__header-title"</span><span class="tag">&gt;</span>',
+    '      <span class="txt">Informations de contact</span>',
+    '    <span class="tag">&lt;/h2&gt;</span>',
+    '  <span class="tag">&lt;/div&gt;</span>',
+    '  <span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"slds-card__body"</span><span class="tag">&gt;</span>',
+    '    <span class="tag">&lt;dl</span> <span class="attr">class</span>=<span class="str">"slds-dl_horizontal"</span><span class="tag">&gt;</span>',
+    '      <span class="tag">&lt;dt&gt;</span><span class="txt">Email</span><span class="tag">&lt;/dt&gt;</span>',
+    '      <span class="tag">&lt;dd&gt;</span><span class="txt">jean.dupont@acme.fr</span><span class="tag">&lt;/dd&gt;</span>',
+    '      <span class="tag">&lt;dt&gt;</span><span class="txt">Telephone</span><span class="tag">&lt;/dt&gt;</span>',
+    '      <span class="tag">&lt;dd&gt;</span><span class="txt">+33 6 12 34 56 78</span><span class="tag">&lt;/dd&gt;</span>',
+    '      <span class="tag">&lt;dt&gt;</span><span class="txt">Societe</span><span class="tag">&lt;/dt&gt;</span>',
+    '      <span class="tag">&lt;dd&gt;</span>',
+    '        <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"/pages/fiche-societe.html"</span><span class="tag">&gt;</span>',
+    '          <span class="txt">Acme Corporation</span>',
+    '        <span class="tag">&lt;/a&gt;</span>',
+    '      <span class="tag">&lt;/dd&gt;</span>',
+    '    <span class="tag">&lt;/dl&gt;</span>',
+    '  <span class="tag">&lt;/div&gt;</span>',
+    '<span class="tag">&lt;/div&gt;</span>',
+  ];
+
+  // Render HTML code editor
+  var gutter = document.getElementById('codeGutter');
+  var body = document.getElementById('codeBody');
+  for (var i = 0; i < htmlLines.length; i++) {
+    var numEl = document.createElement('span');
+    numEl.className = 'code-line-num' + (i === 23 ? ' active' : '');
+    numEl.textContent = i + 1;
+    gutter.appendChild(numEl);
+
+    var lineEl = document.createElement('div');
+    lineEl.className = 'code-line';
+    lineEl.innerHTML = htmlLines[i];
+    body.appendChild(lineEl);
+  }
+
+  // ===== JS Code Lines =====
+  var jsLines = [
+    '<span class="cmt">// Personnalisation du formulaire de contact</span>',
+    '<span class="kw">const</span> <span class="attr">formFields</span> = <span class="tag">document</span>.<span class="attr">querySelectorAll</span>(<span class="str">\'.slds-form-element__control input\'</span>);',
+    '',
+    '<span class="kw">const</span> <span class="attr">placeholders</span> = {',
+    '  <span class="str">\'firstName\'</span>: <span class="str">\'Prenom du contact\'</span>,',
+    '  <span class="str">\'lastName\'</span>: <span class="str">\'Nom du contact\'</span>,',
+    '  <span class="str">\'email\'</span>: <span class="str">\'email@entreprise.com\'</span>,',
+    '  <span class="str">\'phone\'</span>: <span class="str">\'+33 6 XX XX XX XX\'</span>,',
+    '};',
+    '',
+    '<span class="attr">formFields</span>.<span class="attr">forEach</span>((<span class="attr">field</span>) => {',
+    '  <span class="kw">const</span> <span class="attr">name</span> = <span class="attr">field</span>.<span class="attr">getAttribute</span>(<span class="str">\'name\'</span>);',
+    '  <span class="kw">if</span> (<span class="attr">placeholders</span>[<span class="attr">name</span>]) {',
+    '    <span class="attr">field</span>.<span class="attr">placeholder</span> = <span class="attr">placeholders</span>[<span class="attr">name</span>];',
+    '    <span class="attr">field</span>.<span class="attr">style</span>.<span class="attr">borderColor</span> = <span class="str">\'#0070d2\'</span>;',
+    '  }',
+    '});',
+    '',
+    '<span class="cmt">// Ajout d\'un indicateur visuel</span>',
+    '<span class="kw">const</span> <span class="attr">header</span> = <span class="tag">document</span>.<span class="attr">querySelector</span>(<span class="str">\'.slds-page-header\'</span>);',
+    '<span class="kw">if</span> (<span class="attr">header</span>) {',
+    '  <span class="attr">header</span>.<span class="attr">style</span>.<span class="attr">borderTop</span> = <span class="str">\'3px solid #0070d2\'</span>;',
+    '}',
+  ];
+
+  var jsCodeBody = document.getElementById('jsCodeBody');
+  for (var j = 0; j < jsLines.length; j++) {
+    var jsLineEl = document.createElement('div');
+    jsLineEl.className = 'js-code-line';
+    jsLineEl.innerHTML = jsLines[j] || '&nbsp;';
+    jsCodeBody.appendChild(jsLineEl);
+  }
+
+  // ===== Tab Switching =====
+  function switchTab(tabName) {
+    // Deactivate all tabs
+    document.querySelectorAll('.editor-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+
+    // Activate selected
+    document.querySelector('.editor-tab[data-tab="' + tabName + '"]').classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+  }
+
+  // ===== Page Selection =====
+  var pageNames = {
+    'accueil': 'Accueil',
+    'fiche-contact': 'Fiche Contact',
+    'liste-opportunites': 'Liste Opportunites',
+    'dashboard': 'Dashboard',
+    'parametres-crm': 'Parametres CRM',
+    'fiche-societe': 'Fiche Societe',
+    'pipeline': 'Pipeline Commercial',
+    'rapports': 'Rapports',
+    'calendrier': 'Calendrier',
+    'taches': 'Taches',
+    'emails': 'Emails',
+    'notes': 'Notes',
+    'historique': 'Historique activites',
+    'profil-utilisateur': 'Profil Utilisateur'
+  };
+
+  document.querySelectorAll('.page-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      document.querySelectorAll('.page-item').forEach(function(p) { p.classList.remove('active'); });
+      item.classList.add('active');
+      var pageName = pageNames[item.getAttribute('data-page')] || 'Page';
+      document.getElementById('currentPageName').textContent = pageName;
+    });
+  });
+
+  // ===== Toggle JS Scripts =====
+  function toggleJsScript(el) {
+    el.classList.toggle('on');
+  }
+
+  // ===== Toggle Add Script =====
+  function toggleAddScript() {
+    var section = document.getElementById('jsAddSection');
+    section.classList.toggle('expanded');
+  }
+
+  // ===== Preview Toggle =====
+  function togglePreview() {
+    var btn = document.getElementById('previewToggle');
+    btn.classList.toggle('active');
+    if (btn.classList.contains('active')) {
+      showToast('Mode previsualisation active');
+    } else {
+      showToast('Mode edition active');
+    }
+  }
+
+  // ===== Toast =====
+  var toastTimeout;
+  function showToast(message) {
+    var toast = document.getElementById('toast');
+    var msg = document.getElementById('toastMessage');
+    msg.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(function() {
+      toast.classList.remove('show');
+    }, 3500);
+  }
+  function hideToast() {
+    var toast = document.getElementById('toast');
+    toast.classList.remove('show');
+    clearTimeout(toastTimeout);
+  }
+
+  // ===== Page search filter =====
+  document.querySelector('.page-search input').addEventListener('input', function(e) {
+    var query = e.target.value.toLowerCase();
+    document.querySelectorAll('.page-item').forEach(function(item) {
+      var name = item.querySelector('.page-item-name').textContent.toLowerCase();
+      item.style.display = name.includes(query) ? '' : 'none';
+    });
+  });
+
+  // ===== R002: Toggle Smart Links =====
+  function toggleSmartLinks(el) {
+    el.classList.toggle('on');
+    var aiBadges = document.querySelectorAll('.ai-badge');
+    if (el.classList.contains('on')) {
+      aiBadges.forEach(function(b) { b.style.display = ''; });
+      showToast('Liens intelligents actives');
+    } else {
+      aiBadges.forEach(function(b) { b.style.display = 'none'; });
+      showToast('Liens intelligents desactives');
+    }
+  }
+
+  // ===== R003: Toggle Links Group (collapse/expand) =====
+  function toggleLinksGroup(headerEl) {
+    var chevron = headerEl.querySelector('.links-chevron');
+    var items = headerEl.nextElementSibling;
+    if (chevron.classList.contains('open')) {
+      chevron.classList.remove('open');
+      items.classList.add('collapsed');
+    } else {
+      chevron.classList.add('open');
+      items.classList.remove('collapsed');
+    }
+  }
+
+  // ===== R003: Filter Links by search =====
+  function filterLinks(query) {
+    query = query.toLowerCase().trim();
+    document.querySelectorAll('.links-group').forEach(function(group) {
+      var items = group.querySelectorAll('.link-item');
+      var visibleCount = 0;
+      items.forEach(function(item) {
+        var name = item.getAttribute('data-link-name') || '';
+        var linkText = item.querySelector('.link-text');
+        var text = linkText ? linkText.textContent.toLowerCase() : '';
+        if (query === '' || name.includes(query) || text.includes(query)) {
+          item.style.display = '';
+          visibleCount++;
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      // Hide group if no visible items
+      if (query !== '' && visibleCount === 0) {
+        group.style.display = 'none';
+      } else {
+        group.style.display = '';
+      }
+    });
+  }
+
+  // ===== Smart Link Dropdown =====
+  function toggleSmartLinkDropdown(e) {
+    e.stopPropagation();
+    var dropdown = document.getElementById('smartLinkDropdown');
+    dropdown.classList.toggle('visible');
+    if (dropdown.classList.contains('visible')) {
+      document.getElementById('smartLinkSearch').focus();
+    }
+  }
+
+  function filterSmartLinkPages(query) {
+    var items = document.querySelectorAll('#smartLinkList .smart-link-item');
+    query = query.toLowerCase();
+    items.forEach(function(item) {
+      var name = item.querySelector('.smart-link-item-name').textContent.toLowerCase();
+      item.style.display = name.includes(query) ? '' : 'none';
+    });
+  }
+
+  function insertSmartLink(pageName, pageUrl) {
+    var dropdown = document.getElementById('smartLinkDropdown');
+    dropdown.classList.remove('visible');
+    showToast('Lien intelligent insere : ' + pageName + ' → ' + pageUrl);
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    var dropdown = document.getElementById('smartLinkDropdown');
+    var btn = document.getElementById('smartLinkBtn');
+    if (dropdown && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+      dropdown.classList.remove('visible');
+    }
+  });
+</script>
+
+</body>
+</html>

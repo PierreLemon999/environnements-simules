@@ -1,0 +1,1511 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arborescence — Environnements Simul&eacute;s</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-root: #f8f8f8;
+    --bg-sidebar: #fafaf9;
+    --bg-card: #ffffff;
+    --bg-hover: rgba(0,0,0,.03);
+    --bg-active: #eff6ff;
+    --bg-input: #f5f5f4;
+    --border: #e7e5e4;
+    --border-light: #f0eeee;
+    --border-focus: #2563eb;
+    --text-primary: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --text-white: #fafaf9;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-md: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+    --shadow-lg: 0 20px 40px -4px rgba(0,0,0,.1);
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+    --transition-fast: .15s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-root);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.1); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,.18); }
+
+  /* ===== ICON SIDEBAR (48px) ===== */
+  .icon-sidebar {
+    width: 48px;
+    min-width: 48px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 2px;
+    z-index: 10;
+  }
+
+  .icon-sidebar-logo {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+    flex-shrink: 0;
+  }
+
+  .icon-sidebar-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+  .icon-sidebar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+  }
+  .icon-sidebar-btn.active {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .icon-sidebar-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .icon-sidebar-spacer { flex: 1; }
+
+  /* ===== TREE PANEL (320px) ===== */
+  .tree-panel {
+    width: 320px;
+    min-width: 320px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .tree-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    min-height: 52px;
+  }
+  .tree-header-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tree-header-add {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .tree-header-add:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: #d4d4d4;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-xs);
+  }
+  .tree-header-add svg { width: 14px; height: 14px; }
+
+  /* Tabs with sliding indicator */
+  .tree-tabs-wrapper {
+    position: relative;
+    display: flex;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 4px;
+  }
+  .tree-tab {
+    position: relative;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-muted);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    z-index: 1;
+    user-select: none;
+  }
+  .tree-tab:hover:not(.active) {
+    color: var(--text-secondary);
+  }
+  .tree-tab.active {
+    color: var(--text-primary);
+    background: var(--text-primary);
+    color: var(--text-white);
+  }
+
+  /* Search */
+  .tree-search-wrapper {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .tree-search {
+    width: 100%;
+    padding: 7px 10px 7px 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-family: var(--font);
+    outline: none;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+  }
+  .tree-search::placeholder { color: var(--text-muted); }
+  .tree-search:focus {
+    border-color: var(--accent);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+  }
+  .tree-search-icon {
+    position: absolute;
+    left: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  /* Tree content */
+  .tree-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+  }
+
+  /* Tree group */
+  .tree-group {
+    margin-bottom: 2px;
+  }
+  .tree-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px 7px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: background var(--transition-fast);
+    user-select: none;
+  }
+  .tree-group-header:hover {
+    background: var(--bg-hover);
+  }
+  .tree-group-header .chevron {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    transition: transform .2s cubic-bezier(.4,0,.2,1);
+    flex-shrink: 0;
+  }
+  .tree-group-header .chevron.open {
+    transform: rotate(90deg);
+  }
+  .tree-group-header .group-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+  .tree-group-header .group-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tree-group-header .group-count {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* Tree items container (for animation) */
+  .tree-group-items {
+    overflow: hidden;
+  }
+  .tree-group-items.collapsed {
+    display: none;
+  }
+
+  /* Tree items */
+  .tree-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 38px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    position: relative;
+    animation: treeItemFadeIn .3s ease both;
+  }
+  .tree-item:nth-child(1) { animation-delay: 0s; }
+  .tree-item:nth-child(2) { animation-delay: .04s; }
+  .tree-item:nth-child(3) { animation-delay: .08s; }
+  .tree-item:nth-child(4) { animation-delay: .12s; }
+
+  @keyframes treeItemFadeIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .tree-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .tree-item.active {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .tree-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 0 1px 1px 0;
+  }
+  .tree-item .page-icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    opacity: .5;
+  }
+  .tree-item.active .page-icon { opacity: .8; }
+  .tree-item .page-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tree-item .health-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .health-dot.ok { background: var(--green); }
+  .health-dot.warn {
+    background: var(--amber);
+    animation: healthPulse 2s ease-in-out infinite;
+  }
+  .health-dot.error {
+    background: var(--red);
+    animation: healthPulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes healthPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 transparent; }
+    50% { opacity: .6; box-shadow: 0 0 0 3px rgba(0,0,0,.04); }
+  }
+
+  /* Version bar */
+  .version-bar {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    background: var(--bg-input);
+    flex-shrink: 0;
+  }
+  .version-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--mono);
+    transition: all var(--transition-fast);
+    color: var(--text-primary);
+  }
+  .version-selector:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.06);
+  }
+  .version-nav {
+    display: flex;
+    gap: 2px;
+  }
+  .version-nav-btn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 11px;
+    transition: all var(--transition-fast);
+  }
+  .version-nav-btn:hover {
+    background: var(--bg-hover);
+    border-color: #d4d4d4;
+    transform: translateY(-1px);
+  }
+  .version-status {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid var(--green-border);
+  }
+  .version-page-count {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* ===== MAIN PREVIEW AREA ===== */
+  .main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* Preview top bar */
+  .preview-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    min-height: 48px;
+    gap: 16px;
+  }
+  .preview-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    min-width: 0;
+  }
+  .preview-breadcrumb .crumb {
+    white-space: nowrap;
+    transition: color var(--transition-fast);
+    cursor: pointer;
+  }
+  .preview-breadcrumb .crumb:hover { color: var(--text-secondary); }
+  .preview-breadcrumb .crumb-active {
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .preview-breadcrumb .crumb-sep {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    opacity: .4;
+  }
+
+  .preview-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .preview-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font);
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    box-shadow: var(--shadow-xs);
+  }
+  .preview-btn:hover {
+    background: var(--bg-hover);
+    border-color: #d4d4d4;
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .preview-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs);
+  }
+  .preview-btn svg { width: 14px; height: 14px; }
+  .preview-btn.primary {
+    background: var(--accent);
+    color: var(--text-white);
+    border-color: var(--accent);
+    box-shadow: 0 1px 3px rgba(37,99,235,.3);
+  }
+  .preview-btn.primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    box-shadow: 0 4px 12px rgba(37,99,235,.3);
+  }
+
+  /* Preview content area */
+  .preview-viewport {
+    flex: 1;
+    display: flex;
+    background: #ebebeb;
+    overflow: hidden;
+    padding: 20px;
+    animation: fadeInPreview .5s ease .1s both;
+  }
+
+  @keyframes fadeInPreview {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Browser chrome frame */
+  .browser-frame {
+    flex: 1;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,.06);
+  }
+
+  .browser-chrome {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg-input);
+    border-bottom: 1px solid var(--border);
+  }
+  .browser-dots {
+    display: flex;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .browser-dots span {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .browser-dots span:nth-child(1) { background: #ff5f57; }
+  .browser-dots span:nth-child(2) { background: #ffbd2e; }
+  .browser-dots span:nth-child(3) { background: #28c840; }
+
+  .browser-url {
+    flex: 1;
+    padding: 5px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .browser-url .url-protocol {
+    color: var(--green);
+  }
+
+  .browser-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  /* ===== Salesforce Simulated Content ===== */
+  .sf-topnav {
+    background: #032d60;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sf-logo {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sf-logo-icon {
+    width: 22px;
+    height: 22px;
+    background: #fff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sf-logo-icon svg { width: 14px; height: 14px; color: #032d60; }
+  .sf-nav-items {
+    display: flex;
+    gap: 2px;
+  }
+  .sf-nav-item {
+    padding: 6px 14px;
+    font-size: 12px;
+    color: rgba(255,255,255,.7);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .sf-nav-item:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .sf-nav-item.active {
+    background: rgba(255,255,255,.15);
+    color: #fff;
+    font-weight: 500;
+  }
+  .sf-user-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,.7);
+    font-size: 12px;
+  }
+  .sf-user-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .sf-content-area {
+    padding: 20px;
+    background: #f4f6f9;
+    min-height: 100%;
+  }
+
+  .sf-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .sf-page-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #032d60;
+    letter-spacing: -.3px;
+  }
+  .sf-page-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .sf-action-btn {
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid #c9c7c5;
+    background: #fff;
+    color: #3e3e3c;
+    cursor: pointer;
+  }
+
+  .sf-card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .sf-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .sf-card-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #3e3e3c;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sf-card-head-icon {
+    width: 16px;
+    height: 16px;
+    opacity: .4;
+  }
+  .sf-card-body {
+    padding: 14px;
+  }
+  .sf-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  /* SF data rows */
+  .sf-data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .sf-data-row:last-child { border-bottom: none; }
+  .sf-data-label { color: #706e6b; }
+  .sf-data-value { font-weight: 600; color: #3e3e3c; font-variant-numeric: tabular-nums; }
+  .sf-data-value.positive { color: #2e844a; }
+  .sf-data-value.negative { color: #c23934; }
+
+  /* Obfuscated blocks */
+  .sf-obfuscated {
+    background: #d1d5db;
+    color: #d1d5db;
+    border-radius: 2px;
+    padding: 0 2px;
+    font-size: inherit;
+    user-select: none;
+    letter-spacing: 1px;
+  }
+
+  /* SF mini chart (CSS only) */
+  .sf-progress-bar {
+    height: 6px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .sf-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #0070d2, #1b96ff);
+    transition: width .6s ease;
+  }
+
+  /* SF activity list */
+  .sf-activity-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  .sf-activity-row:last-child { border-bottom: none; }
+  .sf-activity-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+  .sf-activity-text {
+    flex: 1;
+    color: #3e3e3c;
+    line-height: 1.3;
+  }
+  .sf-activity-time {
+    color: #706e6b;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ===== DETAIL PANEL (280px) ===== */
+  .detail-panel {
+    width: 280px;
+    min-width: 280px;
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .detail-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 52px;
+  }
+  .detail-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .detail-close {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+  }
+  .detail-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .detail-close svg { width: 14px; height: 14px; }
+
+  .detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  /* Thumbnail */
+  .detail-thumb {
+    width: 100%;
+    aspect-ratio: 3/2;
+    background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 50%, #fce7f3 100%);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,.3));
+  }
+
+  /* Metadata rows */
+  .detail-meta-section {
+    margin-bottom: 16px;
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition-fast);
+  }
+  .detail-row:hover {
+    background: var(--bg-hover);
+    margin: 0 -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-radius: var(--radius-xs);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .detail-value {
+    font-weight: 500;
+    font-size: 12px;
+    text-align: right;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .detail-value.mono {
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  /* Health indicator */
+  .health-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .health-badge.ok {
+    background: var(--green-bg);
+    color: var(--green);
+    border: 1px solid var(--green-border);
+  }
+  .health-badge.ok .health-badge-dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--green);
+  }
+
+  /* Detail sections */
+  .detail-section {
+    margin-top: 20px;
+  }
+  .detail-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .detail-section-title svg {
+    width: 12px;
+    height: 12px;
+    opacity: .6;
+  }
+
+  /* Obfuscation tags */
+  .obfuscation-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    margin: 0 4px 6px 0;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+  }
+  .obfuscation-tag:hover {
+    border-color: #d4d4d4;
+    background: var(--bg-hover);
+  }
+  .obfuscation-tag .tag-arrow {
+    color: var(--text-muted);
+    font-size: 10px;
+  }
+  .obfuscation-tag .tag-redacted {
+    background: #9ca3af;
+    color: #9ca3af;
+    border-radius: 2px;
+    padding: 0 1px;
+    letter-spacing: 0.5px;
+    font-size: 10px;
+  }
+  .obfuscation-tag.more {
+    color: var(--accent);
+    background: var(--accent-light);
+    border-color: transparent;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .obfuscation-tag.more:hover {
+    background: #dbeafe;
+  }
+
+  /* Guide items */
+  .guide-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .guide-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .guide-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-xs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .guide-icon.blue { background: var(--accent-light); }
+  .guide-icon.purple { background: #f5f3ff; }
+</style>
+</head>
+<body>
+
+<!-- ===== ICON SIDEBAR ===== -->
+<aside class="icon-sidebar">
+  <div class="icon-sidebar-logo">ES</div>
+
+  <!-- Dashboard -->
+  <div class="icon-sidebar-btn" title="Dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+  </div>
+
+  <!-- Projects -->
+  <div class="icon-sidebar-btn" title="Projets">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+  </div>
+
+  <!-- Tree (ACTIVE) -->
+  <div class="icon-sidebar-btn active" title="Arborescence">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/></svg>
+  </div>
+
+  <!-- Analytics -->
+  <div class="icon-sidebar-btn" title="Analytics">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+  </div>
+
+  <!-- Settings -->
+  <div class="icon-sidebar-btn" title="Param&egrave;tres">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  </div>
+
+  <div class="icon-sidebar-spacer"></div>
+</aside>
+
+<!-- ===== TREE PANEL ===== -->
+<div class="tree-panel">
+  <!-- Header -->
+  <div class="tree-header">
+    <div class="tree-header-title">Salesforce &mdash; D&eacute;mo Q1</div>
+    <div class="tree-header-add" title="Ajouter une page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tree-tabs-wrapper">
+    <div class="tree-tab active">Par site</div>
+    <div class="tree-tab">Par guide</div>
+  </div>
+
+  <!-- Search -->
+  <div class="tree-search-wrapper" style="position:relative">
+    <svg class="tree-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input class="tree-search" type="text" placeholder="Filtrer les pages...">
+  </div>
+
+  <!-- Scrollable tree content -->
+  <div class="tree-content">
+
+    <!-- GROUP: Home (EXPANDED) -->
+    <div class="tree-group">
+      <div class="tree-group-header" onclick="this.querySelector('.chevron').classList.toggle('open');this.nextElementSibling.classList.toggle('collapsed')">
+        <svg class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="group-icon" style="background:#e0f2fe;color:#0284c7">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        </div>
+        <span class="group-name">Home</span>
+        <span class="group-count">8 pages</span>
+      </div>
+      <div class="tree-group-items">
+        <div class="tree-item active">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          <span class="page-name">Dashboard principal</span>
+          <span class="health-dot ok"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Notifications</span>
+          <span class="health-dot ok"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Recherche globale</span>
+          <span class="health-dot ok"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GROUP: Contacts (EXPANDED) -->
+    <div class="tree-group">
+      <div class="tree-group-header" onclick="this.querySelector('.chevron').classList.toggle('open');this.nextElementSibling.classList.toggle('collapsed')">
+        <svg class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="group-icon" style="background:#dcfce7;color:#16a34a">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <span class="group-name">Contacts</span>
+        <span class="group-count">14 pages</span>
+      </div>
+      <div class="tree-group-items">
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Liste des contacts</span>
+          <span class="health-dot ok"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Fiche contact &mdash; <span class="sf-obfuscated">Jean Dupont</span></span>
+          <span class="health-dot ok"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Nouveau contact</span>
+          <span class="health-dot warn"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Historique activit&eacute;</span>
+          <span class="health-dot ok"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GROUP: Opportunites (EXPANDED) -->
+    <div class="tree-group">
+      <div class="tree-group-header" onclick="this.querySelector('.chevron').classList.toggle('open');this.nextElementSibling.classList.toggle('collapsed')">
+        <svg class="chevron open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="group-icon" style="background:#fef3c7;color:#d97706">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <span class="group-name">Opportunit&eacute;s</span>
+        <span class="group-count">18 pages</span>
+      </div>
+      <div class="tree-group-items">
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Pipeline &mdash; Vue Kanban</span>
+          <span class="health-dot ok"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Opportunit&eacute; &mdash; <span class="sf-obfuscated">Acme Corp</span></span>
+          <span class="health-dot error"></span>
+        </div>
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Cr&eacute;ation opportunit&eacute;</span>
+          <span class="health-dot ok"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GROUP: Rapports (COLLAPSED) -->
+    <div class="tree-group">
+      <div class="tree-group-header" onclick="this.querySelector('.chevron').classList.toggle('open');this.nextElementSibling.classList.toggle('collapsed')">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="group-icon" style="background:#ede9fe;color:#7c3aed">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+        </div>
+        <span class="group-name">Rapports &amp; Tableaux de bord</span>
+        <span class="group-count">12 pages</span>
+      </div>
+      <div class="tree-group-items collapsed">
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Rapport ventes</span>
+          <span class="health-dot ok"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- GROUP: Configuration (COLLAPSED) -->
+    <div class="tree-group">
+      <div class="tree-group-header" onclick="this.querySelector('.chevron').classList.toggle('open');this.nextElementSibling.classList.toggle('collapsed')">
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <div class="group-icon" style="background:#f5f5f4;color:#78716c">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33"/></svg>
+        </div>
+        <span class="group-name">Configuration</span>
+        <span class="group-count">6 pages</span>
+      </div>
+      <div class="tree-group-items collapsed">
+        <div class="tree-item">
+          <svg class="page-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="page-name">Param&egrave;tres g&eacute;n&eacute;raux</span>
+          <span class="health-dot ok"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Version bar -->
+  <div class="version-bar">
+    <div class="version-selector">v3.2 &#x25BE;</div>
+    <div class="version-nav">
+      <button class="version-nav-btn">&#x25C0;</button>
+      <button class="version-nav-btn">&#x25B6;</button>
+    </div>
+    <span class="version-status">&Agrave; jour</span>
+    <span class="version-page-count">86 pages</span>
+  </div>
+</div>
+
+<!-- ===== MAIN PREVIEW AREA ===== -->
+<div class="main-area">
+  <!-- Top bar: breadcrumb + actions -->
+  <div class="preview-topbar">
+    <div class="preview-breadcrumb">
+      <span class="crumb">Salesforce</span>
+      <svg class="crumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="crumb">Home</span>
+      <svg class="crumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="crumb-active">Dashboard principal</span>
+    </div>
+    <div class="preview-actions">
+      <button class="preview-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Live Edit
+      </button>
+      <button class="preview-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/></svg>
+        Obfuscation
+      </button>
+      <button class="preview-btn primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+        Ouvrir d&eacute;mo
+      </button>
+    </div>
+  </div>
+
+  <!-- Preview viewport -->
+  <div class="preview-viewport">
+    <div class="browser-frame">
+      <!-- Browser chrome -->
+      <div class="browser-chrome">
+        <div class="browser-dots"><span></span><span></span><span></span></div>
+        <div class="browser-url"><span class="url-protocol">https://</span>salesforce.env01.com/lightning/page/home</div>
+      </div>
+
+      <!-- Browser content: Simulated Salesforce dashboard -->
+      <div class="browser-content">
+        <!-- SF Top navigation -->
+        <div class="sf-topnav">
+          <div class="sf-logo">
+            <div class="sf-logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            Sales Cloud
+          </div>
+          <div class="sf-nav-items">
+            <div class="sf-nav-item active">Accueil</div>
+            <div class="sf-nav-item">Opportunit&eacute;s</div>
+            <div class="sf-nav-item">Contacts</div>
+            <div class="sf-nav-item">Comptes</div>
+            <div class="sf-nav-item">Rapports</div>
+          </div>
+          <div class="sf-user-area">
+            <div class="sf-user-avatar">ML</div>
+            <span class="sf-obfuscated">Marie L.</span>
+          </div>
+        </div>
+
+        <!-- SF Content area -->
+        <div class="sf-content-area">
+          <div class="sf-page-header">
+            <div class="sf-page-title">Tableau de bord</div>
+            <div class="sf-page-actions">
+              <button class="sf-action-btn">Modifier</button>
+              <button class="sf-action-btn">Actualiser</button>
+            </div>
+          </div>
+
+          <div class="sf-card-grid">
+            <!-- Card: Performance -->
+            <div class="sf-card">
+              <div class="sf-card-head">
+                <svg class="sf-card-head-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+                Performance ce trimestre
+              </div>
+              <div class="sf-card-body">
+                <div class="sf-data-row">
+                  <span class="sf-data-label">Objectif</span>
+                  <span class="sf-data-value">&euro;250 000</span>
+                </div>
+                <div class="sf-data-row">
+                  <span class="sf-data-label">R&eacute;alis&eacute;</span>
+                  <span class="sf-data-value positive">&euro;187 500</span>
+                </div>
+                <div class="sf-data-row">
+                  <span class="sf-data-label">Progression</span>
+                  <span class="sf-data-value">75%</span>
+                </div>
+                <div class="sf-progress-bar">
+                  <div class="sf-progress-fill" style="width:75%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Opportunites -->
+            <div class="sf-card">
+              <div class="sf-card-head">
+                <svg class="sf-card-head-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Opportunit&eacute;s en cours
+              </div>
+              <div class="sf-card-body">
+                <div class="sf-data-row">
+                  <span class="sf-data-label">Qualification</span>
+                  <span class="sf-data-value">8</span>
+                </div>
+                <div class="sf-data-row">
+                  <span class="sf-data-label">Proposition</span>
+                  <span class="sf-data-value">5</span>
+                </div>
+                <div class="sf-data-row">
+                  <span class="sf-data-label">N&eacute;gociation</span>
+                  <span class="sf-data-value">3</span>
+                </div>
+                <div class="sf-data-row">
+                  <span class="sf-data-label">Cl&ocirc;tur&eacute;es (gagn&eacute;es)</span>
+                  <span class="sf-data-value positive">12</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Activites recentes (full-width) -->
+            <div class="sf-card full-width">
+              <div class="sf-card-head">
+                <svg class="sf-card-head-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Activit&eacute;s r&eacute;centes
+              </div>
+              <div class="sf-card-body">
+                <div class="sf-activity-row">
+                  <div class="sf-activity-icon" style="background:#e0f2fe;color:#0284c7">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72"/></svg>
+                  </div>
+                  <div class="sf-activity-text">Appel &mdash; <span class="sf-obfuscated">Acme Corp</span></div>
+                  <div class="sf-activity-time">il y a 1h</div>
+                </div>
+                <div class="sf-activity-row">
+                  <div class="sf-activity-icon" style="background:#dcfce7;color:#16a34a">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>
+                  </div>
+                  <div class="sf-activity-text">Email &mdash; <span class="sf-obfuscated">Tech Solutions SAS</span></div>
+                  <div class="sf-activity-time">il y a 3h</div>
+                </div>
+                <div class="sf-activity-row">
+                  <div class="sf-activity-icon" style="background:#fef3c7;color:#d97706">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  </div>
+                  <div class="sf-activity-text">RDV &mdash; <span class="sf-obfuscated">Global Industries</span></div>
+                  <div class="sf-activity-time">demain 10h</div>
+                </div>
+                <div class="sf-activity-row">
+                  <div class="sf-activity-icon" style="background:#ede9fe;color:#7c3aed">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                  </div>
+                  <div class="sf-activity-text">Devis envoy&eacute; &mdash; <span class="sf-obfuscated">Nexus Digital</span></div>
+                  <div class="sf-activity-time">hier</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETAIL PANEL ===== -->
+<aside class="detail-panel">
+  <div class="detail-header">
+    <div class="detail-title">Dashboard principal</div>
+    <div class="detail-close" title="Fermer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+  </div>
+
+  <div class="detail-body">
+    <!-- Thumbnail -->
+    <div class="detail-thumb">Preview &mdash; 1200&times;800</div>
+
+    <!-- Metadata -->
+    <div class="detail-meta-section">
+      <div class="detail-row">
+        <span class="detail-label">URL source</span>
+        <span class="detail-value mono">/lightning/page/home</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Taille</span>
+        <span class="detail-value">2.4 Mo</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Captur&eacute;e le</span>
+        <span class="detail-value">24 f&eacute;v. 2026</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Mode</span>
+        <span class="detail-value">Capture libre</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Liens sortants</span>
+        <span class="detail-value">12</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Liens cass&eacute;s</span>
+        <span class="detail-value" style="color:var(--text-muted)">0</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Sant&eacute;</span>
+        <span class="detail-value">
+          <span class="health-badge ok">
+            <span class="health-badge-dot"></span>
+            OK
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Obfuscation section -->
+    <div class="detail-section">
+      <div class="detail-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19M1 1l22 22"/></svg>
+        Obfuscation active
+      </div>
+      <div>
+        <span class="obfuscation-tag">
+          Acme Corp <span class="tag-arrow">&rarr;</span> <span class="tag-redacted">&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;</span>
+        </span>
+        <span class="obfuscation-tag">
+          jean.dupont <span class="tag-arrow">&rarr;</span> <span class="tag-redacted">&#x2588;&#x2588;&#x2588;&#x2588;</span>
+        </span>
+        <span class="obfuscation-tag more">+3 r&egrave;gles</span>
+      </div>
+    </div>
+
+    <!-- Guides section -->
+    <div class="detail-section">
+      <div class="detail-section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Guides associ&eacute;s
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;color:var(--accent)"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        </div>
+        <span>Cr&eacute;er un contact</span>
+      </div>
+      <div class="guide-item">
+        <div class="guide-icon purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;color:#7c3aed"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        </div>
+        <span>G&eacute;rer une opportunit&eacute;</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+</body>
+</html>

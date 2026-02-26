@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import {
 		STORAGE_KEYS,
 		CAPTURE_MODES,
@@ -15,8 +14,7 @@
 	import AutoCapturePanel from './AutoCapturePanel.svelte';
 	import type { AutoCaptureConfig } from '$lib/auto-capture';
 
-	let { user }: { user: User | null } = $props();
-	const dispatch = createEventDispatcher<{ logout: void }>();
+	let { user, onLogout }: { user: User | null; onLogout: () => void } = $props();
 
 	// State
 	let projects = $state<Project[]>([]);
@@ -239,7 +237,7 @@
 			</div>
 		</div>
 		<button
-			onclick={() => dispatch('logout')}
+			onclick={onLogout}
 			class="text-gray-400 hover:text-gray-600 transition p-1"
 			title="Se déconnecter"
 		>
@@ -393,8 +391,8 @@
 					<PageItem
 						{page}
 						{formatSize}
-						on:remove={() => removePage(page.localId)}
-						on:recapture={() => recapturePage(page.localId)}
+						onRemove={() => removePage(page.localId)}
+						onRecapture={() => recapturePage(page.localId)}
 					/>
 				{/each}
 			</div>

@@ -1,0 +1,1265 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extension Capture — Mode Auto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --bg-card: #fff;
+    --border: #e5e5e5;
+    --text: #0c0a09;
+    --text-secondary: #57534e;
+    --text-muted: #a8a29e;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --amber: #d97706;
+    --red: #dc2626;
+    --radius: 8px;
+    --radius-sm: 6px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .popup {
+    width: 380px;
+    min-height: 580px;
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.06),
+      0 8px 40px rgba(0,0,0,0.12),
+      0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+
+  .logo {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+
+  .header-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .header-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .header-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.2;
+  }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--green-bg);
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(22, 163, 74, 0); }
+  }
+
+  /* ─── Project selector ─── */
+  .project-selector {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .project-dropdown {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .project-dropdown:hover {
+    border-color: #d4d4d4;
+  }
+
+  .project-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #fff;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .project-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .project-detect {
+    font-size: 10px;
+    color: var(--green);
+    background: var(--green-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+
+  .chevron-down {
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .btn-nouveau {
+    padding: 7px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-light);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-nouveau:hover {
+    background: #dbeafe;
+  }
+
+  /* ─── Tabs ─── */
+  .tabs {
+    display: flex;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    border: none;
+    background: none;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+  }
+
+  .tab:hover {
+    color: var(--text-secondary);
+  }
+
+  .tab.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 16px;
+    right: 16px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .tab-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .tab-icon {
+    font-size: 13px;
+    opacity: 0.7;
+  }
+
+  .tab.active .tab-icon {
+    opacity: 1;
+  }
+
+  /* ─── Content area ─── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ─── Section cards ─── */
+  .section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .section-header {
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .section-title-icon {
+    font-size: 13px;
+    width: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .section-body {
+    padding: 0 12px 12px;
+  }
+
+  /* ─── Configuration grid ─── */
+  .config-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .config-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .config-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 112px;
+    flex-shrink: 0;
+  }
+
+  .config-input {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+
+  .config-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+
+  .config-input::-webkit-inner-spin-button,
+  .config-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+
+  .config-select {
+    flex: 1;
+    padding: 6px 28px 6px 10px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23a8a29e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .config-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+
+  .config-unit {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    min-width: 32px;
+  }
+
+  /* ─── Zone list ─── */
+  .zone-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .zone-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    transition: background 0.15s;
+  }
+
+  .zone-item:hover {
+    background: #f0f0f0;
+  }
+
+  .zone-pattern {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zone-multiplier {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .zone-remove {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .zone-remove:hover {
+    background: #fee2e2;
+    color: var(--red);
+  }
+
+  .add-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 4px 0;
+    border: none;
+    background: none;
+    transition: opacity 0.15s;
+  }
+
+  .add-link:hover {
+    opacity: 0.7;
+  }
+
+  .add-link svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* ─── Blacklist tags ─── */
+  .blacklist-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .bl-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+
+  .bl-tag-icon {
+    margin-right: 3px;
+    font-size: 9px;
+  }
+
+  .manage-link {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: color 0.15s;
+    padding: 0;
+  }
+
+  .manage-link:hover {
+    color: var(--text-secondary);
+  }
+
+  /* ─── Toggle ─── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+
+  .toggle-label {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .toggle-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: #d4d4d4;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+  }
+
+  .toggle.active {
+    background: var(--accent);
+  }
+
+  .toggle.active::after {
+    transform: translateX(16px);
+  }
+
+  /* ─── Progress panel (hidden by default) ─── */
+  .progress-panel {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .progress-panel.visible {
+    display: flex;
+  }
+
+  .progress-bar-container {
+    height: 6px;
+    background: #e5e5e5;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    width: 45%;
+    background: linear-gradient(90deg, var(--accent) 0%, #3b82f6 100%);
+    border-radius: 3px;
+    position: relative;
+    animation: progress-indeterminate 2.5s ease-in-out infinite;
+  }
+
+  @keyframes progress-indeterminate {
+    0% { width: 10%; margin-left: 0; }
+    50% { width: 50%; margin-left: 20%; }
+    100% { width: 10%; margin-left: 90%; }
+  }
+
+  .progress-bar-fill.determinate {
+    animation: none;
+    width: 62%;
+    transition: width 0.5s ease;
+  }
+
+  .progress-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .progress-stat {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .progress-stat strong {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .progress-stat .dot-sep {
+    color: var(--text-muted);
+    margin: 0 2px;
+  }
+
+  .stat-discovered strong { color: var(--accent); }
+  .stat-captured strong { color: var(--green); }
+  .stat-errors strong { color: var(--red); }
+
+  .progress-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .progress-url {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .progress-depth {
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .depth-indicator {
+    display: flex;
+    gap: 3px;
+  }
+
+  .depth-level {
+    width: 14px;
+    height: 4px;
+    border-radius: 2px;
+    background: #e5e5e5;
+  }
+
+  .depth-level.filled {
+    background: var(--accent);
+  }
+
+  .depth-level.current {
+    background: var(--accent);
+    animation: depth-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes depth-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .speed-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--green);
+    background: var(--green-bg);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .speed-icon {
+    font-size: 10px;
+  }
+
+  /* ─── Footer bar ─── */
+  .footer-bar {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .footer-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    flex: 1;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-primary:hover {
+    background: #1d4ed8;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .btn-secondary {
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-secondary:hover {
+    background: #f0f0f0;
+    border-color: #d4d4d4;
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-secondary svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .btn-stop {
+    flex: 1;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    background: var(--red);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-stop:hover {
+    background: #b91c1c;
+  }
+
+  .btn-stop svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* ─── Version footer ─── */
+  .version-footer {
+    text-align: center;
+    padding: 0 0 2px;
+  }
+
+  .version-text {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* ─── Scrollbar ─── */
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 4px; }
+  .content::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+  /* ─── Separator ─── */
+  .section-sep {
+    height: 1px;
+    background: var(--border);
+    margin: 0 12px;
+  }
+
+  /* ─── Running state modifications ─── */
+  .popup.running .config-panel { display: none; }
+  .popup.running .progress-panel { display: flex; }
+  .popup.running .btn-primary { display: none; }
+  .popup.running .btn-stop { display: flex; }
+  .popup.running .btn-secondary { display: none; }
+
+  /* ─── Demo toggle button ─── */
+  .demo-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    background: #18181b;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 100;
+  }
+
+  .demo-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  }
+
+  /* ─── Info hint ─── */
+  .info-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 6px 12px 2px;
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    line-height: 1.4;
+  }
+
+  .info-hint svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--text-muted);
+  }
+
+  /* ─── Subtle fade-in animation ─── */
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-card, .toggle-row {
+    animation: fadeSlideIn 0.3s ease-out forwards;
+  }
+
+  .section-card:nth-child(1) { animation-delay: 0.05s; }
+  .section-card:nth-child(2) { animation-delay: 0.1s; }
+  .section-card:nth-child(3) { animation-delay: 0.15s; }
+  .toggle-row { animation-delay: 0.2s; }
+</style>
+</head>
+<body>
+
+<div class="popup" id="popup">
+
+  <!-- ─── Header ─── -->
+  <div class="header">
+    <div class="logo">ES</div>
+    <div class="header-text">
+      <div class="header-title">Environnements Simules</div>
+      <div class="header-subtitle">Lemon Learning</div>
+    </div>
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      Connecte
+    </div>
+  </div>
+
+  <!-- ─── Project Selector ─── -->
+  <div class="project-selector">
+    <div class="project-dropdown">
+      <div class="project-icon">SF</div>
+      <span class="project-name">Salesforce Lightning</span>
+      <span class="project-detect">auto</span>
+      <svg class="chevron-down" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 6l4 4 4-4"/>
+      </svg>
+    </div>
+    <button class="btn-nouveau">+ Nouveau</button>
+  </div>
+
+  <!-- ─── Tabs ─── -->
+  <div class="tabs">
+    <button class="tab" data-tab="libre">
+      <span class="tab-label">
+        <svg class="tab-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+        Libre
+      </span>
+    </button>
+    <button class="tab" data-tab="guides">
+      <span class="tab-label">
+        <svg class="tab-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M2 8h12M2 13h7"/></svg>
+        Guides
+      </span>
+    </button>
+    <button class="tab active" data-tab="auto">
+      <span class="tab-label">
+        <svg class="tab-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z"/><path d="M5 7v2M11 7v2M7 5h2M7 11h2"/></svg>
+        Auto
+      </span>
+    </button>
+  </div>
+
+  <!-- ─── Content ─── -->
+  <div class="content">
+
+    <!-- Configuration panel (visible before crawl) -->
+    <div class="config-panel" id="configPanel">
+
+      <!-- Crawl Configuration -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">
+            <span class="section-title-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6"/></svg>
+            </span>
+            Configuration du crawl
+          </span>
+        </div>
+        <div class="section-body">
+          <div class="config-grid">
+            <div class="config-row">
+              <label class="config-label">Pages cible</label>
+              <input type="number" class="config-input" value="50" min="1" max="500" style="width: 72px; flex: none; text-align: center;">
+              <span class="config-unit">pages</span>
+            </div>
+            <div class="config-row">
+              <label class="config-label">Profondeur max</label>
+              <select class="config-select">
+                <option value="1">1 niveau</option>
+                <option value="2">2 niveaux</option>
+                <option value="3" selected>3 niveaux</option>
+                <option value="4">4 niveaux</option>
+                <option value="5">5 niveaux</option>
+              </select>
+            </div>
+            <div class="config-row">
+              <label class="config-label">Delai entre pages</label>
+              <select class="config-select">
+                <option value="1">1 seconde</option>
+                <option value="2" selected>2 secondes</option>
+                <option value="3">3 secondes</option>
+                <option value="5">5 secondes</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="info-hint">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 7v4M8 5.5v0"/></svg>
+          Crawl BFS a partir de la page courante. L'algo suit les liens et capture automatiquement.
+        </div>
+      </div>
+
+      <!-- Zones d'interet -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">
+            <span class="section-title-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L2 6l4 4"/><path d="M10 2l4 4-4 4"/></svg>
+            </span>
+            Zones d'interet
+          </span>
+          <span style="font-size: 10px; color: var(--text-muted); font-weight: 400;">Profondeur accrue</span>
+        </div>
+        <div class="section-body">
+          <div class="zone-list">
+            <div class="zone-item">
+              <span class="zone-pattern">/lightning/o/*</span>
+              <span class="zone-multiplier">x2</span>
+              <button class="zone-remove" title="Retirer">&times;</button>
+            </div>
+            <div class="zone-item">
+              <span class="zone-pattern">/lightning/r/*</span>
+              <span class="zone-multiplier">x2</span>
+              <button class="zone-remove" title="Retirer">&times;</button>
+            </div>
+            <div class="zone-item">
+              <span class="zone-pattern">/lightning/setup/*</span>
+              <span class="zone-multiplier">x1.5</span>
+              <button class="zone-remove" title="Retirer">&times;</button>
+            </div>
+          </div>
+          <button class="add-link" style="margin-top: 6px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg>
+            Ajouter une zone
+          </button>
+        </div>
+      </div>
+
+      <!-- Liste noire -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">
+            <span class="section-title-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M4 4l8 8"/></svg>
+            </span>
+            Liste noire
+          </span>
+          <button class="manage-link">Gerer</button>
+        </div>
+        <div class="section-body">
+          <div class="blacklist-tags">
+            <span class="bl-tag"><span class="bl-tag-icon">&#x2715;</span> Deconnexion</span>
+            <span class="bl-tag"><span class="bl-tag-icon">&#x2715;</span> Supprimer</span>
+            <span class="bl-tag"><span class="bl-tag-icon">&#x2715;</span> Logout</span>
+            <span class="bl-tag"><span class="bl-tag-icon">&#x2715;</span> Delete</span>
+            <span class="bl-tag"><span class="bl-tag-icon">&#x2715;</span> Reinitialiser</span>
+          </div>
+          <span style="font-size: 10px; color: var(--text-muted);">5 termes exclus du crawl</span>
+        </div>
+      </div>
+
+      <!-- Replace toggle -->
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Remplacer les pages existantes</div>
+          <div class="toggle-desc">Les pages deja capturees seront ecrasees</div>
+        </div>
+        <button class="toggle" id="replaceToggle" onclick="this.classList.toggle('active')"></button>
+      </div>
+
+    </div>
+
+    <!-- Progress panel (visible during crawl) -->
+    <div class="progress-panel" id="progressPanel">
+
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">
+            <span class="section-title-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8 2v4M8 10v4M2 8h4M10 8h4"/>
+                <circle cx="8" cy="8" r="2"/>
+              </svg>
+            </span>
+            Crawl en cours
+          </span>
+          <span class="speed-badge">
+            <span class="speed-icon">&#9889;</span>
+            12 pages/min
+          </span>
+        </div>
+        <div class="section-body" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Progress bar -->
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill determinate"></div>
+          </div>
+
+          <!-- Stats -->
+          <div class="progress-stats">
+            <span class="progress-stat stat-discovered">
+              <strong>78</strong> decouvertes
+            </span>
+            <span class="progress-stat" style="color: var(--text-muted);">&middot;</span>
+            <span class="progress-stat stat-captured">
+              <strong>31</strong> capturees
+            </span>
+            <span class="progress-stat" style="color: var(--text-muted);">&middot;</span>
+            <span class="progress-stat stat-errors">
+              <strong>2</strong> erreurs
+            </span>
+          </div>
+
+          <!-- Depth -->
+          <div class="progress-depth">
+            <span>Profondeur actuelle :</span>
+            <div class="depth-indicator">
+              <div class="depth-level filled"></div>
+              <div class="depth-level current"></div>
+              <div class="depth-level"></div>
+            </div>
+            <strong style="font-weight: 600; color: var(--text);">2/3</strong>
+          </div>
+
+          <!-- Current URL -->
+          <div class="progress-meta">
+            <div class="progress-url" title="https://acme.lightning.force.com/lightning/o/Account/list">
+              acme.lightning.force.com/lightning/o/Account/list
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live log summary -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title" style="font-size: 11px; font-weight: 500; color: var(--text-secondary);">
+            Dernieres pages
+          </span>
+        </div>
+        <div class="section-body">
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0;"></span>
+              <span style="color: var(--text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'SF Mono', 'Consolas', monospace; font-size: 10px;">/lightning/o/Account/list</span>
+              <span style="color: var(--text-muted); font-size: 10px; flex-shrink: 0;">2.1s</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0;"></span>
+              <span style="color: var(--text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'SF Mono', 'Consolas', monospace; font-size: 10px;">/lightning/o/Contact/list</span>
+              <span style="color: var(--text-muted); font-size: 10px; flex-shrink: 0;">1.8s</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0;"></span>
+              <span style="color: var(--text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'SF Mono', 'Consolas', monospace; font-size: 10px;">/lightning/o/Lead/list</span>
+              <span style="color: var(--text-muted); font-size: 10px; flex-shrink: 0;">timeout</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0;"></span>
+              <span style="color: var(--text-secondary); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'SF Mono', 'Consolas', monospace; font-size: 10px;">/lightning/r/Account/view</span>
+              <span style="color: var(--text-muted); font-size: 10px; flex-shrink: 0;">3.4s</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ─── Footer ─── -->
+  <div class="footer-bar">
+    <div class="footer-buttons">
+      <button class="btn-primary" id="btnLaunch" onclick="toggleCrawl()">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5 3l8 5-8 5V3z"/></svg>
+        Lancer le crawl
+      </button>
+      <button class="btn-stop" id="btnStop" onclick="toggleCrawl()">
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>
+        Arreter
+      </button>
+      <button class="btn-secondary" id="btnConfig">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15M3.05 3.05l1.77 1.77M11.18 11.18l1.77 1.77M3.05 12.95l1.77-1.77M11.18 4.82l1.77-1.77"/></svg>
+        Configurer
+      </button>
+    </div>
+    <div class="version-footer">
+      <span class="version-text">Environnements Simules v0.4.0</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Demo state toggle (not part of actual extension UI) -->
+<button class="demo-toggle" onclick="toggleCrawl()">Basculer : Configuration / Crawl en cours</button>
+
+<script>
+  let isRunning = false;
+
+  function toggleCrawl() {
+    isRunning = !isRunning;
+    const popup = document.getElementById('popup');
+
+    if (isRunning) {
+      popup.classList.add('running');
+      startProgressAnimation();
+    } else {
+      popup.classList.remove('running');
+      stopProgressAnimation();
+    }
+  }
+
+  let progressInterval;
+  let counterInterval;
+
+  function startProgressAnimation() {
+    const fill = document.querySelector('.progress-bar-fill');
+    let width = 20;
+    fill.style.animation = 'none';
+    fill.classList.add('determinate');
+
+    let discovered = 40;
+    let captured = 15;
+    let errors = 1;
+    const speedEl = document.querySelector('.speed-badge');
+    const statsEls = document.querySelectorAll('.progress-stat strong');
+
+    counterInterval = setInterval(() => {
+      if (discovered < 120) {
+        discovered += Math.floor(Math.random() * 3) + 1;
+      }
+      if (captured < discovered - 10) {
+        captured += Math.floor(Math.random() * 2) + 1;
+      }
+      if (Math.random() < 0.05 && errors < 5) {
+        errors++;
+      }
+
+      const speed = Math.floor(8 + Math.random() * 8);
+      width = Math.min(95, (captured / 50) * 100);
+
+      fill.style.width = width + '%';
+      statsEls[0].textContent = discovered;
+      statsEls[1].textContent = captured;
+      statsEls[2].textContent = errors;
+      speedEl.innerHTML = '<span class="speed-icon">&#9889;</span> ' + speed + ' pages/min';
+    }, 800);
+  }
+
+  function stopProgressAnimation() {
+    clearInterval(progressInterval);
+    clearInterval(counterInterval);
+  }
+
+  // Tab switching (visual only)
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

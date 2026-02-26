@@ -1,0 +1,1656 @@
+<!-- [MockupForge] Ce fichier HTML est une maquette geree par MockupForge, un outil de gestion et d'annotation de maquettes. Le contenu ci-dessous est la maquette a analyser, iterer ou implementer. Les elements de l'interface MockupForge (header, navigation, panneaux lateraux) ne font PAS partie de cette maquette et doivent etre ignores par les IA. -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viewer Commercial — Environnements Simulés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Salesforce tokens */
+    --sf-blue: #032d60;
+    --sf-blue-light: #1b5297;
+    --sf-link: #0070d2;
+    --sf-link-hover: #005fb2;
+    --sf-bg: #f3f3f3;
+    --sf-card: #ffffff;
+    --sf-border: #dddbda;
+    --sf-text: #181818;
+    --sf-text-secondary: #706e6b;
+    --sf-text-muted: #969492;
+    --sf-green: #2e844a;
+    --sf-purple: #7526c1;
+    --sf-orange: #dd7a01;
+    --obfuscated: #c9c7c5;
+
+    /* Banner tokens */
+    --banner-bg: rgba(12, 10, 9, .92);
+    --banner-text: #ffffff;
+    --banner-text-secondary: rgba(255,255,255,.6);
+    --banner-border: rgba(255,255,255,.08);
+    --banner-hover: rgba(255,255,255,.1);
+    --banner-collapsed-h: 56px;
+    --banner-expanded-h: 200px;
+    --banner-transition: 0.35s cubic-bezier(.4,0,.2,1);
+  }
+
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--sf-bg);
+    color: var(--sf-text);
+    font-size: 13px;
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ============================== */
+  /*  ANIMATIONS                    */
+  /* ============================== */
+  @keyframes fadeInPage {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fadeInTooltip {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 4px 16px rgba(251,191,36,.35), 0 1px 3px rgba(0,0,0,.12); }
+    50% { box-shadow: 0 4px 24px rgba(251,191,36,.5), 0 1px 3px rgba(0,0,0,.12); }
+  }
+  @keyframes toastIn {
+    0% { opacity: 0; transform: translate(-50%, 10px); }
+    100% { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes toastOut {
+    0% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -8px); }
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+  @keyframes slideDownContent {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================== */
+  /*  COMMERCIAL BANNER             */
+  /* ============================== */
+  .commercial-banner {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 10000;
+    background: var(--banner-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--banner-border);
+    height: var(--banner-collapsed-h);
+    overflow: hidden;
+    transition: height var(--banner-transition);
+    color: var(--banner-text);
+    font-size: 13px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.25), 0 1px 4px rgba(0,0,0,.15);
+  }
+  .commercial-banner.expanded {
+    height: var(--banner-expanded-h);
+  }
+
+  /* Collapsed row */
+  .banner-collapsed {
+    height: var(--banner-collapsed-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .banner-collapsed:hover {
+    background: rgba(255,255,255,.03);
+  }
+
+  .banner-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 700; font-size: 13px;
+    color: #fbbf24;
+    letter-spacing: -0.01em;
+    flex-shrink: 0;
+    padding-right: 14px;
+    margin-right: 2px;
+    border-right: 1px solid var(--banner-border);
+  }
+  .banner-logo-icon {
+    width: 28px; height: 28px;
+    background: rgba(251,191,36,.15);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .banner-logo-icon svg { width: 16px; height: 16px; color: #fbbf24; }
+
+  .banner-project-name {
+    font-weight: 600; font-size: 13.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .banner-separator {
+    color: rgba(255,255,255,.25);
+    font-weight: 400;
+    margin: 0 2px;
+  }
+  .banner-site-name {
+    font-weight: 500; font-size: 13px;
+    color: var(--banner-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .banner-chevron {
+    display: flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 5px;
+    transition: transform var(--banner-transition), background .15s;
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+  .banner-chevron svg { width: 16px; height: 16px; color: rgba(255,255,255,.5); }
+  .commercial-banner.expanded .banner-chevron {
+    transform: rotate(180deg);
+  }
+
+  .banner-quick-actions {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .banner-icon-btn {
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: rgba(255,255,255,.6);
+    transition: background .15s, color .15s;
+    position: relative;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .banner-icon-btn:hover {
+    background: var(--banner-hover);
+    color: #fff;
+  }
+  .banner-icon-btn svg { width: 16px; height: 16px; }
+  .banner-icon-btn .btn-tooltip {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.88);
+    color: #fff;
+    padding: 4px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .15s ease .08s;
+    z-index: 10;
+  }
+  .banner-icon-btn:hover .btn-tooltip {
+    opacity: 1;
+  }
+
+  .banner-live-dot {
+    width: 7px; height: 7px;
+    background: #22c55e;
+    border-radius: 50%;
+    position: absolute;
+    top: 7px; right: 7px;
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+
+  /* Expanded content */
+  .banner-expanded-content {
+    padding: 0 20px 16px;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity .25s ease .05s, transform .25s ease .05s;
+    pointer-events: none;
+  }
+  .commercial-banner.expanded .banner-expanded-content {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+
+  .banner-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .banner-row:last-child { margin-bottom: 0; }
+
+  /* Dropdowns */
+  .banner-select-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .banner-select {
+    appearance: none;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 7px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 7px 32px 7px 12px;
+    cursor: pointer;
+    outline: none;
+    transition: background .15s, border-color .15s;
+    min-width: 200px;
+  }
+  .banner-select:hover {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.2);
+  }
+  .banner-select:focus {
+    border-color: rgba(251,191,36,.5);
+    background: rgba(255,255,255,.12);
+  }
+  .banner-select option {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 8px;
+  }
+  .banner-select-arrow {
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: rgba(255,255,255,.4);
+  }
+  .banner-select-arrow svg { width: 14px; height: 14px; }
+
+  .banner-select-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,.4);
+    margin-bottom: 4px;
+  }
+
+  .banner-version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: rgba(251,191,36,.12);
+    border: 1px solid rgba(251,191,36,.2);
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #fbbf24;
+    white-space: nowrap;
+  }
+  .banner-version-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+
+  /* Stats row */
+  .banner-stat {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 14px;
+    border-right: 1px solid var(--banner-border);
+    white-space: nowrap;
+  }
+  .banner-stat:last-of-type { border-right: none; }
+  .banner-stat-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: rgba(255,255,255,.06);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .banner-stat-icon svg { width: 14px; height: 14px; color: rgba(255,255,255,.5); }
+  .banner-stat-value {
+    font-size: 14px; font-weight: 700; color: #fff;
+    line-height: 1.1;
+  }
+  .banner-stat-label {
+    font-size: 10.5px; color: rgba(255,255,255,.45);
+    line-height: 1.1;
+  }
+  .banner-stat:first-child { padding-left: 0; }
+
+  /* Action buttons row */
+  .banner-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, color .15s, border-color .15s;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.85);
+    white-space: nowrap;
+  }
+  .banner-action-btn:hover {
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    border-color: rgba(255,255,255,.2);
+  }
+  .banner-action-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .banner-action-btn.primary {
+    background: #fbbf24;
+    color: #171717;
+    border-color: #fbbf24;
+    font-weight: 600;
+  }
+  .banner-action-btn.primary:hover {
+    background: #f59e0b;
+    border-color: #f59e0b;
+  }
+
+  /* Handle / grab tab */
+  .banner-handle {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 48px; height: 4px;
+    background: rgba(255,255,255,.2);
+    border-radius: 2px 2px 0 0;
+    cursor: pointer;
+    transition: background .15s, width .15s;
+    z-index: 2;
+  }
+  .banner-handle:hover {
+    background: rgba(255,255,255,.35);
+    width: 64px;
+  }
+
+  /* ============================== */
+  /*  TOAST NOTIFICATION            */
+  /* ============================== */
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15,15,15,.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.1);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    z-index: 20000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    animation: toastIn .25s ease-out;
+  }
+  .toast.hiding {
+    animation: toastOut .2s ease-in forwards;
+  }
+  .toast svg { width: 16px; height: 16px; color: #22c55e; }
+
+  /* ============================== */
+  /*  PROJECT SWITCHER DROPDOWN     */
+  /* ============================== */
+  .project-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 340px;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    overflow: hidden;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .project-dropdown.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+  .project-dropdown-header {
+    padding: 10px 14px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,.35);
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .project-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background .1s;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .project-dropdown-item:last-child { border-bottom: none; }
+  .project-dropdown-item:hover {
+    background: rgba(255,255,255,.06);
+  }
+  .project-dropdown-item.active {
+    background: rgba(251,191,36,.08);
+  }
+  .project-tool-badge {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+  .project-tool-badge.salesforce { background: #e1f0ff; color: #0070d2; }
+  .project-tool-badge.sap { background: #e8f5e9; color: #2e844a; }
+  .project-tool-badge.workday { background: #fff3e0; color: #dd7a01; }
+  .project-tool-badge.servicenow { background: #f3e8ff; color: #7526c1; }
+  .project-dropdown-info { flex: 1; min-width: 0; }
+  .project-dropdown-name {
+    font-size: 13px; font-weight: 600; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .project-dropdown-meta {
+    font-size: 11px; color: rgba(255,255,255,.45);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .project-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .project-status-dot.active { background: #22c55e; }
+  .project-status-dot.draft { background: #fbbf24; }
+  .project-status-dot.archived { background: #969492; }
+  .project-dropdown-check {
+    color: #fbbf24;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .project-dropdown-item.active .project-dropdown-check {
+    opacity: 1;
+  }
+  .project-dropdown-check svg { width: 16px; height: 16px; }
+
+  /* ============================== */
+  /*  MAIN CONTENT WRAPPER          */
+  /* ============================== */
+  .main-content-wrapper {
+    margin-top: var(--banner-collapsed-h);
+    height: calc(100vh - var(--banner-collapsed-h));
+    overflow-y: auto;
+    transition: margin-top var(--banner-transition);
+  }
+  .commercial-banner.expanded ~ .main-content-wrapper {
+    margin-top: var(--banner-expanded-h);
+    height: calc(100vh - var(--banner-expanded-h));
+  }
+
+  /* ============================== */
+  /*  SALESFORCE — GLOBAL NAV       */
+  /* ============================== */
+  .sf-app {
+    width: 100%;
+    animation: fadeInPage .5s ease-out;
+  }
+
+  .sf-global-nav {
+    background: var(--sf-blue);
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    position: relative;
+    z-index: 100;
+  }
+
+  .sf-logo {
+    display: flex; align-items: center; gap: 8px;
+    color: #fff; font-weight: 700; font-size: 14px;
+    margin-right: 8px; padding-right: 16px;
+    border-right: 1px solid rgba(255,255,255,.15);
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .sf-logo-icon {
+    width: 24px; height: 24px; background: rgba(255,255,255,.15);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  }
+  .sf-logo-icon svg { width: 16px; height: 16px; }
+
+  .sf-nav-items {
+    display: flex; align-items: center; gap: 0;
+    height: 100%; overflow: hidden;
+  }
+  .sf-nav-item {
+    color: rgba(255,255,255,.72);
+    font-size: 12.5px; font-weight: 500;
+    padding: 0 14px; height: 100%;
+    display: flex; align-items: center;
+    cursor: pointer; position: relative;
+    white-space: nowrap;
+    transition: color .15s;
+  }
+  .sf-nav-item:hover { color: rgba(255,255,255,.95); }
+  .sf-nav-item.active { color: #fff; }
+  .sf-nav-item.active::after {
+    content: ''; position: absolute; bottom: 0; left: 14px; right: 14px;
+    height: 3px; background: #fff; border-radius: 3px 3px 0 0;
+  }
+
+  .sf-nav-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .sf-search-box {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 6px;
+    padding: 6px 12px 6px 32px;
+    color: #fff; font-size: 12px;
+    width: 240px;
+    font-family: inherit;
+    outline: none;
+    transition: background .15s, border-color .15s;
+  }
+  .sf-search-box:focus {
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.25);
+  }
+  .sf-search-box::placeholder { color: rgba(255,255,255,.45); }
+
+  .sf-search-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .sf-search-wrap svg {
+    position: absolute; left: 10px; width: 14px; height: 14px;
+    color: rgba(255,255,255,.45); pointer-events: none;
+  }
+
+  .sf-nav-icon-btn {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.65); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .sf-nav-icon-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
+  .sf-nav-icon-btn svg { width: 18px; height: 18px; }
+
+  .sf-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #1b96ff, #0b5cab);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 11px; font-weight: 700;
+    cursor: pointer; letter-spacing: 0.02em;
+    border: 2px solid rgba(255,255,255,.2);
+  }
+
+  /* ============================== */
+  /*  SALESFORCE — TAB BAR          */
+  /* ============================== */
+  .sf-tab-bar-wrap {
+    background: #fff;
+    border-bottom: 1px solid var(--sf-border);
+    padding: 0 24px;
+  }
+  .sf-page-header {
+    max-width: 1200px; margin: 0 auto;
+    padding: 16px 0 0 0;
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+  .sf-breadcrumb {
+    font-size: 11px; color: var(--sf-text-muted); margin-bottom: 4px;
+  }
+  .sf-breadcrumb a { color: var(--sf-link); text-decoration: none; }
+  .sf-breadcrumb a:hover { text-decoration: underline; }
+  .sf-page-title {
+    font-size: 20px; font-weight: 700; color: var(--sf-blue);
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: -0.02em;
+  }
+  .sf-page-title-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, #7f8ced, #6870e0);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; flex-shrink: 0;
+  }
+  .sf-page-title-icon svg { width: 20px; height: 20px; }
+
+  .sf-header-actions {
+    display: flex; gap: 8px; padding-top: 4px;
+  }
+  .sf-btn {
+    padding: 7px 16px;
+    border-radius: 6px;
+    font-size: 12.5px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all .15s;
+    border: 1px solid transparent;
+  }
+  .sf-btn-primary {
+    background: var(--sf-link); color: #fff;
+    border-color: var(--sf-link);
+  }
+  .sf-btn-primary:hover { background: var(--sf-link-hover); border-color: var(--sf-link-hover); }
+  .sf-btn-outline {
+    background: #fff; color: var(--sf-text);
+    border-color: var(--sf-border);
+  }
+  .sf-btn-outline:hover { background: #f5f5f5; }
+
+  .sf-tabs {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; gap: 0; padding-top: 8px;
+  }
+  .sf-tab {
+    padding: 10px 16px;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--sf-text-secondary);
+    cursor: pointer;
+    position: relative;
+    transition: color .15s;
+    white-space: nowrap;
+  }
+  .sf-tab:hover { color: var(--sf-text); }
+  .sf-tab.active {
+    color: var(--sf-link); font-weight: 600;
+  }
+  .sf-tab.active::after {
+    content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 3px; background: var(--sf-link); border-radius: 3px 3px 0 0;
+  }
+
+  /* ============================== */
+  /*  SALESFORCE — PAGE CONTENT     */
+  /* ============================== */
+  .sf-content {
+    max-width: 1200px; margin: 0 auto;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 20px;
+    animation: fadeInPage .4s ease-out .1s both;
+  }
+
+  .sf-card {
+    background: var(--sf-card);
+    border: 1px solid var(--sf-border);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .sf-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .sf-card-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0efed;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sf-card-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--sf-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .sf-card-action {
+    font-size: 11px; color: var(--sf-link); cursor: pointer; font-weight: 500;
+  }
+  .sf-card-action:hover { text-decoration: underline; }
+  .sf-card-body { padding: 0; }
+
+  /* Field rows */
+  .sf-fields { padding: 4px 0; }
+  .sf-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid #f5f4f2;
+  }
+  .sf-field-row:last-child { border-bottom: none; }
+  .sf-field-cell {
+    padding: 10px 16px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .sf-field-cell + .sf-field-cell {
+    border-left: 1px solid #f5f4f2;
+  }
+  .sf-field-label {
+    font-size: 11px; color: var(--sf-text-muted);
+    font-weight: 500;
+  }
+  .sf-field-value {
+    font-size: 13px; font-weight: 500; color: var(--sf-text);
+  }
+  .sf-field-value a {
+    color: var(--sf-link); text-decoration: none;
+  }
+  .sf-field-value a:hover { text-decoration: underline; }
+
+  /* Obfuscated text blocks */
+  .obf {
+    display: inline-block;
+    background: var(--obfuscated);
+    color: transparent;
+    border-radius: 3px;
+    user-select: none;
+    pointer-events: none;
+    line-height: 1.3;
+    vertical-align: baseline;
+    letter-spacing: 0;
+  }
+
+  /* Timeline */
+  .sf-timeline { padding: 8px 16px 12px; }
+  .sf-timeline-item {
+    display: flex; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f4f2;
+    position: relative;
+  }
+  .sf-timeline-item:last-child { border-bottom: none; }
+  .sf-timeline-dot-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 3px;
+  }
+  .sf-timeline-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .sf-timeline-dot.call { background: var(--sf-green); }
+  .sf-timeline-dot.email { background: var(--sf-purple); }
+  .sf-timeline-dot.meeting { background: var(--sf-link); }
+  .sf-timeline-dot.task { background: var(--sf-orange); }
+  .sf-timeline-line {
+    width: 2px; flex: 1; background: #e5e5e3;
+    margin-top: 4px; border-radius: 1px;
+  }
+  .sf-timeline-content { flex: 1; min-width: 0; }
+  .sf-timeline-title {
+    font-size: 13px; font-weight: 500; color: var(--sf-text);
+  }
+  .sf-timeline-type {
+    display: inline-block;
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px; border-radius: 3px;
+    margin-right: 6px;
+  }
+  .sf-timeline-type.call { background: #e8f5e9; color: var(--sf-green); }
+  .sf-timeline-type.email { background: #f3e8ff; color: var(--sf-purple); }
+  .sf-timeline-type.meeting { background: #e1f0ff; color: var(--sf-link); }
+  .sf-timeline-type.task { background: #fff3e0; color: var(--sf-orange); }
+  .sf-timeline-date {
+    font-size: 11px; color: var(--sf-text-muted); margin-top: 2px;
+  }
+  .sf-timeline-desc {
+    font-size: 12px; color: var(--sf-text-secondary); margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  /* Opportunity cards */
+  .sf-opp-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f5f4f2;
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .sf-opp-item:last-child { border-bottom: none; }
+  .sf-opp-item:hover { background: #fafaf9; }
+  .sf-opp-name {
+    font-size: 13px; font-weight: 600; color: var(--sf-link);
+    margin-bottom: 4px;
+  }
+  .sf-opp-meta {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11.5px; color: var(--sf-text-secondary);
+  }
+  .sf-opp-stage {
+    display: inline-block;
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 10.5px; font-weight: 600;
+  }
+  .sf-opp-stage.negociation { background: #fff3cd; color: #8a6d00; }
+  .sf-opp-stage.qualification { background: #d1ecf1; color: #0c5460; }
+  .sf-opp-stage.proposition { background: #e8d5f5; color: #5b2c8c; }
+  .sf-opp-amount { font-weight: 600; }
+
+  /* Notes card */
+  .sf-notes-body {
+    padding: 14px 16px;
+    font-size: 13px; color: var(--sf-text-secondary);
+    line-height: 1.65;
+  }
+
+  /* ============================== */
+  /*  LEMON LEARNING BADGE          */
+  /* ============================== */
+  .ll-badge {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    z-index: 9990;
+    width: 48px; height: 48px;
+    background: #fbbf24;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #171717;
+    font-weight: 800; font-size: 16px;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+    animation: pulseGlow 3s ease-in-out infinite;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  .ll-badge:hover {
+    transform: scale(1.1);
+  }
+  .ll-badge:active {
+    transform: scale(1.04);
+  }
+</style>
+</head>
+<body>
+
+<!-- ================================================ -->
+<!--  COMMERCIAL CONTROL BANNER                       -->
+<!-- ================================================ -->
+<div class="commercial-banner" id="commercialBanner">
+
+  <!-- Collapsed row (always visible) -->
+  <div class="banner-collapsed" id="bannerCollapsed">
+    <div class="banner-logo">
+      <div class="banner-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
+        </svg>
+      </div>
+      LL Demo
+    </div>
+
+    <div class="banner-project-name">D&eacute;mo Salesforce &mdash; Acme Corp</div>
+    <span class="banner-separator">/</span>
+    <div class="banner-site-name">Fiche Contact</div>
+
+    <div class="banner-chevron">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+
+    <div class="banner-quick-actions">
+      <!-- Live indicator -->
+      <button class="banner-icon-btn" onclick="event.stopPropagation()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+          <path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span class="banner-live-dot"></span>
+        <span class="btn-tooltip">3 clients connect&eacute;s</span>
+      </button>
+
+      <!-- Share -->
+      <button class="banner-icon-btn" id="btnShareCollapsed" onclick="event.stopPropagation(); copyShareLink()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/>
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        <span class="btn-tooltip">Partager</span>
+      </button>
+
+      <!-- Switch project -->
+      <button class="banner-icon-btn" id="btnSwitchCollapsed" onclick="event.stopPropagation(); toggleProjectDropdownCollapsed()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <span class="btn-tooltip">Changer de projet</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Expanded content (visible when expanded) -->
+  <div class="banner-expanded-content">
+    <!-- Row 1: Selectors -->
+    <div class="banner-row">
+      <div class="banner-select-wrap" id="projectSelectWrap">
+        <div class="banner-select-label">Projet</div>
+        <select class="banner-select" id="projectSelect">
+          <option value="salesforce-acme" selected>Salesforce &mdash; Acme Corp</option>
+          <option value="sap-global">SAP &mdash; Global Industries</option>
+          <option value="workday-rh">Workday &mdash; RH Solutions</option>
+          <option value="servicenow-it">ServiceNow &mdash; IT Services</option>
+        </select>
+        <span class="banner-select-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+
+        <!-- Project dropdown (custom overlay) -->
+        <div class="project-dropdown" id="projectDropdown">
+          <div class="project-dropdown-header">Projets disponibles</div>
+          <div class="project-dropdown-item active" data-project="salesforce-acme" onclick="selectProject(this)">
+            <div class="project-tool-badge salesforce">SF</div>
+            <div class="project-dropdown-info">
+              <div class="project-dropdown-name">D&eacute;mo Salesforce &mdash; Acme Corp</div>
+              <div class="project-dropdown-meta">
+                <span class="project-status-dot active"></span>
+                Actif &middot; v2.1 &middot; 5 pages
+              </div>
+            </div>
+            <div class="project-dropdown-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+          <div class="project-dropdown-item" data-project="sap-global" onclick="selectProject(this)">
+            <div class="project-tool-badge sap">SAP</div>
+            <div class="project-dropdown-info">
+              <div class="project-dropdown-name">SAP &mdash; Global Industries</div>
+              <div class="project-dropdown-meta">
+                <span class="project-status-dot active"></span>
+                Actif &middot; v1.3 &middot; 8 pages
+              </div>
+            </div>
+            <div class="project-dropdown-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+          <div class="project-dropdown-item" data-project="workday-rh" onclick="selectProject(this)">
+            <div class="project-tool-badge workday">WD</div>
+            <div class="project-dropdown-info">
+              <div class="project-dropdown-name">Workday &mdash; RH Solutions</div>
+              <div class="project-dropdown-meta">
+                <span class="project-status-dot draft"></span>
+                Brouillon &middot; v0.8 &middot; 3 pages
+              </div>
+            </div>
+            <div class="project-dropdown-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+          <div class="project-dropdown-item" data-project="servicenow-it" onclick="selectProject(this)">
+            <div class="project-tool-badge servicenow">SN</div>
+            <div class="project-dropdown-info">
+              <div class="project-dropdown-name">ServiceNow &mdash; IT Services</div>
+              <div class="project-dropdown-meta">
+                <span class="project-status-dot archived"></span>
+                Archiv&eacute; &middot; v1.0 &middot; 12 pages
+              </div>
+            </div>
+            <div class="project-dropdown-check">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="banner-select-wrap">
+        <div class="banner-select-label">Site / Page</div>
+        <select class="banner-select" id="siteSelect">
+          <option value="contact" selected>Fiche Contact</option>
+          <option value="dashboard">Tableau de bord</option>
+          <option value="opportunities">Liste Opportunit&eacute;s</option>
+          <option value="reports">Rapports</option>
+          <option value="settings">Param&egrave;tres</option>
+        </select>
+        <span class="banner-select-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </span>
+      </div>
+
+      <div class="banner-version-badge">
+        <span class="dot"></span>
+        v2.1 &mdash; Production
+      </div>
+    </div>
+
+    <!-- Row 2: Quick stats -->
+    <div class="banner-row">
+      <div class="banner-stat">
+        <div class="banner-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <path d="M14 2v6h6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="banner-stat-value">5</div>
+          <div class="banner-stat-label">Pages captur&eacute;es</div>
+        </div>
+      </div>
+      <div class="banner-stat">
+        <div class="banner-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+            <path d="M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+        </div>
+        <div>
+          <div class="banner-stat-value">3</div>
+          <div class="banner-stat-label">Clients connect&eacute;s</div>
+        </div>
+      </div>
+      <div class="banner-stat">
+        <div class="banner-stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <div class="banner-stat-value">il y a 2 min</div>
+          <div class="banner-stat-label">Derni&egrave;re activit&eacute;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Action buttons -->
+    <div class="banner-row">
+      <button class="banner-action-btn primary" onclick="copyShareLink()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/>
+          <circle cx="6" cy="12" r="3"/>
+          <circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Partager le lien
+      </button>
+      <button class="banner-action-btn" onclick="copyURL()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copier l'URL
+      </button>
+      <button class="banner-action-btn" onclick="openAsClient()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        Ouvrir en tant que client
+      </button>
+      <button class="banner-action-btn" onclick="openSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        Param&egrave;tres
+      </button>
+    </div>
+  </div>
+
+  <!-- Handle / grab tab at bottom center -->
+  <div class="banner-handle" id="bannerHandle"></div>
+</div>
+
+<!-- ================================================ -->
+<!--  MAIN CONTENT: SIMULATED SALESFORCE              -->
+<!-- ================================================ -->
+<div class="main-content-wrapper" id="mainContent">
+<div class="sf-app">
+
+  <!-- Global Navigation Bar -->
+  <nav class="sf-global-nav">
+    <div class="sf-logo">
+      <div class="sf-logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19.5 10c.3 0 .5.2.5.5V16a6 6 0 01-12 0v-.5"/>
+          <circle cx="12" cy="10" r="3"/>
+          <path d="M5 18a7 7 0 0114 0"/>
+          <path d="M12 2v3"/>
+        </svg>
+      </div>
+      Sales Cloud
+    </div>
+
+    <div class="sf-nav-items">
+      <div class="sf-nav-item">Accueil</div>
+      <div class="sf-nav-item">Opportunit&eacute;s</div>
+      <div class="sf-nav-item active">Contacts</div>
+      <div class="sf-nav-item">Comptes</div>
+      <div class="sf-nav-item">Rapports</div>
+      <div class="sf-nav-item">Tableaux de bord</div>
+    </div>
+
+    <div class="sf-nav-right">
+      <div class="sf-search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="sf-search-box" type="text" placeholder="Rechercher dans Salesforce...">
+      </div>
+      <div class="sf-nav-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <div class="sf-nav-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </div>
+      <div class="sf-avatar">JD</div>
+    </div>
+  </nav>
+
+  <!-- Page Header + Tabs -->
+  <div class="sf-tab-bar-wrap">
+    <div class="sf-page-header">
+      <div>
+        <div class="sf-breadcrumb">
+          <a href="#">Contacts</a>&nbsp;&nbsp;/&nbsp;&nbsp;Fiche Contact
+        </div>
+        <div class="sf-page-title">
+          <div class="sf-page-title-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span>Fiche Contact</span>
+        </div>
+      </div>
+      <div class="sf-header-actions">
+        <button class="sf-btn sf-btn-outline">Cloner</button>
+        <button class="sf-btn sf-btn-primary">Modifier</button>
+      </div>
+    </div>
+    <div class="sf-tabs">
+      <div class="sf-tab active">D&eacute;tails</div>
+      <div class="sf-tab">Activit&eacute;</div>
+      <div class="sf-tab">Opportunit&eacute;s li&eacute;es</div>
+      <div class="sf-tab">Fichiers</div>
+    </div>
+  </div>
+
+  <!-- Two-Column Content -->
+  <div class="sf-content">
+    <!-- LEFT COLUMN -->
+    <div>
+      <!-- Personal Information -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Informations personnelles</div>
+          <div class="sf-card-action">Tout modifier</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-fields">
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Nom complet</div>
+                <div class="sf-field-value"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Soci&eacute;t&eacute;</div>
+                <div class="sf-field-value"><a href="#"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> Corp</a></div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Email</div>
+                <div class="sf-field-value"><a href="#"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></a></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">T&eacute;l&eacute;phone</div>
+                <div class="sf-field-value"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Titre</div>
+                <div class="sf-field-value">Directeur Commercial</div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">D&eacute;partement</div>
+                <div class="sf-field-value">Ventes</div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Adresse</div>
+                <div class="sf-field-value"><span class="obf">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Source du lead</div>
+                <div class="sf-field-value">Salon professionnel</div>
+              </div>
+            </div>
+            <div class="sf-field-row">
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Propri&eacute;taire du contact</div>
+                <div class="sf-field-value"><a href="#">Julien Durand</a></div>
+              </div>
+              <div class="sf-field-cell">
+                <div class="sf-field-label">Cr&eacute;&eacute; le</div>
+                <div class="sf-field-value">15 janvier 2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Activit&eacute; r&eacute;cente</div>
+          <div class="sf-card-action">Voir tout</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-timeline">
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot call"></div>
+                <div class="sf-timeline-line"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type call">Appel</span>
+                  Discussion renouvellement contrat
+                </div>
+                <div class="sf-timeline-desc">Point sur les conditions de renouvellement et les nouvelles fonctionnalit&eacute;s demand&eacute;es.</div>
+                <div class="sf-timeline-date">24 f&eacute;v. 2026 &middot; 14:30</div>
+              </div>
+            </div>
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot email"></div>
+                <div class="sf-timeline-line"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type email">Email</span>
+                  Envoi proposition commerciale v2
+                </div>
+                <div class="sf-timeline-date">22 f&eacute;v. 2026 &middot; 09:15</div>
+              </div>
+            </div>
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot meeting"></div>
+                <div class="sf-timeline-line"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type meeting">R&eacute;union</span>
+                  Point trimestriel Q1 2026
+                </div>
+                <div class="sf-timeline-date">18 f&eacute;v. 2026 &middot; 15:00</div>
+              </div>
+            </div>
+            <div class="sf-timeline-item">
+              <div class="sf-timeline-dot-wrap">
+                <div class="sf-timeline-dot task"></div>
+              </div>
+              <div class="sf-timeline-content">
+                <div class="sf-timeline-title">
+                  <span class="sf-timeline-type task">T&acirc;che</span>
+                  Pr&eacute;parer d&eacute;mo personnalis&eacute;e
+                </div>
+                <div class="sf-timeline-desc">Pr&eacute;parer la d&eacute;mo Analytics pour la semaine 10.</div>
+                <div class="sf-timeline-date">15 f&eacute;v. 2026 &middot; 10:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+      <!-- Opportunities -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Opportunit&eacute;s en cours</div>
+          <div class="sf-card-action">Nouvelle</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-opp-item">
+            <div class="sf-opp-name">Renouvellement Enterprise 2026</div>
+            <div class="sf-opp-meta">
+              <span class="sf-opp-amount">&euro;45 000</span>
+              <span class="sf-opp-stage negociation">N&eacute;gociation</span>
+              <span style="margin-left:auto">Cl&ocirc;ture : 15 mars</span>
+            </div>
+          </div>
+          <div class="sf-opp-item">
+            <div class="sf-opp-name">Upsell Module Analytics</div>
+            <div class="sf-opp-meta">
+              <span class="sf-opp-amount">&euro;12 000</span>
+              <span class="sf-opp-stage qualification">Qualification</span>
+              <span style="margin-left:auto">Cl&ocirc;ture : 30 avr.</span>
+            </div>
+          </div>
+          <div class="sf-opp-item">
+            <div class="sf-opp-name">Extension Licences &Eacute;quipe Support</div>
+            <div class="sf-opp-meta">
+              <span class="sf-opp-amount">&euro;8 500</span>
+              <span class="sf-opp-stage proposition">Proposition</span>
+              <span style="margin-left:auto">Cl&ocirc;ture : 20 mai</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Notes</div>
+          <div class="sf-card-action">Modifier</div>
+        </div>
+        <div class="sf-card-body">
+          <div class="sf-notes-body">
+            Client tr&egrave;s satisfait du produit actuel. Souhaite explorer le module Analytics pour le suivi d&rsquo;adoption interne. Prochaine &eacute;tape&nbsp;: d&eacute;mo personnalis&eacute;e semaine 10.<br><br>
+            Contact pr&eacute;f&eacute;r&eacute; pour les &eacute;changes&nbsp;: email. Disponibilit&eacute; les mardis et jeudis apr&egrave;s-midi.
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Metrics mini card -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Score du contact</div>
+        </div>
+        <div class="sf-card-body">
+          <div style="padding:14px 16px; display:flex; align-items:center; gap:16px;">
+            <div style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#2e844a,#48bb78); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:800;">A</div>
+            <div>
+              <div style="font-size:14px; font-weight:600; color:var(--sf-text);">Score&nbsp;: 87/100</div>
+              <div style="font-size:11.5px; color:var(--sf-text-muted); margin-top:2px;">Engagement &eacute;lev&eacute; &middot; 12 interactions ce mois</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Related Files mini card -->
+      <div class="sf-card">
+        <div class="sf-card-header">
+          <div class="sf-card-title">Fichiers r&eacute;cents</div>
+          <div class="sf-card-action">Voir tout</div>
+        </div>
+        <div class="sf-card-body">
+          <div style="padding:10px 16px;">
+            <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #f5f4f2;">
+              <div style="width:28px; height:28px; border-radius:4px; background:#e1f0ff; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#0070d2" stroke-width="2" style="width:14px; height:14px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px; font-weight:500;">Proposition_commerciale_v2.pdf</div>
+                <div style="font-size:11px; color:var(--sf-text-muted);">245 Ko &middot; 22 f&eacute;v.</div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; padding:6px 0;">
+              <div style="width:28px; height:28px; border-radius:4px; background:#e8f5e9; display:flex; align-items:center; justify-content:center;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2e844a" stroke-width="2" style="width:14px; height:14px;"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px; font-weight:500;">CR_reunion_Q4.xlsx</div>
+                <div style="font-size:11px; color:var(--sf-text-muted);">128 Ko &middot; 18 f&eacute;v.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ================================================ -->
+<!--  LEMON LEARNING BADGE                            -->
+<!-- ================================================ -->
+<div class="ll-badge" title="Lemon Learning">LL</div>
+
+<!-- ================================================ -->
+<!--  JAVASCRIPT                                      -->
+<!-- ================================================ -->
+<script>
+(function() {
+  'use strict';
+
+  const banner = document.getElementById('commercialBanner');
+  const bannerCollapsed = document.getElementById('bannerCollapsed');
+  const bannerHandle = document.getElementById('bannerHandle');
+  const mainContent = document.getElementById('mainContent');
+  const projectDropdown = document.getElementById('projectDropdown');
+
+  let isExpanded = false;
+  let projectDropdownOpen = false;
+  let collapsedDropdownOpen = false;
+
+  // ========================================
+  // BANNER EXPAND / COLLAPSE
+  // ========================================
+  function toggleBanner() {
+    isExpanded = !isExpanded;
+    if (isExpanded) {
+      banner.classList.add('expanded');
+    } else {
+      banner.classList.remove('expanded');
+      closeProjectDropdown();
+    }
+  }
+
+  function expandBanner() {
+    if (!isExpanded) {
+      isExpanded = true;
+      banner.classList.add('expanded');
+    }
+  }
+
+  function collapseBanner() {
+    if (isExpanded) {
+      isExpanded = false;
+      banner.classList.remove('expanded');
+      closeProjectDropdown();
+    }
+  }
+
+  bannerCollapsed.addEventListener('click', function(e) {
+    // Don't toggle if clicking on quick action buttons
+    if (e.target.closest('.banner-quick-actions')) return;
+    toggleBanner();
+  });
+
+  bannerHandle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleBanner();
+  });
+
+  // Keyboard shortcut: Escape to collapse
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (projectDropdownOpen || collapsedDropdownOpen) {
+        closeProjectDropdown();
+        collapsedDropdownOpen = false;
+      } else if (isExpanded) {
+        collapseBanner();
+      }
+    }
+  });
+
+  // ========================================
+  // PROJECT DROPDOWN
+  // ========================================
+  function closeProjectDropdown() {
+    projectDropdown.classList.remove('open');
+    projectDropdownOpen = false;
+  }
+
+  function toggleProjectDropdown() {
+    projectDropdownOpen = !projectDropdownOpen;
+    if (projectDropdownOpen) {
+      projectDropdown.classList.add('open');
+    } else {
+      projectDropdown.classList.remove('open');
+    }
+  }
+
+  // Override native select with custom dropdown
+  document.getElementById('projectSelect').addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    toggleProjectDropdown();
+  });
+
+  // Collapsed project switcher button
+  window.toggleProjectDropdownCollapsed = function() {
+    if (!isExpanded) {
+      expandBanner();
+      setTimeout(function() {
+        projectDropdown.classList.add('open');
+        projectDropdownOpen = true;
+      }, 200);
+    } else {
+      toggleProjectDropdown();
+    }
+  };
+
+  // Select a project from custom dropdown
+  window.selectProject = function(el) {
+    const projectVal = el.getAttribute('data-project');
+    const projectName = el.querySelector('.project-dropdown-name').textContent;
+
+    // Update active state
+    document.querySelectorAll('.project-dropdown-item').forEach(function(item) {
+      item.classList.remove('active');
+    });
+    el.classList.add('active');
+
+    // Update native select
+    document.getElementById('projectSelect').value = projectVal;
+
+    // Update collapsed banner text
+    document.querySelector('.banner-project-name').textContent = projectName;
+
+    closeProjectDropdown();
+
+    // Show toast
+    showToast('Projet changé : ' + projectName.replace(/&mdash;/g, '—'));
+  };
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#projectSelectWrap') && !e.target.closest('#btnSwitchCollapsed')) {
+      closeProjectDropdown();
+    }
+  });
+
+  // ========================================
+  // TOAST NOTIFICATIONS
+  // ========================================
+  let currentToast = null;
+
+  function showToast(message, icon) {
+    // Remove existing toast
+    if (currentToast) {
+      currentToast.remove();
+      currentToast = null;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+
+    const svgIcon = icon || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+    toast.innerHTML = svgIcon + '<span>' + message + '</span>';
+    document.body.appendChild(toast);
+    currentToast = toast;
+
+    setTimeout(function() {
+      toast.classList.add('hiding');
+      setTimeout(function() {
+        if (toast.parentNode) toast.remove();
+        if (currentToast === toast) currentToast = null;
+      }, 200);
+    }, 2000);
+  }
+
+  // ========================================
+  // ACTION BUTTONS
+  // ========================================
+  window.copyShareLink = function() {
+    const fakeLink = 'https://demo.lemonlearning.com/share/sf-acme-contact?token=abc123';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fakeLink).then(function() {
+        showToast('Lien de partage copié !');
+      }).catch(function() {
+        showToast('Lien de partage copié !');
+      });
+    } else {
+      showToast('Lien de partage copié !');
+    }
+  };
+
+  window.copyURL = function() {
+    const fakeURL = 'https://demo.lemonlearning.com/view/sf-acme-contact';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(fakeURL).then(function() {
+        showToast('Copié !');
+      }).catch(function() {
+        showToast('Copié !');
+      });
+    } else {
+      showToast('Copié !');
+    }
+  };
+
+  window.openAsClient = function() {
+    showToast('Ouverture de la vue client...', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>');
+  };
+
+  window.openSettings = function() {
+    showToast('Paramètres (bientôt disponible)', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>');
+  };
+
+  // ========================================
+  // SITE/PAGE SELECTOR CHANGE
+  // ========================================
+  document.getElementById('siteSelect').addEventListener('change', function() {
+    const selectedText = this.options[this.selectedIndex].text;
+    document.querySelector('.banner-site-name').textContent = selectedText;
+    showToast('Navigation : ' + selectedText);
+  });
+
+})();
+</script>
+
+</body>
+</html>
