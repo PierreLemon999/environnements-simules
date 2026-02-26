@@ -1,5 +1,23 @@
 
-  VITE v7.3.1  ready in 733 ms
+  VITE v7.3.1  ready in 544 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
+20:20:58 [vite-plugin-svelte] src/lib/components/layout/CommandPalette.svelte:317:2 Elements with the 'dialog' interactive role must have a tabindex value
+https://svelte.dev/e/a11y_interactive_supports_focus
+20:21:27 [vite-plugin-svelte] src/routes/admin/obfuscation/+page.svelte:556:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+20:21:27 [vite-plugin-svelte] src/routes/admin/obfuscation/+page.svelte:566:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+20:21:27 [vite-plugin-svelte] src/routes/admin/obfuscation/+page.svelte:570:10 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+20:21:27 [vite-plugin-svelte] src/routes/admin/obfuscation/+page.svelte:672:7 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+20:21:27 [vite-plugin-svelte] src/routes/admin/obfuscation/+page.svelte:695:9 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+20:21:27 [vite-plugin-svelte] src/routes/admin/obfuscation/+page.svelte:767:4 A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control
+20:23:47 [vite-plugin-svelte] src/routes/demo/[...path]/+page.svelte:557:3 Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events
+20:23:47 [vite-plugin-svelte] src/routes/demo/[...path]/+page.svelte:557:3 `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions

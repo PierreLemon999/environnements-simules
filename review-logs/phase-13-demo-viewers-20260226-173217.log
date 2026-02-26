@@ -1,0 +1,19 @@
+Phase 13 review is complete. Here's the summary:
+
+**7 issues found and fixed** across both demo viewers:
+
+| # | Issue | Severity | Viewer |
+|---|-------|----------|--------|
+| 1 | Permanent top toolbar instead of tongue tab | High | Commercial |
+| 2 | Card position (bottom-right) and grid (4-col) wrong | High | Commercial |
+| 3 | Share was a separate dialog, not inside card | Medium | Commercial |
+| 4 | Missing card header (logo, activity, version badge) | Medium | Commercial |
+| 5 | Had toolbar and info panel (should be blank) | High | Prospect |
+| 6 | Had expandable widget (not in mockup) | Medium | Prospect |
+| 7 | LL badge styling mismatch | Low | Both |
+
+**Files modified:**
+- `frontend/src/routes/demo/[...path]/+page.svelte` — complete rewrite (tongue tab + dropdown card per v5 mockup)
+- `frontend/src/routes/view/[...path]/+page.svelte` — complete rewrite (full-screen + LL badge only per v4 mockup)
+
+**All 3 post-fix E2E tests pass.** Report written to `review-logs/phase-13-report.md`. Temp test files cleaned up.
