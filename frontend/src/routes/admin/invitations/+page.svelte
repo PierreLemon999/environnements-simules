@@ -389,6 +389,7 @@
 			const res = await post<{ data: NewAssignment }>(`/versions/${formVersionId}/assignments`, {
 				email: formEmail.trim(),
 				name: formName.trim(),
+				company: formCompany.trim() || undefined,
 				expiresInDays: formExpiryDays,
 				requireAccount: formRequireAccount ? 1 : 0,
 			});
@@ -423,6 +424,7 @@
 			const res = await post<{ data: NewAssignment }>(`/versions/${linkVersionId}/assignments`, {
 				email: `${companyName.toLowerCase().replace(/\s+/g, '-')}@link.demo`,
 				name: companyName,
+				company: companyName,
 				expiresInDays: linkExpiryDays,
 			});
 
@@ -693,7 +695,15 @@
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
-						<table class="w-full">
+						<table class="w-full table-fixed">
+							<colgroup>
+								<col class="w-[22%]" /><!-- Client -->
+								<col class="w-[22%]" /><!-- Email -->
+								<col class="w-[20%]" /><!-- Projet -->
+								<col class="w-[12%]" /><!-- Statut -->
+								<col class="w-[12%]" /><!-- Envoyé le -->
+								<col class="w-[12%]" /><!-- Actions -->
+							</colgroup>
 							<thead>
 								<tr class="border-b border-border">
 									<th class="pb-2 text-left">
@@ -753,33 +763,33 @@
 								{#each paginatedAssignments() as assignment}
 									{@const status = getStatusInfo(assignment)}
 									<tr class="group relative border-b border-border last:border-0 transition-colors hover:bg-accent/50 hover:border-l-[3px] hover:border-l-primary">
-										<td class="py-3 pr-4">
-											<div class="flex items-center gap-3">
-												<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary transition-transform group-hover:scale-110">
+										<td class="py-3 pr-3">
+											<div class="flex items-center gap-2">
+												<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary transition-transform group-hover:scale-110">
 													{getInitials(assignment.user.name)}
 												</div>
 												<div class="min-w-0">
-													<span class="block truncate text-sm font-medium text-foreground">{assignment.user.name}</span>
+													<span class="block truncate text-xs font-medium text-foreground">{assignment.user.name}</span>
 													{#if assignment.user.company}
-														<span class="block truncate text-xs text-muted-foreground">{assignment.user.company}</span>
+														<span class="block truncate text-[10px] text-muted-foreground">{assignment.user.company}</span>
 													{/if}
 												</div>
 											</div>
 										</td>
-										<td class="py-3 pr-4">
-											<span class="text-sm text-muted-foreground">{assignment.user.email}</span>
+										<td class="py-3 pr-3">
+											<span class="block truncate text-xs text-muted-foreground">{assignment.user.email}</span>
 										</td>
-										<td class="py-3 pr-4">
-											<span class="text-sm text-foreground">{getVersionName(assignment.versionId)}</span>
+										<td class="py-3 pr-3">
+											<span class="block truncate text-xs text-foreground">{getVersionName(assignment.versionId)}</span>
 										</td>
-										<td class="py-3 pr-4">
-											<span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium {status.bgColor} {status.borderColor} {status.textColor}">
+										<td class="py-3 pr-3">
+											<span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-medium {status.bgColor} {status.borderColor} {status.textColor}">
 												<span class="h-1.5 w-1.5 rounded-full {status.dotColor}"></span>
 												{status.label}
 											</span>
 										</td>
-										<td class="py-3 pr-4">
-											<span class="text-xs text-muted-foreground">{formatDate(assignment.createdAt)}</span>
+										<td class="py-3 pr-3 whitespace-nowrap">
+											<span class="text-[10px] text-muted-foreground">{formatDate(assignment.createdAt)}</span>
 										</td>
 										<td class="py-3 text-right">
 											<div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">

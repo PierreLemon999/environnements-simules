@@ -7,6 +7,7 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash'), // nullable for Google SSO admins
   role: text('role', { enum: ['admin', 'client'] }).notNull().default('client'),
+  company: text('company'), // nullable — company name for client users
   avatarUrl: text('avatar_url'),
   googleId: text('google_id'),
   language: text('language').notNull().default('fr'),

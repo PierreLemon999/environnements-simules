@@ -53,7 +53,7 @@ describe('Auth endpoints', () => {
       const res = await request(app)
         .post('/api/auth/google')
         .send({
-          googleToken: 'fake-token',
+          devBypass: true,
           email: 'newadmin@lemonlearning.com',
           name: 'New Admin',
           googleId: 'google-id-123',

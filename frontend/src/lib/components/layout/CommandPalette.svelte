@@ -34,9 +34,9 @@
 	let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 	const categoryTabs: { key: CategoryFilter; label: string }[] = [
-		{ key: 'all', label: 'Tout' },
+		{ key: 'all', label: 'Tous' },
+		{ key: 'page', label: 'Pages' },
 		{ key: 'project', label: 'Projets' },
-		{ key: 'page', label: 'Démos' },
 		{ key: 'user', label: 'Utilisateurs' },
 		{ key: 'action', label: 'Actions' },
 	];
@@ -50,6 +50,8 @@
 		{ id: 'action-obfuscation', type: 'action', title: 'Règles d\'obfuscation', subtitle: 'Configurer les règles de masquage des données', href: '/admin/obfuscation', icon: Zap },
 		{ id: 'action-invitations', type: 'action', title: 'Invitations clients', subtitle: 'Gérer les accès démo pour les prospects', href: '/admin/invitations', icon: Zap },
 	];
+
+	const avatarColors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
 
 	let filteredResults = $derived(() => {
 		if (activeFilter === 'all') return results;
@@ -73,17 +75,24 @@
 		return new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 	}
 
-	function getToolBadgeColor(toolName: string): string {
-		const colors: Record<string, string> = {
-			'Salesforce': '#00A1E0',
-			'SAP SuccessFactors': '#0070F2',
-			'Workday': '#F5A623',
-			'ServiceNow': '#81B5A1',
-			'HubSpot': '#FF7A59',
-			'Zendesk': '#03363D',
-			'Oracle': '#C74634',
+	function getBadgeStyle(toolName: string): { bg: string; color: string } {
+		const styles: Record<string, { bg: string; color: string }> = {
+			'Salesforce': { bg: '#eff6ff', color: '#2563eb' },
+			'SAP SuccessFactors': { bg: '#fef3c7', color: '#b45309' },
+			'Workday': { bg: '#f5f3ff', color: '#7c3aed' },
+			'ServiceNow': { bg: '#e0e7ff', color: '#4338ca' },
+			'HubSpot': { bg: '#fff1f2', color: '#e11d48' },
+			'Zendesk': { bg: '#f0fdfa', color: '#0f766e' },
+			'Oracle': { bg: '#fef2f2', color: '#dc2626' },
 		};
-		return colors[toolName] ?? '#6B7280';
+		return styles[toolName] ?? { bg: '#f3f4f6', color: '#6b7280' };
+	}
+
+	function getBadgeLabel(toolName: string): string {
+		const labels: Record<string, string> = {
+			'SAP SuccessFactors': 'SAP',
+		};
+		return labels[toolName] ?? toolName;
 	}
 
 	function getIconForType(type: string) {
@@ -98,23 +107,47 @@
 
 	function getLabelForType(type: string) {
 		switch (type) {
-			case 'page': return 'Page';
-			case 'project': return 'Projet';
-			case 'user': return 'Utilisateur';
-			case 'action': return 'Action';
+			case 'page': return 'Pages';
+			case 'project': return 'Projets';
+			case 'user': return 'Utilisateurs';
+			case 'action': return 'Actions';
 			default: return '';
 		}
 	}
 
+	function getActionHintForType(type: string) {
+		switch (type) {
+			case 'user': return 'Voir le profil';
+			default: return 'Ouvrir';
+		}
+	}
+
+	function getAvatarColor(name: string): string {
+		let hash = 0;
+		for (let i = 0; i < name.length; i++) {
+			hash = name.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		return avatarColors[Math.abs(hash) % avatarColors.length];
+	}
+
+	function getInitials(name: string): string {
+		return name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+	}
+
+	function highlightMatch(text: string, q: string): string {
+		if (!q.trim()) return text;
+		const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const regex = new RegExp(`(${escaped})`, 'gi');
+		return text.replace(regex, '<mark>$1</mark>');
+	}
+
 	function groupResults(items: SearchResult[]): Record<string, SearchResult[]> {
-		// Ordered: pages first, then projects, users, actions
 		const order = ['page', 'project', 'user', 'action'];
 		const groups: Record<string, SearchResult[]> = {};
 		for (const type of order) {
 			const matching = items.filter((r) => r.type === type);
 			if (matching.length > 0) groups[type] = matching;
 		}
-		// Include any types not in the predefined order
 		for (const r of items) {
 			if (!order.includes(r.type)) {
 				if (!groups[r.type]) groups[r.type] = [];
@@ -275,43 +308,37 @@
 	<!-- Backdrop -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+		class="palette-overlay"
 		onmousedown={() => { open = false; }}
 		onkeydown={handleKeydown}
 	>
 		<!-- Modal -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
-			class="mx-auto mt-[15vh] w-full max-w-xl overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+			class="palette-modal"
+			role="dialog"
+			aria-label="Recherche admin"
 			onmousedown={handleModalMousedown}
 		>
-			<!-- Header -->
-			<div class="flex items-center justify-between border-b border-border px-4 py-2">
-				<span class="text-[10px] font-semibold uppercase tracking-wider text-muted">Recherche admin</span>
-				<kbd class="rounded border border-border bg-input px-1.5 py-0.5 font-mono text-[10px] text-muted">
-					ESC
-				</kbd>
-			</div>
-
 			<!-- Search input -->
-			<div class="flex items-center gap-3 border-b border-border px-4 py-3">
-				<Search class="h-4 w-4 shrink-0 text-muted" />
+			<div class="palette-search-area">
+				<Search class="palette-search-icon" />
 				<input
 					bind:this={inputRef}
 					bind:value={query}
 					oninput={handleInput}
 					onkeydown={handleKeydown}
 					type="text"
-					placeholder="Rechercher une page, un projet, une action..."
-					class="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
+					placeholder="Recherche admin..."
+					class="palette-search-input"
 				/>
 			</div>
 
 			<!-- Category filter tabs -->
-			<div class="flex items-center gap-1 border-b border-border px-3 py-1.5">
+			<div class="palette-tabs">
 				{#each categoryTabs as tab}
 					<button
-						class="rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors {activeFilter === tab.key ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
+						class="palette-tab {activeFilter === tab.key ? 'active' : ''}"
 						onclick={() => setFilter(tab.key)}
 					>
 						{tab.label}
@@ -320,73 +347,494 @@
 			</div>
 
 			<!-- Results -->
-			<div class="max-h-72 overflow-y-auto p-2">
+			<div class="palette-results">
 				{#if loading}
-					<div class="flex items-center justify-center py-8">
-						<div class="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+					<div class="palette-loading">
+						<div class="palette-spinner"></div>
 					</div>
 				{:else if filteredResults().length === 0}
-					<p class="py-8 text-center text-sm text-muted-foreground">Aucun résultat trouvé.</p>
+					<div class="palette-no-results">
+						<Search style="width:40px;height:40px;opacity:0.4;color:#a8a29e" />
+						<p class="palette-no-results-title">Aucun résultat</p>
+						<p class="palette-no-results-desc">Essayez avec d'autres termes de recherche</p>
+					</div>
 				{:else}
 					{@const grouped = groupResults(filteredResults())}
 					{#each Object.entries(grouped) as [type, items]}
-						<p class="mb-1 mt-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted first:mt-0">
-							{getLabelForType(type)}s
-							<span class="ml-1 font-normal normal-case text-muted">{items.length} résultat{items.length !== 1 ? 's' : ''}</span>
-						</p>
-						{#each items as result, ri}
-							{@const globalIdx = getGlobalIndex(grouped, type, ri)}
-							{@const Icon = result.icon ?? getIconForType(result.type)}
-							<button
-								class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors {selectedIndex === globalIdx ? 'bg-accent text-foreground' : 'text-secondary hover:bg-accent/50'}"
-								onmouseenter={() => { selectedIndex = globalIdx; }}
-								onclick={() => handleSelect(result)}
-							>
-								{#if result.type === 'user'}
-									<!-- Colored avatar circle with initials for users -->
-									<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
-										{result.title.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
-									</div>
-								{:else}
-									<Icon class="h-4 w-4 shrink-0 text-muted" />
-								{/if}
-								<div class="min-w-0 flex-1 text-left">
-									<div class="flex items-center gap-2">
-										<p class="truncate font-medium">{result.title}</p>
-										{#if (result.type === 'page' || result.type === 'project') && result.subtitle}
-											<span class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white" style="background-color: {getToolBadgeColor(result.subtitle)}">{result.subtitle}</span>
+						<div class="palette-group">
+							<div class="palette-group-label">
+								{getLabelForType(type)}
+								<span class="palette-group-count">{items.length} résultat{items.length !== 1 ? 's' : ''}</span>
+							</div>
+							{#each items as result, ri}
+								{@const globalIdx = getGlobalIndex(grouped, type, ri)}
+								{@const Icon = result.icon ?? getIconForType(result.type)}
+								{@const isSelected = selectedIndex === globalIdx}
+								<button
+									class="palette-result-item {isSelected ? 'selected' : ''}"
+									onmouseenter={() => { selectedIndex = globalIdx; }}
+									onclick={() => handleSelect(result)}
+								>
+									{#if result.type === 'user'}
+										<div class="palette-avatar-wrap">
+											<div class="palette-avatar {getAvatarColor(result.title)}">
+												{getInitials(result.title)}
+											</div>
+										</div>
+									{:else if result.type === 'action' && result.icon === Plus}
+										<div class="palette-icon-wrap palette-icon-wrap-action">
+											<Plus class="palette-icon" style="color: #16a34a" />
+										</div>
+									{:else}
+										<div class="palette-icon-wrap">
+											<Icon class="palette-icon" />
+										</div>
+									{/if}
+									<div class="palette-result-body">
+										<div class="palette-result-name-row">
+											{#if query.trim()}
+												<span class="palette-result-name">{@html highlightMatch(result.title, query)}</span>
+											{:else}
+												<span class="palette-result-name">{result.title}</span>
+											{/if}
+											{#if (result.type === 'page' || result.type === 'project') && result.subtitle}
+												{@const badge = getBadgeStyle(result.subtitle)}
+												<span class="palette-result-badge" style="background:{badge.bg};color:{badge.color}">
+													{getBadgeLabel(result.subtitle)}
+												</span>
+											{/if}
+										</div>
+										{#if result.meta}
+											<span class="palette-result-meta">{result.meta}</span>
+										{:else if result.subtitle && result.type !== 'page' && result.type !== 'project'}
+											<span class="palette-result-meta">{result.subtitle}</span>
 										{/if}
 									</div>
-									{#if result.subtitle && result.type !== 'page' && result.type !== 'project'}
-										<p class="truncate text-xs text-muted-foreground">{result.subtitle}</p>
-									{/if}
-									{#if result.meta}
-										<p class="truncate text-[10px] text-muted">{result.meta}</p>
-									{/if}
-								</div>
-								<ArrowRight class="h-3 w-3 shrink-0 text-muted opacity-0 {selectedIndex === globalIdx ? 'opacity-100' : ''}" />
-							</button>
-						{/each}
+									<div class="palette-result-right">
+										<span class="palette-result-action-hint">{getActionHintForType(result.type)}</span>
+									</div>
+								</button>
+							{/each}
+						</div>
 					{/each}
 				{/if}
-			</div>
-
-			<!-- Footer with keyboard hints -->
-			<div class="flex items-center gap-4 border-t border-border px-4 py-2">
-				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">&uarr;&darr;</kbd>
-					naviguer
-				</span>
-				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">Enter</kbd>
-					ouvrir
-				</span>
-				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">ESC</kbd>
-					fermer
-				</span>
-				<span class="ml-auto text-[10px] font-medium text-muted">Recherche admin</span>
 			</div>
 		</div>
 	</div>
 {/if}
+
+<style>
+	/* Overlay */
+	.palette-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		background: rgba(0, 0, 0, 0.5);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding-top: min(18vh, 140px);
+		animation: overlayFadeIn 0.2s ease-out both;
+	}
+
+	@keyframes overlayFadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+
+	/* Modal */
+	.palette-modal {
+		width: 100%;
+		max-width: 600px;
+		background: #fff;
+		border-radius: 16px;
+		box-shadow:
+			0 0 0 1px rgba(0, 0, 0, 0.05),
+			0 4px 6px -1px rgba(0, 0, 0, 0.08),
+			0 25px 50px -6px rgba(0, 0, 0, 0.22);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		max-height: min(72vh, 560px);
+		animation: paletteIn 0.25s cubic-bezier(0.16, 1, 0.3, 1.05) both;
+	}
+
+	@keyframes paletteIn {
+		from {
+			opacity: 0;
+			transform: scale(0.96) translateY(-8px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+
+	/* Search area */
+	.palette-search-area {
+		display: flex;
+		align-items: center;
+		padding: 0 16px;
+		border-bottom: 1px solid #e7e5e4;
+		flex-shrink: 0;
+	}
+
+	.palette-search-area :global(.palette-search-icon) {
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+		color: #a8a29e;
+		transition: color 0.2s ease;
+	}
+
+	.palette-search-area:focus-within :global(.palette-search-icon) {
+		color: #2563eb;
+	}
+
+	.palette-search-input {
+		flex: 1;
+		border: none;
+		outline: none;
+		font-family: inherit;
+		font-size: 16px;
+		font-weight: 400;
+		color: #0c0a09;
+		padding: 16px 12px;
+		background: transparent;
+		line-height: 1.5;
+	}
+
+	.palette-search-input::placeholder {
+		color: #a8a29e;
+	}
+
+	/* Category tabs */
+	.palette-tabs {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		padding: 6px 12px;
+		border-bottom: 1px solid #e7e5e4;
+		flex-shrink: 0;
+	}
+
+	.palette-tab {
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 13px;
+		font-weight: 500;
+		color: #6b7280;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.palette-tab:hover {
+		background: rgba(0, 0, 0, 0.03);
+		color: #0c0a09;
+	}
+
+	.palette-tab.active {
+		background: #eff6ff;
+		color: #2563eb;
+	}
+
+	/* Results */
+	.palette-results {
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		flex: 1;
+		padding: 4px 0;
+	}
+
+	.palette-results::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.palette-results::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.palette-results::-webkit-scrollbar-thumb {
+		background: #d1d5db;
+		border-radius: 3px;
+	}
+
+	/* Loading */
+	.palette-loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 32px;
+	}
+
+	.palette-spinner {
+		width: 20px;
+		height: 20px;
+		border: 2px solid #2563eb;
+		border-top-color: transparent;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	/* No results */
+	.palette-no-results {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 40px 20px;
+		color: #a8a29e;
+		text-align: center;
+	}
+
+	.palette-no-results-title {
+		font-size: 14px;
+		font-weight: 600;
+		color: #57534e;
+		margin-top: 12px;
+		margin-bottom: 4px;
+	}
+
+	.palette-no-results-desc {
+		font-size: 12px;
+		color: #a8a29e;
+	}
+
+	/* Group */
+	.palette-group {
+		padding: 0 6px;
+	}
+
+	.palette-group + .palette-group {
+		margin-top: 2px;
+	}
+
+	.palette-group-label {
+		font-size: 11px;
+		font-weight: 600;
+		color: #a8a29e;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 8px 10px 4px;
+		user-select: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.palette-group-count {
+		font-size: 10px;
+		font-weight: 600;
+		padding: 1px 6px;
+		border-radius: 8px;
+		background: rgba(0, 0, 0, 0.04);
+		color: #a8a29e;
+		letter-spacing: 0;
+		text-transform: none;
+	}
+
+	/* Result item */
+	.palette-result-item {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 9px 10px;
+		border-radius: 10px;
+		cursor: pointer;
+		transition: background-color 0.1s ease;
+		border: none;
+		background: transparent;
+		width: 100%;
+		text-align: left;
+		font-family: inherit;
+	}
+
+	.palette-result-item:hover {
+		background: #f3f4f6;
+	}
+
+	.palette-result-item.selected {
+		background: #2563eb;
+	}
+
+	.palette-result-item.selected .palette-result-name,
+	.palette-result-item.selected .palette-result-meta {
+		color: #fff;
+	}
+
+	.palette-result-item.selected :global(.palette-icon) {
+		color: #fff !important;
+	}
+
+	.palette-result-item.selected .palette-icon-wrap {
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	.palette-result-item.selected .palette-icon-wrap-action {
+		background: rgba(255, 255, 255, 0.2);
+	}
+
+	.palette-result-item.selected .palette-result-badge {
+		background: rgba(255, 255, 255, 0.2) !important;
+		color: #fff !important;
+	}
+
+	.palette-result-item.selected .palette-avatar {
+		border-color: rgba(255, 255, 255, 0.3);
+	}
+
+	.palette-result-item.selected .palette-result-action-hint {
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	/* Icon wrap */
+	.palette-icon-wrap {
+		width: 34px;
+		height: 34px;
+		border-radius: 8px;
+		background: #f3f4f6;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		transition: background-color 0.1s ease;
+	}
+
+	.palette-icon-wrap-action {
+		background: #f0fdf4;
+	}
+
+	.palette-icon-wrap :global(.palette-icon) {
+		width: 16px;
+		height: 16px;
+		color: #6b7280;
+		transition: color 0.1s ease;
+	}
+
+	/* Avatar */
+	.palette-avatar-wrap {
+		position: relative;
+		flex-shrink: 0;
+	}
+
+	.palette-avatar {
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 12px;
+		font-weight: 600;
+		color: #fff;
+		flex-shrink: 0;
+		border: 2px solid #fff;
+		transition: border-color 0.1s ease;
+	}
+
+	/* Result body */
+	.palette-result-body {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.palette-result-name-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.palette-result-name {
+		font-size: 14px;
+		font-weight: 500;
+		color: #0c0a09;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		transition: color 0.1s ease;
+		line-height: 1.4;
+	}
+
+	.palette-result-name :global(mark) {
+		background: none;
+		color: inherit;
+		font-weight: 600;
+		text-decoration: underline;
+		text-decoration-color: #2563eb;
+		text-underline-offset: 2px;
+		text-decoration-thickness: 2px;
+	}
+
+	.palette-result-item.selected .palette-result-name :global(mark) {
+		text-decoration-color: rgba(255, 255, 255, 0.6);
+	}
+
+	.palette-result-badge {
+		flex-shrink: 0;
+		font-size: 10px;
+		font-weight: 600;
+		padding: 2px 7px;
+		border-radius: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		line-height: 1.4;
+		transition: background-color 0.1s ease, color 0.1s ease;
+	}
+
+	.palette-result-meta {
+		font-size: 12px;
+		color: #a8a29e;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		transition: color 0.1s ease;
+		line-height: 1.4;
+	}
+
+	/* Right side action hint */
+	.palette-result-right {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+
+	.palette-result-action-hint {
+		font-size: 11px;
+		color: #a8a29e;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+		white-space: nowrap;
+	}
+
+	.palette-result-item:hover .palette-result-action-hint,
+	.palette-result-item.selected .palette-result-action-hint {
+		opacity: 1;
+	}
+
+	/* Responsive */
+	@media (max-width: 640px) {
+		.palette-overlay {
+			padding-top: 0;
+			align-items: flex-start;
+		}
+
+		.palette-modal {
+			max-width: 100%;
+			max-height: 100vh;
+			border-radius: 0;
+			height: 100vh;
+		}
+	}
+</style>

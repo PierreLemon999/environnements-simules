@@ -32,6 +32,7 @@ export async function loginWithGoogle(
 	const response = await api.post<{
 		data: { token: string; user: User };
 	}>('/auth/google', {
+		devBypass: true,
 		email,
 		name,
 		googleId,

@@ -26,6 +26,7 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
+					devBypass: true,
 					email: googleEmail,
 					name: googleEmail.split('@')[0].replace('.', ' '),
 					googleId: `google-${Date.now()}`,

@@ -63,21 +63,29 @@ export async function login(email: string, password: string): Promise<User> {
 
 /**
  * Log in via Google SSO (admin flow).
- * The frontend handles the Google sign-in and sends the token to the backend.
+ * Sends the Google id_token to the backend for server-side verification.
  */
-export async function loginWithGoogle(
-	googleToken: string,
-	email: string,
-	name: string,
-	googleId: string,
-	avatarUrl?: string
-): Promise<User> {
+export async function loginWithGoogle(idToken: string): Promise<User> {
 	const res = await post<{ data: { token: string; user: User } }>('/auth/google', {
-		googleToken,
+		idToken
+	});
+
+	setToken(res.data.token);
+	token.set(res.data.token);
+	user.set(res.data.user);
+	return res.data.user;
+}
+
+/**
+ * Dev-only login bypass (magic door).
+ * Skips Google OAuth by asking the backend to trust provided credentials.
+ */
+export async function loginDevBypass(email: string, name: string, googleId: string): Promise<User> {
+	const res = await post<{ data: { token: string; user: User } }>('/auth/google', {
+		devBypass: true,
 		email,
 		name,
-		googleId,
-		avatarUrl
+		googleId
 	});
 
 	setToken(res.data.token);

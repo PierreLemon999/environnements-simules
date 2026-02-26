@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { login, loginWithGoogle } from '$lib/stores/auth';
-	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-svelte';
+	import { login, loginWithGoogle, loginDevBypass } from '$lib/stores/auth';
+	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, KeyRound } from 'lucide-svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -9,9 +9,12 @@
 	let error = $state('');
 	let loading = $state(false);
 	let googleLoading = $state(false);
+	let devLoading = $state(false);
 	let showPassword = $state(false);
 	let success = $state(false);
 	let redirectTarget = $state('');
+
+	const isDev = import.meta.env.DEV;
 
 	async function handleLogin(e: Event) {
 		e.preventDefault();
@@ -44,12 +47,55 @@
 		error = '';
 
 		try {
-			const user = await loginWithGoogle(
-				'mock-google-token',
+			const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID;
+
+			if (!clientId) {
+				error = 'Google Client ID non configuré. Utilisez le bouton Dev Login en développement.';
+				googleLoading = false;
+				return;
+			}
+
+			google.accounts.id.initialize({
+				client_id: clientId,
+				callback: async (response: GoogleCredentialResponse) => {
+					try {
+						const user = await loginWithGoogle(response.credential);
+						success = true;
+						redirectTarget = '/admin';
+						setTimeout(() => goto(redirectTarget), 1000);
+					} catch (err: unknown) {
+						if (err && typeof err === 'object' && 'message' in err) {
+							error = (err as Error).message;
+						} else {
+							error = 'Une erreur est survenue lors de la connexion Google.';
+						}
+					} finally {
+						googleLoading = false;
+					}
+				}
+			});
+
+			google.accounts.id.prompt((notification: GooglePromptNotification) => {
+				if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+					error = 'La fenêtre Google n\'a pas pu s\'afficher. Vérifiez votre bloqueur de popups.';
+					googleLoading = false;
+				}
+			});
+		} catch (err) {
+			error = 'Impossible de charger la connexion Google.';
+			googleLoading = false;
+		}
+	}
+
+	async function handleDevLogin() {
+		devLoading = true;
+		error = '';
+
+		try {
+			const user = await loginDevBypass(
 				'marie.laurent@lemonlearning.com',
 				'Marie Laurent',
-				'google-marie-001',
-				undefined
+				'google-marie-001'
 			);
 			success = true;
 			redirectTarget = '/admin';
@@ -58,10 +104,10 @@
 			if (err && typeof err === 'object' && 'message' in err) {
 				error = (err as Error).message;
 			} else {
-				error = 'Une erreur est survenue lors de la connexion Google.';
+				error = 'Erreur lors du dev login.';
 			}
 		} finally {
-			googleLoading = false;
+			devLoading = false;
 		}
 	}
 </script>
@@ -216,6 +262,23 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Magic door — dev only -->
+	{#if isDev}
+		<button
+			class="magic-door"
+			onclick={handleDevLogin}
+			disabled={loading || googleLoading || devLoading}
+			title="Connexion rapide en tant qu'admin (dev uniquement)"
+		>
+			{#if devLoading}
+				<Loader2 size={14} class="animate-spin" />
+			{:else}
+				<KeyRound size={14} />
+			{/if}
+			Connexion locale
+		</button>
+	{/if}
 </div>
 
 <style>
@@ -637,6 +700,40 @@
 	.success-subtitle {
 		font-size: 14px;
 		color: var(--color-muted-foreground);
+	}
+
+	/* Magic door — dev only */
+	.magic-door {
+		position: fixed;
+		bottom: 20px;
+		right: 20px;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		border: 1px solid #e5e7eb;
+		border-radius: 20px;
+		background: rgba(255, 255, 255, 0.9);
+		backdrop-filter: blur(8px);
+		color: #6b7280;
+		font-size: 12px;
+		font-weight: 500;
+		font-family: inherit;
+		cursor: pointer;
+		transition: all 0.2s;
+		z-index: 100;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+	}
+
+	.magic-door:hover:not(:disabled) {
+		color: #3b82f6;
+		border-color: #3b82f6;
+		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+	}
+
+	.magic-door:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
 	}
 
 	@media (max-width: 480px) {

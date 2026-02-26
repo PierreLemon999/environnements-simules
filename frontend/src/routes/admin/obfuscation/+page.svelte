@@ -130,38 +130,56 @@
 		return { rulesCount: active, occurrencesFound: totalOccurrences, affectedPages, coverage };
 	});
 
-	// Animated counter values
+	// Animated counter values — displayed in template
 	let animatedRulesCount = $state(0);
 	let animatedOccurrences = $state(0);
 	let animatedPages = $state(0);
 
-	// Animate counters when stats change
-	$effect(() => {
-		const stats = previewStats();
-		animateValue(animatedRulesCount, stats.rulesCount, (v) => { animatedRulesCount = v; });
-		animateValue(animatedOccurrences, stats.occurrencesFound, (v) => { animatedOccurrences = v; });
-		animateValue(animatedPages, stats.affectedPages, (v) => { animatedPages = v; });
-	});
+	// Track previous targets to avoid reading animated values in $effect
+	let prevTargetRules = 0;
+	let prevTargetOccurrences = 0;
+	let prevTargetPages = 0;
 
-	function animateValue(from: number, to: number, setter: (v: number) => void) {
-		if (from === to) return;
-		const duration = 400;
+	// Animation cancel handles
+	let cancelRules = 0;
+	let cancelOccurrences = 0;
+	let cancelPages = 0;
+
+	function animateCounter(from: number, to: number, setter: (v: number) => void, cancelId: number): number {
+		if (cancelId) cancelAnimationFrame(cancelId);
+		if (from === to) { setter(to); return 0; }
+		const duration = 600;
 		const startTime = performance.now();
-		const startVal = from;
+		let frameId = 0;
 
 		function step(currentTime: number) {
 			const elapsed = currentTime - startTime;
 			const progress = Math.min(elapsed / duration, 1);
-			// Ease-out cubic
 			const eased = 1 - Math.pow(1 - progress, 3);
-			const current = Math.round(startVal + (to - startVal) * eased);
-			setter(current);
+			setter(Math.round(from + (to - from) * eased));
 			if (progress < 1) {
-				requestAnimationFrame(step);
+				frameId = requestAnimationFrame(step);
 			}
 		}
-		requestAnimationFrame(step);
+		frameId = requestAnimationFrame(step);
+		return frameId;
 	}
+
+	// Only depend on previewStats, NOT on animated values
+	$effect(() => {
+		const stats = previewStats();
+		const targetRules = stats.rulesCount;
+		const targetOccurrences = stats.occurrencesFound;
+		const targetPages = stats.affectedPages;
+
+		cancelRules = animateCounter(prevTargetRules, targetRules, (v) => { animatedRulesCount = v; }, cancelRules);
+		cancelOccurrences = animateCounter(prevTargetOccurrences, targetOccurrences, (v) => { animatedOccurrences = v; }, cancelOccurrences);
+		cancelPages = animateCounter(prevTargetPages, targetPages, (v) => { animatedPages = v; }, cancelPages);
+
+		prevTargetRules = targetRules;
+		prevTargetOccurrences = targetOccurrences;
+		prevTargetPages = targetPages;
+	});
 
 	async function loadRules(projectId: string) {
 		if (!projectId) return;
@@ -413,8 +431,8 @@
 				<CardHeader class="pb-3">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-3">
-							<CardTitle class="text-base">Règles d'obfuscation</CardTitle>
-							<Badge variant="secondary">{activeCount} active{activeCount !== 1 ? 's' : ''}</Badge>
+							<CardTitle class="text-base">{activeTab === 'auto' ? 'Règles automatiques' : 'Règles manuelles'}</CardTitle>
+							<Badge variant="secondary">{filteredRules().length} règle{filteredRules().length !== 1 ? 's' : ''}</Badge>
 						</div>
 						<Button size="sm" class="gap-1.5" onclick={() => { showAddForm = true; addError = ''; }} disabled={!selectedProjectId}>
 							<Plus class="h-3.5 w-3.5" />
@@ -439,52 +457,51 @@
 							<table class="w-full">
 								<thead>
 									<tr class="border-b border-border">
-										<th class="w-8 pb-2"></th>
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
+										<th class="w-10 pb-2"></th>
 										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rechercher</th>
 										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Remplacer par</th>
 										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Occurrences</th>
 										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
-										<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
+										<th class="pb-2"></th>
 									</tr>
 								</thead>
 								<tbody>
 									{#each filteredRules() as rule}
 										<tr
 											class="group border-b border-border last:border-0 transition-colors hover:bg-accent/50"
-											style="border-left: 3px solid {rule.isActive ? '#10B981' : '#9CA3AF'};"
+											style="border-left: 3px solid {rule.isActive ? '#16a34a' : '#e7e5e4'};"
 											draggable="true"
 											ondragstart={() => { draggedRuleId = rule.id; }}
 											ondragend={() => { draggedRuleId = null; }}
 										>
-											<!-- Drag handle -->
+											<!-- Drag handle + type icon -->
 											<td class="py-3 pr-1">
-												<div class="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-													<GripVertical class="h-4 w-4 text-muted" />
+												<div class="flex items-center gap-1">
+													<div class="opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+														<GripVertical class="h-4 w-4 text-muted" />
+													</div>
+													{#if rule.isRegex}
+														<div class="flex h-[22px] w-[22px] items-center justify-center rounded bg-purple-50 dark:bg-purple-950/30" style="opacity: {rule.isActive ? 1 : 0.5}">
+															<Regex class="h-3 w-3 text-purple-600 dark:text-purple-400" />
+														</div>
+													{:else}
+														<div class="flex h-[22px] w-[22px] items-center justify-center rounded bg-blue-50 dark:bg-blue-950/30" style="opacity: {rule.isActive ? 1 : 0.5}">
+															<Type class="h-3 w-3 text-blue-600 dark:text-blue-400" />
+														</div>
+													{/if}
 												</div>
 											</td>
-											<!-- Type with icon -->
-											<td class="py-3 pr-4">
-												{#if rule.isRegex}
-													<div class="inline-flex items-center gap-1.5 rounded-md bg-purple-50 px-2 py-1 dark:bg-purple-950/30">
-														<Regex class="h-3 w-3 text-purple-600 dark:text-purple-400" />
-														<span class="text-[11px] font-medium text-purple-700 dark:text-purple-300">Regex</span>
-													</div>
-												{:else}
-													<div class="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 dark:bg-blue-950/30">
-														<Type class="h-3 w-3 text-blue-600 dark:text-blue-400" />
-														<span class="text-[11px] font-medium text-blue-700 dark:text-blue-300">Texte</span>
-													</div>
-												{/if}
+											<td class="py-3 pr-4" style="opacity: {rule.isActive ? 1 : 0.5}">
+												<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs font-medium text-foreground">{rule.searchTerm}</code>
 											</td>
-											<td class="py-3 pr-4">
-												<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.searchTerm}</code>
+											<td class="py-3 pr-4" style="opacity: {rule.isActive ? 1 : 0.5}">
+												<code class="rounded bg-accent px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{rule.replaceTerm}</code>
 											</td>
-											<td class="py-3 pr-4">
-												<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.replaceTerm}</code>
-											</td>
-											<td class="py-3 pr-4">
-												<span class="text-xs font-medium text-foreground">{getRuleOccurrences(rule)}</span>
+											<td class="py-3 pr-4" style="opacity: {rule.isActive ? 1 : 0.5}">
+												<span class="inline-flex items-center gap-1 font-mono text-xs font-semibold text-muted-foreground">
+													<Eye class="h-3 w-3 text-muted" />
+													{getRuleOccurrences(rule)}
+												</span>
 											</td>
 											<!-- Mini CSS toggle switch -->
 											<td class="py-3 pr-4">
@@ -501,7 +518,7 @@
 												</button>
 											</td>
 											<td class="py-3 text-right">
-												<div class="flex items-center justify-end gap-1">
+												<div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 													<button
 														class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
 														onclick={() => openEditDialog(rule)}
@@ -521,7 +538,7 @@
 										</tr>
 									{:else}
 										<tr>
-											<td colspan="7" class="py-8 text-center text-sm text-muted-foreground">
+											<td colspan="6" class="py-8 text-center text-sm text-muted-foreground">
 												<EyeOff class="mx-auto mb-2 h-8 w-8 text-muted" />
 												Aucune règle {activeTab === 'auto' ? 'automatique' : 'manuelle'} pour ce projet.
 											</td>
@@ -585,13 +602,13 @@
 				<CardContent class="p-5">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-3">
-							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
-								<Pen class="h-5 w-5 text-purple-600 dark:text-purple-400" />
+							<div class="flex h-11 w-11 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+								<Eye class="h-5 w-5 text-purple-600 dark:text-purple-400" />
 							</div>
 							<div>
-								<h3 class="text-sm font-semibold text-foreground">Masquage dans l'éditeur</h3>
+								<h3 class="text-sm font-semibold text-foreground">Obfuscation manuelle</h3>
 								<p class="text-xs text-muted-foreground">
-									Masquez manuellement des éléments directement dans l'éditeur visuel de page
+									Sélectionnez des éléments directement sur la page de démo pour les obfusquer. Cliquez sur un texte, une image ou un bloc pour appliquer un masque personnalisé.
 								</p>
 							</div>
 						</div>
@@ -600,8 +617,8 @@
 							size="sm"
 							class="gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20"
 						>
-							<Pen class="h-3.5 w-3.5" />
-							Ouvrir l'éditeur
+							<Eye class="h-3.5 w-3.5" />
+							Ouvrir l'éditeur visuel
 						</Button>
 					</div>
 					<div class="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
@@ -625,58 +642,31 @@
 		<!-- RIGHT COLUMN: Persistent preview panel -->
 		<div class="space-y-0">
 			<div class="sticky top-20">
-				<Card>
-					<CardHeader class="pb-3">
-						<div class="flex items-center justify-between">
-							<CardTitle class="text-sm">Aperçu en direct</CardTitle>
-							<!-- Before/After toggle -->
-							<div class="flex items-center rounded-full border border-border bg-accent p-0.5">
-								<button
-									class="rounded-full px-3 py-1 text-xs font-medium transition-colors {previewMode === 'before' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-									onclick={() => { previewMode = 'before'; }}
-								>
-									Avant
-								</button>
-								<button
-									class="rounded-full px-3 py-1 text-xs font-medium transition-colors {previewMode === 'after' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-									onclick={() => { previewMode = 'after'; }}
-								>
-									Après
-								</button>
-							</div>
+				<div class="overflow-hidden rounded-lg border border-border bg-card">
+					<!-- Header -->
+					<div class="flex items-center justify-between border-b border-border px-5 py-3.5">
+						<span class="text-sm font-semibold text-foreground">Aperçu en direct</span>
+						<!-- Before/After toggle - dark active state like mockup -->
+						<div class="flex items-center rounded-full border border-border bg-accent p-0.5">
+							<button
+								class="flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-all {previewMode === 'before' ? 'bg-foreground text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+								onclick={() => { previewMode = 'before'; }}
+							>
+								<Eye class="h-3 w-3" />
+								Avant
+							</button>
+							<button
+								class="flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-medium transition-all {previewMode === 'after' ? 'bg-foreground text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+								onclick={() => { previewMode = 'after'; }}
+							>
+								<EyeOff class="h-3 w-3" />
+								Après
+							</button>
 						</div>
-					</CardHeader>
-					<CardContent class="space-y-4">
-						<!-- Coverage bar -->
-						<div class="space-y-2">
-							<div class="flex items-center justify-between">
-								<span class="text-xs font-medium text-foreground">Couverture d'obfuscation</span>
-								<span class="text-sm font-bold text-primary">{previewStats().coverage}%</span>
-							</div>
-							<div class="h-2.5 overflow-hidden rounded-full bg-border">
-								<div
-									class="h-full rounded-full transition-all duration-500 ease-out {previewStats().coverage >= 80 ? 'bg-emerald-500' : previewStats().coverage >= 50 ? 'bg-primary' : previewStats().coverage > 0 ? 'bg-orange-400' : 'bg-border'}"
-									style="width: {previewStats().coverage}%"
-								></div>
-							</div>
-						</div>
+					</div>
 
-						<!-- Animated stat counters -->
-						<div class="grid grid-cols-3 gap-2">
-							<div class="rounded-lg border border-border p-2.5 text-center">
-								<p class="text-lg font-bold tabular-nums text-foreground transition-all duration-300">{animatedRulesCount}</p>
-								<p class="text-[10px] text-muted-foreground">Règles actives</p>
-							</div>
-							<div class="rounded-lg border border-border p-2.5 text-center">
-								<p class="text-lg font-bold tabular-nums text-foreground transition-all duration-300">{animatedOccurrences}</p>
-								<p class="text-[10px] text-muted-foreground">Occurrences trouvées</p>
-							</div>
-							<div class="rounded-lg border border-border p-2.5 text-center">
-								<p class="text-lg font-bold tabular-nums text-primary transition-all duration-300">{animatedPages}</p>
-								<p class="text-[10px] text-muted-foreground">Pages affectées</p>
-							</div>
-						</div>
-
+					<!-- Preview area -->
+					<div class="space-y-4 p-5">
 						<!-- Mini preview area -->
 						<div class="space-y-2">
 							<label class="text-xs font-medium text-muted-foreground">HTML source</label>
@@ -720,16 +710,38 @@
 								</div>
 							</div>
 						{/if}
+					</div>
 
-						<!-- Summary coverage footer -->
-						<div class="rounded-lg border border-border bg-accent/30 p-2.5">
-							<div class="flex items-center justify-between text-xs">
-								<span class="text-muted-foreground">{previewStats().rulesCount} règle{previewStats().rulesCount !== 1 ? 's' : ''} active{previewStats().rulesCount !== 1 ? 's' : ''} sur {rules.length}</span>
-								<span class="font-medium text-foreground">{previewStats().coverage}% couverture</span>
-							</div>
+					<!-- Coverage bar -->
+					<div class="border-t border-border px-5 py-3.5">
+						<div class="flex items-center justify-between mb-2">
+							<span class="text-xs font-medium text-muted-foreground">Couverture d'obfuscation</span>
+							<span class="text-xs font-bold text-primary">{previewStats().coverage}%</span>
 						</div>
-					</CardContent>
-				</Card>
+						<div class="h-1.5 overflow-hidden rounded-full bg-border">
+							<div
+								class="h-full rounded-full transition-all duration-1000 ease-out"
+								style="width: {previewStats().coverage}%; background: linear-gradient(90deg, #2563eb, #60a5fa);"
+							></div>
+						</div>
+					</div>
+
+					<!-- Stats footer - matching mockup layout -->
+					<div class="flex border-t border-border">
+						<div class="flex-1 border-r border-border px-4 py-3.5 text-center">
+							<p class="text-lg font-bold tabular-nums text-foreground">{animatedRulesCount}</p>
+							<p class="text-[11px] text-muted-foreground">règles actives</p>
+						</div>
+						<div class="flex-1 border-r border-border px-4 py-3.5 text-center">
+							<p class="text-lg font-bold tabular-nums text-foreground">{animatedOccurrences}</p>
+							<p class="text-[11px] text-muted-foreground">occurrences trouvées</p>
+						</div>
+						<div class="flex-1 px-4 py-3.5 text-center">
+							<p class="text-lg font-bold tabular-nums text-foreground">{animatedPages}</p>
+							<p class="text-[11px] text-muted-foreground">pages affectées</p>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>

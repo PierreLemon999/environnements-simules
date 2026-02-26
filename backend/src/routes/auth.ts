@@ -1,10 +1,14 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { db } from '../db/index.js';
 import { users, demoAssignments } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { signToken, verifyToken } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const router = Router();
 
@@ -73,15 +77,62 @@ router.post('/login', async (req: Request, res: Response) => {
 
 /**
  * POST /auth/google
- * Authenticate with Google token. Auto-provisions admin if @lemonlearning.com.
+ * Authenticate with Google id_token. Auto-provisions admin if @lemonlearning.com.
+ *
+ * Production: expects { idToken } — verified server-side via google-auth-library.
+ * Dev mode:   accepts { devBypass: true, email, name, googleId } — skips verification.
  */
 router.post('/google', async (req: Request, res: Response) => {
   try {
-    const { googleToken, email, name, googleId, avatarUrl } = req.body;
+    const { idToken, devBypass } = req.body;
 
-    if (!email || !googleId) {
-      res.status(400).json({ error: 'Données d\'authentification Google requises', code: 400 });
-      return;
+    let email: string;
+    let name: string;
+    let googleId: string;
+    let avatarUrl: string | null = null;
+
+    if (devBypass === true && process.env.NODE_ENV !== 'production') {
+      // Dev bypass — trust provided fields
+      if (!req.body.email || !req.body.googleId) {
+        res.status(400).json({ error: 'Email et googleId requis pour le dev bypass', code: 400 });
+        return;
+      }
+      email = req.body.email;
+      name = req.body.name || email.split('@')[0];
+      googleId = req.body.googleId;
+      avatarUrl = req.body.avatarUrl || null;
+    } else {
+      // Production — verify Google id_token
+      if (!idToken) {
+        res.status(400).json({ error: 'Token Google requis', code: 400 });
+        return;
+      }
+
+      if (!GOOGLE_CLIENT_ID) {
+        res.status(500).json({ error: 'GOOGLE_CLIENT_ID non configuré sur le serveur', code: 500 });
+        return;
+      }
+
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken,
+          audience: GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) {
+          res.status(401).json({ error: 'Token Google invalide', code: 401 });
+          return;
+        }
+
+        email = payload.email;
+        name = payload.name || email.split('@')[0];
+        googleId = payload.sub;
+        avatarUrl = payload.picture || null;
+      } catch (err) {
+        console.error('Google token verification failed:', err);
+        res.status(401).json({ error: 'Token Google invalide ou expiré', code: 401 });
+        return;
+      }
     }
 
     // Check if user already exists
@@ -106,7 +157,7 @@ router.post('/google', async (req: Request, res: Response) => {
         email,
         passwordHash: null,
         role: 'admin' as const,
-        avatarUrl: avatarUrl || null,
+        avatarUrl,
         googleId,
         language: 'fr',
         createdAt: new Date().toISOString(),

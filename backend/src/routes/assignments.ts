@@ -55,7 +55,7 @@ router.get(
       const enriched = await Promise.all(
         assignments.map(async (assignment) => {
           const user = await db
-            .select({ id: users.id, name: users.name, email: users.email })
+            .select({ id: users.id, name: users.name, email: users.email, company: users.company })
             .from(users)
             .where(eq(users.id, assignment.userId))
             .get();
@@ -98,7 +98,7 @@ router.post(
         return;
       }
 
-      const { userId, email, name, expiresInDays } = req.body;
+      const { userId, email, name, company, expiresInDays } = req.body;
       let targetUserId = userId;
 
       // If no userId provided, look up or create a client user by email
@@ -119,12 +119,16 @@ router.post(
             email,
             passwordHash: null,
             role: 'client',
+            company: company || null,
             avatarUrl: null,
             googleId: null,
             language: 'fr',
             createdAt: new Date().toISOString(),
           };
           await db.insert(users).values(user);
+        } else if (company && !user.company) {
+          // Update company if not already set
+          await db.update(users).set({ company }).where(eq(users.id, user.id));
         }
         targetUserId = user.id;
       }

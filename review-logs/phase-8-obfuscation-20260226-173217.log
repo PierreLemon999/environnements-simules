@@ -1,0 +1,12 @@
+Phase 8 review is complete. Here's the summary:
+
+**Backend:** All 5 CRUD endpoints verified working (GET, POST, PUT, DELETE, preview) — no changes needed.
+
+**Frontend:** 11 issues found and fixed on `/admin/obfuscation`:
+- **1 critical:** Animation reactive dependency loop causing erratic counter values — fixed by tracking previous targets in non-reactive variables
+- **4 major:** Table column structure, inactive row dimming, action button visibility, stats footer placement
+- **6 minor:** Toggle styling, coverage bar gradient, replace term color, dynamic card title, section text/icon, occurrences icon
+
+**3 remaining low-priority items:** Drag-and-drop ordering (needs schema migration), rich visual CRM preview (works functionally with textarea), test selector fragility (test-only issue).
+
+Report written to `review-logs/phase-8-report.md`. Temp test files cleaned up.

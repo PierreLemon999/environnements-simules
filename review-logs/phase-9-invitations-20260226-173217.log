@@ -1,0 +1,17 @@
+## Phase 9 Complete
+
+**Summary of fixes applied:**
+
+1. **Added `company` field to users table** — schema, seed data, and live DB migration
+2. **Backend returns company in assignments API** — GET enrichment now includes `company`
+3. **Backend accepts company on assignment creation** — POST route saves company for new users and updates existing users
+4. **Frontend passes company in both form tabs** — email invitation and link sharing now send company
+5. **Fixed table column visibility** — switched to `table-fixed` layout with `<colgroup>` so all 6 columns (Client, Email, Projet/Démo, Statut, Envoyé le, Actions) fit within the card width
+
+**All 4 Playwright tests pass**, covering:
+- Page load with stats, table, and form
+- Creating invitation with company (credentials display works)
+- Demo-access auth flow (token + password → JWT with client role)
+- Delete/revoke dialog functionality
+
+Report written to `review-logs/phase-9-report.md`.

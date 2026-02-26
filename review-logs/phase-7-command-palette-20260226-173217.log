@@ -1,0 +1,18 @@
+Phase 7 is complete. Here's a summary of what was done:
+
+**Phase 7: Command Palette (Cmd+K) — Complete**
+
+The command palette was functionally solid (search, keyboard nav, API data) but had 18 visual/label issues compared to the mockup. All fixed:
+
+**Key fixes:**
+- Removed extra "RECHERCHE ADMIN" header bar and footer — mockup starts directly with search input
+- Tab labels: "Tout" → "Tous", "Démos" → "Pages"
+- Selected item: light gray → solid blue (`#2563eb`) with white text
+- Badges: white-on-brand → light bg + colored text (e.g., light blue bg + blue text for Salesforce)
+- Modal: 12px → 16px border-radius, 576px → 600px max-width
+- Added open animation (scale + translate), backdrop blur (8px)
+- Added 34px icon-wrap boxes, larger colored user avatars
+- Added search text highlighting with `<mark>` + underline
+- Added "Ouvrir" / "Voir le profil" action hints on hover
+
+**Tests: 11/11 passing** — all functionality verified including styling assertions.
