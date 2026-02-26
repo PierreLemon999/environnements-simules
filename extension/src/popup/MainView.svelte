@@ -12,7 +12,11 @@
 	} from '$lib/constants';
 	import PageItem from './PageItem.svelte';
 	import AutoCapturePanel from './AutoCapturePanel.svelte';
+	import ProjectDropdown from './ProjectDropdown.svelte';
+	import CreateProjectModal from './CreateProjectModal.svelte';
+	import GuidedCapturePanel from './GuidedCapturePanel.svelte';
 	import type { AutoCaptureConfig } from '$lib/auto-capture';
+	import type { LLGuide } from '$lib/constants';
 
 	let { user, onLogout }: { user: User | null; onLogout: () => void } = $props();
 
@@ -33,10 +37,13 @@
 	let loading = $state(true);
 	let error = $state('');
 	let showAutoPanel = $state(false);
+	let showCreateProject = $state(false);
+	let detectedProject = $state<Project | null>(null);
+	let pageFilter = $state<'all' | 'done' | 'error'>('all');
 	let autoConfig = $state<AutoCaptureConfig>({
 		targetPageCount: 20,
 		maxDepth: 3,
-		delayBetweenPages: 2000,
+		delayBetweenPages: 800,
 		interestZones: [],
 		blacklist: ['Supprimer', 'Delete', 'Remove', 'Déconnexion', 'Logout', 'Sign out']
 	});
@@ -47,6 +54,13 @@
 	let errorPages = $derived(captureState.pages.filter((p) => p.status === PAGE_STATUS.ERROR));
 	let totalPages = $derived(captureState.pages.length);
 	let targetCount = $derived(captureState.targetPageCount || totalPages);
+	let filteredPages = $derived(
+		pageFilter === 'all'
+			? captureState.pages
+			: pageFilter === 'done'
+				? captureState.pages.filter((p) => p.status === PAGE_STATUS.DONE)
+				: captureState.pages.filter((p) => p.status === PAGE_STATUS.ERROR)
+	);
 
 	// Load initial data
 	$effect(() => {
@@ -78,6 +92,27 @@
 			}
 			if (stored[STORAGE_KEYS.CAPTURE_MODE]) {
 				captureMode = stored[STORAGE_KEYS.CAPTURE_MODE];
+			}
+
+			// Detect project from current tab URL
+			try {
+				const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+				if (tab?.url && projects.length > 0) {
+					const hostname = new URL(tab.url).hostname.toLowerCase();
+					const detected = projects.find((p) => {
+						const tool = p.toolName?.toLowerCase();
+						const sub = p.subdomain?.toLowerCase();
+						return (tool && hostname.includes(tool)) || (sub && hostname.includes(sub));
+					});
+					if (detected) {
+						detectedProject = detected;
+						if (!activeProject) {
+							await selectProject(detected);
+						}
+					}
+				}
+			} catch {
+				// Non-critical
 			}
 
 			// Load capture state
@@ -206,6 +241,51 @@
 		await chrome.runtime.sendMessage({ type: 'STOP_AUTO_CRAWL' });
 	}
 
+	async function startGuidedCapture(guides: LLGuide[], mode: 'manual' | 'auto') {
+		if (!activeVersion) {
+			error = 'Sélectionnez un projet et une version';
+			return;
+		}
+		error = '';
+		// For now, start capture for each selected guide
+		// The actual implementation will need the guided-capture.ts rework
+		// This is the hookup point — the capture logic will run from service worker
+		try {
+			await chrome.runtime.sendMessage({
+				type: 'START_GUIDED_CAPTURE',
+				guides,
+				executionMode: mode
+			});
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Erreur de lancement';
+		}
+	}
+
+	async function createProject(data: { name: string; toolName: string }) {
+		try {
+			const res = await chrome.runtime.sendMessage({
+				type: 'CREATE_PROJECT',
+				name: data.name,
+				toolName: data.toolName
+			});
+			if (res?.data) {
+				// Reload projects and select the new one
+				const projectsRes = await chrome.runtime.sendMessage({ type: 'GET_PROJECTS' });
+				if (projectsRes?.data) {
+					projects = projectsRes.data;
+				}
+				const newProject = projects.find((p) => p.id === res.data.id);
+				if (newProject) {
+					await selectProject(newProject);
+				}
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Erreur de création';
+		} finally {
+			showCreateProject = false;
+		}
+	}
+
 	function handleFooterClick(panel: 'config' | 'zones' | 'blacklist') {
 		if (captureMode !== 'auto') {
 			setMode('auto');
@@ -231,8 +311,16 @@
 			<div>
 				<h1 class="text-sm font-semibold text-gray-900 leading-tight">Env. Simulés</h1>
 				<div class="flex items-center gap-1">
-					<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-					<span class="text-[10px] text-success font-medium">Connecté</span>
+					{#if captureState.isRunning}
+						<div class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></div>
+						<span class="text-[10px] text-warning font-medium">Capture en cours</span>
+					{:else if isCapturing}
+						<div class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></div>
+						<span class="text-[10px] text-warning font-medium">Capture...</span>
+					{:else}
+						<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+						<span class="text-[10px] text-success font-medium">Connecté</span>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -249,22 +337,13 @@
 
 	<!-- Project selector -->
 	<div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-		<div class="flex items-center gap-2">
-			<select
-				class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition appearance-none"
-				value={activeProject?.id || ''}
-				onchange={(e: Event) => {
-					const id = (e.target as HTMLSelectElement).value;
-					const project = projects.find((p) => p.id === id);
-					if (project) selectProject(project);
-				}}
-			>
-				<option value="" disabled>Sélectionner un projet</option>
-				{#each projects as project}
-					<option value={project.id}>{project.name}</option>
-				{/each}
-			</select>
-		</div>
+		<ProjectDropdown
+			{projects}
+			{activeProject}
+			{detectedProject}
+			onSelect={selectProject}
+			onCreateNew={() => (showCreateProject = true)}
+		/>
 
 		{#if activeProject && versions.length > 0}
 			<select
@@ -284,35 +363,55 @@
 		{/if}
 	</div>
 
-	<!-- Mode toggle -->
-	<div class="px-4 py-2.5 border-b border-gray-100">
-		<div class="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+	<!-- Create project modal -->
+	{#if showCreateProject}
+		<CreateProjectModal
+			onClose={() => (showCreateProject = false)}
+			onCreate={createProject}
+		/>
+	{/if}
+
+	<!-- Mode selector cards -->
+	<div class="px-4 py-3 border-b border-gray-100">
+		<div class="grid grid-cols-3 gap-2">
 			<button
 				onclick={() => setMode('free')}
-				class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition {captureMode === 'free' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+				class="relative flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition text-center {captureMode === 'free' ? 'border-primary bg-blue-50/50 text-primary' : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 			>
-				<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				{#if captureMode === 'free'}
+					<div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+				{/if}
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
 				</svg>
-				Libre
+				<span class="text-[11px] font-medium leading-tight">Libre</span>
+				<span class="text-[9px] text-gray-400 leading-tight">Page par page</span>
 			</button>
 			<button
 				onclick={() => setMode('guided')}
-				class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition {captureMode === 'guided' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+				class="relative flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition text-center {captureMode === 'guided' ? 'border-primary bg-blue-50/50 text-primary' : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 			>
-				<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+				{#if captureMode === 'guided'}
+					<div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+				{/if}
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
 				</svg>
-				Guides
+				<span class="text-[11px] font-medium leading-tight">Guides</span>
+				<span class="text-[9px] text-gray-400 leading-tight">Via LL Player</span>
 			</button>
 			<button
 				onclick={() => setMode('auto')}
-				class="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium transition {captureMode === 'auto' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+				class="relative flex flex-col items-center gap-1.5 p-2.5 rounded-lg border transition text-center {captureMode === 'auto' ? 'border-primary bg-blue-50/50 text-primary' : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'}"
 			>
-				<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				{#if captureMode === 'auto'}
+					<div class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+				{/if}
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
 				</svg>
-				Auto
+				<span class="text-[11px] font-medium leading-tight">Auto</span>
+				<span class="text-[9px] text-gray-400 leading-tight">Crawl BFS</span>
 			</button>
 		</div>
 	</div>
@@ -321,6 +420,13 @@
 	{#if captureMode === 'auto' && (showAutoPanel || !captureState.isRunning)}
 		<div class="px-4 py-3 border-b border-gray-100 bg-blue-50/30">
 			<AutoCapturePanel bind:config={autoConfig} onStart={startAutoCrawl} />
+		</div>
+	{/if}
+
+	<!-- Guided capture panel -->
+	{#if captureMode === 'guided' && !captureState.isRunning}
+		<div class="px-4 py-3 border-b border-gray-100 bg-blue-50/30">
+			<GuidedCapturePanel onStartCapture={startGuidedCapture} />
 		</div>
 	{/if}
 
@@ -374,9 +480,9 @@
 	{/if}
 
 	<!-- Page list -->
-	<div class="flex-1 overflow-y-auto px-4 py-2">
+	<div class="flex-1 overflow-y-auto">
 		{#if captureState.pages.length === 0}
-			<div class="flex flex-col items-center justify-center py-10 text-center">
+			<div class="flex flex-col items-center justify-center py-10 text-center px-4">
 				<svg class="w-10 h-10 text-gray-200 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
 					<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
 				</svg>
@@ -386,11 +492,37 @@
 				</p>
 			</div>
 		{:else}
-			<div class="space-y-1">
-				{#each captureState.pages as page (page.localId)}
+			<!-- Filter header -->
+			<div class="flex items-center justify-between px-4 py-2 border-b border-gray-50">
+				<div class="flex items-center gap-1">
+					<button
+						onclick={() => (pageFilter = 'all')}
+						class="px-2 py-0.5 rounded text-[10px] font-medium transition {pageFilter === 'all' ? 'bg-gray-200 text-gray-700' : 'text-gray-400 hover:text-gray-600'}"
+					>
+						Tout ({captureState.pages.length})
+					</button>
+					<button
+						onclick={() => (pageFilter = 'done')}
+						class="px-2 py-0.5 rounded text-[10px] font-medium transition {pageFilter === 'done' ? 'bg-green-100 text-success' : 'text-gray-400 hover:text-gray-600'}"
+					>
+						OK ({donePages.length})
+					</button>
+					<button
+						onclick={() => (pageFilter = 'error')}
+						class="px-2 py-0.5 rounded text-[10px] font-medium transition {pageFilter === 'error' ? 'bg-red-100 text-error' : 'text-gray-400 hover:text-gray-600'}"
+					>
+						Err ({errorPages.length})
+					</button>
+				</div>
+				<span class="text-[10px] text-gray-400">{filteredPages.length} page{filteredPages.length > 1 ? 's' : ''}</span>
+			</div>
+
+			<div class="space-y-1 px-4 py-2">
+				{#each filteredPages as page (page.localId)}
 					<PageItem
 						{page}
 						{formatSize}
+						subdomain={activeProject?.subdomain}
 						onRemove={() => removePage(page.localId)}
 						onRecapture={() => recapturePage(page.localId)}
 					/>

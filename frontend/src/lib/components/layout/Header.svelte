@@ -125,8 +125,11 @@
 
 		const crumbs: Array<{ label: string; href: string }> = [];
 
-		// On the dashboard itself (/admin), no breadcrumbs needed
-		if (segments.length <= 1) return crumbs;
+		// On the dashboard itself (/admin), show "Accueil > Vue d'ensemble"
+		if (segments.length <= 1) {
+			crumbs.push({ label: 'Accueil', href: '/admin' });
+			return crumbs;
+		}
 
 		// Always start with "Accueil" linking to /admin
 		crumbs.push({ label: 'Accueil', href: '/admin' });
@@ -147,13 +150,20 @@
 	class="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm transition-all duration-300"
 	style="margin-left: {collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'}"
 >
-	<!-- Breadcrumb + Page title -->
-	<div class="flex items-center gap-1.5">
-		{#each breadcrumbs() as crumb}
-			<a href={crumb.href} class="text-sm text-muted-foreground transition-colors hover:text-foreground">{crumb.label}</a>
-			<ChevronRight class="h-3.5 w-3.5 text-muted" />
-		{/each}
-		<h1 class="text-lg font-bold text-foreground">{pageTitle()}</h1>
+	<!-- Page title + Breadcrumb -->
+	<div class="flex items-center gap-4">
+		<h1 class="text-lg font-bold tracking-tight text-foreground">{pageTitle()}</h1>
+		{#if breadcrumbs().length > 0}
+			<div class="flex items-center gap-1.5">
+				{#each breadcrumbs() as crumb, i}
+					<a href={crumb.href} class="text-xs text-muted-foreground transition-colors hover:text-foreground">{crumb.label}</a>
+					<ChevronRight class="h-3 w-3 text-muted" />
+				{/each}
+				<span class="text-xs font-medium text-foreground">
+					{pageTitle() === 'Dashboard' ? "Vue d'ensemble" : pageTitle()}
+				</span>
+			</div>
+		{/if}
 	</div>
 
 	<div class="flex-1"></div>

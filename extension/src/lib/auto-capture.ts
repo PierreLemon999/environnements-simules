@@ -24,7 +24,7 @@ export interface AutoCaptureConfig {
 
 export interface InterestZone {
 	urlPattern: string;
-	depthMultiplier: number;
+	depth: number;
 }
 
 interface CrawlQueueItem {
@@ -36,7 +36,7 @@ interface CrawlQueueItem {
 const DEFAULT_CONFIG: AutoCaptureConfig = {
 	targetPageCount: 20,
 	maxDepth: 3,
-	delayBetweenPages: 2000,
+	delayBetweenPages: 800,
 	interestZones: [],
 	blacklist: [
 		'Supprimer',
@@ -336,9 +336,17 @@ async function captureAndUploadPage(
 
 		const result = await uploadCapturedPage(versionId, captured, 'auto');
 
+		let urlPath: string | undefined;
+		try {
+			const parsedUrl = new URL(captured.url);
+			urlPath = parsedUrl.pathname + parsedUrl.search;
+		} catch {
+			// Keep undefined
+		}
 		await updatePageStatus(localId, PAGE_STATUS.DONE, {
 			id: result.id,
-			fileSize: result.fileSize
+			fileSize: result.fileSize,
+			urlPath
 		});
 	} catch (err) {
 		const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -439,12 +447,12 @@ function getEffectiveDepth(config: AutoCaptureConfig, url: string): number {
 		try {
 			const regex = new RegExp(zone.urlPattern);
 			if (regex.test(url)) {
-				maxDepth = Math.round(config.maxDepth * zone.depthMultiplier);
+				maxDepth = Math.max(maxDepth, zone.depth);
 			}
 		} catch {
 			// Invalid regex — try simple includes
 			if (url.includes(zone.urlPattern)) {
-				maxDepth = Math.round(config.maxDepth * zone.depthMultiplier);
+				maxDepth = Math.max(maxDepth, zone.depth);
 			}
 		}
 	}

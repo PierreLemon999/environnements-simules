@@ -88,14 +88,16 @@
 	interface Assignment {
 		id: string;
 		versionId: string;
-		clientEmail: string;
-		clientName: string | null;
-		clientCompany?: string | null;
+		userId: string;
 		accessToken: string;
-		password: string | null;
 		expiresAt: string | null;
-		requireAccount: number;
 		createdAt: string;
+		user?: {
+			id: string;
+			name: string;
+			email: string;
+		};
+		// Computed fields
 		lastAccessAt?: string | null;
 		engagementPercent?: number;
 		status?: 'active' | 'expired' | 'pending';
@@ -965,11 +967,11 @@
 											<td class="py-3 pr-4">
 												<div class="flex items-center gap-3">
 													<div class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-semibold text-foreground shrink-0">
-														{(assignment.clientName ?? assignment.clientEmail)[0].toUpperCase()}
+														{(assignment.user?.name ?? assignment.user?.email ?? '?')[0].toUpperCase()}
 													</div>
 													<div class="min-w-0">
-														<p class="text-sm font-medium text-foreground truncate">{assignment.clientName ?? '—'}</p>
-														<p class="text-[11px] text-muted-foreground truncate">{assignment.clientEmail}</p>
+														<p class="text-sm font-medium text-foreground truncate">{assignment.user?.name ?? '—'}</p>
+														<p class="text-[11px] text-muted-foreground truncate">{assignment.user?.email ?? '—'}</p>
 													</div>
 												</div>
 											</td>

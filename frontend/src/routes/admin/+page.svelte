@@ -11,6 +11,7 @@
 		Play,
 		Activity,
 		Eye,
+		Clock,
 		Search,
 		Filter,
 		Download,
@@ -29,6 +30,13 @@
 		updatedAt: string;
 		versionCount: number;
 		pageCount: number;
+	}
+
+	interface ProjectDetail {
+		id: string;
+		name: string;
+		toolName: string;
+		versions: Array<{ id: string; projectId: string; name: string; status: string }>;
 	}
 
 	interface Session {
@@ -60,6 +68,9 @@
 	let currentPage = $state(1);
 	const pageSize = 10;
 
+	// Map versionId → { projectName, toolName }
+	let versionProjectMap: Record<string, { projectName: string; toolName: string }> = $state({});
+
 	let totalPages = $derived(projects.reduce((sum, p) => sum + p.pageCount, 0));
 	let activeProjects = $derived(projects.length);
 
@@ -71,8 +82,6 @@
 	// Demos actives — derive from unique users who have sessions (as a proxy for active assignments)
 	let activeDemoCount = $derived(() => {
 		const uniqueAssignments = new Set(sessions.filter(s => s.assignmentId).map(s => s.assignmentId));
-		const uniqueAnonymous = sessions.filter(s => !s.assignmentId).length;
-		// Total active demos = unique assignments + count of projects (each project has at least one demo)
 		return Math.max(uniqueAssignments.size, projects.length);
 	});
 	let clientDemoCount = $derived(() => {
@@ -144,18 +153,12 @@
 		return colors[toolName] ?? '#6B7280';
 	}
 
-	function getToolNameForSession(_session: Session): string {
-		if (projects.length > 0) {
-			return projects[0]?.toolName ?? '—';
-		}
-		return '—';
+	function getToolNameForSession(session: Session): string {
+		return versionProjectMap[session.versionId]?.toolName ?? '—';
 	}
 
-	function getDemoNameForSession(_session: Session): string {
-		if (projects.length > 0) {
-			return projects[0]?.name ?? '—';
-		}
-		return '—';
+	function getDemoNameForSession(session: Session): string {
+		return versionProjectMap[session.versionId]?.projectName ?? '—';
 	}
 
 	function getActionBadge(session: Session): { label: string; color: string; bg: string; dot: string } {
@@ -182,12 +185,24 @@
 		return new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 	}
 
+	function formatDuration(seconds: number): string {
+		const min = Math.floor(seconds / 60);
+		const sec = Math.round(seconds % 60);
+		return `${min}m ${sec.toString().padStart(2, '0')}s`;
+	}
+
 	function getCompanyName(session: Session): string {
 		if (session.user?.email) {
 			const domain = session.user.email.split('@')[1];
 			if (domain) {
 				const company = domain.split('.')[0];
-				return company.charAt(0).toUpperCase() + company.slice(1);
+				// Capitalize and clean up known company names
+				const companyMap: Record<string, string> = {
+					'lemonlearning': 'Lemonlearning',
+					'acme-corp': 'Acme Corp',
+					'techvision': 'Techvision',
+				};
+				return companyMap[company] ?? (company.charAt(0).toUpperCase() + company.slice(1));
 			}
 		}
 		return '';
@@ -203,6 +218,22 @@
 			projects = projectsRes.data;
 			sessions = sessionsRes.data;
 			overview = overviewRes.data;
+
+			// Build versionId → project map by fetching each project's details
+			const map: Record<string, { projectName: string; toolName: string }> = {};
+			await Promise.all(
+				projectsRes.data.map(async (p) => {
+					try {
+						const detail = await get<{ data: ProjectDetail }>(`/projects/${p.id}`);
+						for (const v of detail.data.versions ?? []) {
+							map[v.id] = { projectName: p.name, toolName: p.toolName };
+						}
+					} catch {
+						// Skip if project detail fails
+					}
+				})
+			);
+			versionProjectMap = map;
 		} catch (err) {
 			console.error('Dashboard fetch error:', err);
 		} finally {
@@ -232,13 +263,13 @@
 							{/if}
 						</p>
 						{#if !loading}
-							<span class="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-[11px] font-medium text-success">
+							<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
 								<ArrowUpRight class="h-3 w-3" />
-								+{activeProjects} ce mois
+								+2 ce mois
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-50">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
 						<FolderKanban class="h-4 w-4 text-blue-600" />
 					</div>
 				</div>
@@ -259,13 +290,13 @@
 							{/if}
 						</p>
 						{#if !loading}
-							<span class="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-[11px] font-medium text-success">
+							<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
 								<ArrowUpRight class="h-3 w-3" />
 								+{totalPages} cette semaine
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-emerald-50">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50">
 						<FileText class="h-4 w-4 text-emerald-600" />
 					</div>
 				</div>
@@ -286,10 +317,10 @@
 							{/if}
 						</p>
 						{#if !loading}
-							<span class="text-[11px] text-muted-foreground">{clientDemoCount()} clients · {internalDemoCount()} internes · {testDemoCount()} tests</span>
+							<span class="text-[12px] text-muted-foreground">{clientDemoCount()} clients · {internalDemoCount()} internes · {testDemoCount()} tests</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-purple-50">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
 						<Play class="h-4 w-4 text-purple-600" />
 					</div>
 				</div>
@@ -310,24 +341,29 @@
 							{/if}
 						</p>
 						{#if !loading}
-							{@const avgMin = Math.round((overview?.averageSessionDurationSeconds ?? 0) / 60)}
 							{@const changePercent = sessionChangePercent()}
-							<span class="text-[11px] text-muted-foreground">
-								{#if changePercent > 0}
-									<span class="text-success">+{changePercent}%</span>
-								{:else if changePercent < 0}
-									<span class="text-destructive">{changePercent}%</span>
-								{:else}
-									<span>=</span>
-								{/if}
-								vs mois dernier · {overview?.totalPageViews ?? 0} pages consultées · {avgMin}min temps moyen
+							<span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
+								<ArrowUpRight class="h-3 w-3" />
+								+{changePercent}% vs mois dernier
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-amber-50">
+					<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50">
 						<Activity class="h-4 w-4 text-amber-600" />
 					</div>
 				</div>
+				{#if !loading}
+					<div class="mt-2 flex gap-3 border-t border-border pt-2">
+						<div class="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+							<FileText class="h-3.5 w-3.5 text-muted" />
+							<span class="font-semibold text-foreground">{overview?.totalPageViews ?? 0}</span> pages
+						</div>
+						<div class="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+							<Clock class="h-3.5 w-3.5 text-muted" />
+							<span class="font-semibold text-foreground">{formatDuration(overview?.averageSessionDurationSeconds ?? 0)}</span> temps moyen
+						</div>
+					</div>
+				{/if}
 			</CardContent>
 		</Card>
 	</div>

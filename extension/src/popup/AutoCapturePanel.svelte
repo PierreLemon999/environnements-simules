@@ -7,19 +7,31 @@
 
 	// Interest zone form
 	let newZonePattern = $state('');
-	let newZoneMultiplier = $state(1.5);
+	let newZoneDepth = $state(5);
 
 	// Blacklist form
 	let newBlacklistItem = $state('');
+
+	async function copyCurrentPathname() {
+		try {
+			const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+			if (tab?.url) {
+				const url = new URL(tab.url);
+				newZonePattern = url.pathname;
+			}
+		} catch {
+			// Ignore
+		}
+	}
 
 	function addInterestZone() {
 		if (!newZonePattern.trim()) return;
 		config.interestZones = [
 			...config.interestZones,
-			{ urlPattern: newZonePattern.trim(), depthMultiplier: newZoneMultiplier }
+			{ urlPattern: newZonePattern.trim(), depth: newZoneDepth }
 		];
 		newZonePattern = '';
-		newZoneMultiplier = 1.5;
+		newZoneDepth = 5;
 	}
 
 	function removeInterestZone(index: number) {
@@ -68,7 +80,7 @@
 		<!-- Configuration panel -->
 		<div class="space-y-3">
 			<div>
-				<label class="block text-[11px] font-medium text-gray-600 mb-1">Pages cible</label>
+				<label class="block text-[11px] font-medium text-gray-600 mb-1">Pages à ajouter</label>
 				<input
 					type="number"
 					min="1"
@@ -76,7 +88,7 @@
 					bind:value={config.targetPageCount}
 					class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 				/>
-				<p class="text-[10px] text-gray-400 mt-0.5">Nombre maximum de pages à capturer</p>
+				<p class="text-[10px] text-gray-400 mt-0.5">Nombre de pages supplémentaires à capturer</p>
 			</div>
 
 			<div>
@@ -95,9 +107,9 @@
 				<label class="block text-[11px] font-medium text-gray-600 mb-1">Délai entre pages (ms)</label>
 				<input
 					type="number"
-					min="500"
+					min="200"
 					max="10000"
-					step="500"
+					step="100"
 					bind:value={config.delayBetweenPages}
 					class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 				/>
@@ -116,7 +128,7 @@
 					<div class="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
 						<div class="flex-1 min-w-0">
 							<p class="text-[11px] font-mono text-gray-700 truncate">{zone.urlPattern}</p>
-							<p class="text-[10px] text-gray-400">×{zone.depthMultiplier} profondeur</p>
+							<p class="text-[10px] text-gray-400">profondeur {zone.depth}</p>
 						</div>
 						<button
 							onclick={() => removeInterestZone(i)}
@@ -131,20 +143,30 @@
 
 			<!-- Add zone form -->
 			<div class="pt-1 space-y-1.5">
-				<input
-					type="text"
-					bind:value={newZonePattern}
-					placeholder="Pattern URL (ex: /settings/.*)"
-					class="w-full text-[11px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-				/>
-				<div class="flex gap-2">
+				<div class="flex gap-1.5">
+					<input
+						type="text"
+						bind:value={newZonePattern}
+						placeholder="Pattern URL (ex: /settings/.*)"
+						class="flex-1 text-[11px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+					/>
+					<button
+						onclick={copyCurrentPathname}
+						class="shrink-0 p-1.5 text-gray-400 hover:text-primary border border-gray-200 rounded-lg hover:border-primary/30 transition"
+						title="Copier le chemin de l'onglet courant"
+					>
+						<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+					</button>
+				</div>
+				<div class="flex gap-2 items-center">
+					<label class="text-[10px] text-gray-500 shrink-0">Prof.</label>
 					<input
 						type="number"
-						bind:value={newZoneMultiplier}
-						min="0.5"
-						max="5"
-						step="0.5"
-						class="w-20 text-[11px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+						bind:value={newZoneDepth}
+						min="1"
+						max="10"
+						step="1"
+						class="w-16 text-[11px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 					/>
 					<button
 						onclick={addInterestZone}

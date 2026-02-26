@@ -113,6 +113,41 @@ async function handleMessage(
 			return api.put(`/capture-jobs/${jobId}`, updates);
 		}
 
+		case 'DETECT_LL_PLAYER': {
+			const tabId = message.tabId as number;
+			try {
+				const result = await chrome.tabs.sendMessage(tabId, { type: 'DETECT_LL_PLAYER' });
+				return result;
+			} catch {
+				return { detected: false, error: 'Content script not available' };
+			}
+		}
+
+		case 'SCAN_LL_GUIDES': {
+			const tabId = message.tabId as number;
+			try {
+				const result = await chrome.tabs.sendMessage(tabId, { type: 'SCAN_LL_GUIDES' });
+				return result;
+			} catch {
+				return { guides: [], error: 'Content script not available' };
+			}
+		}
+
+		case 'CREATE_PROJECT': {
+			const name = message.name as string;
+			const toolName = message.toolName as string;
+			const subdomain = toolName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+			const projectRes = await api.post('/projects', { name, toolName, subdomain });
+			// Auto-create a first version v1.0
+			if (projectRes?.data?.id) {
+				await api.post(`/projects/${projectRes.data.id}/versions`, {
+					name: 'v1.0',
+					language: 'fr'
+				}).catch(() => {});
+			}
+			return projectRes;
+		}
+
 		case 'CHECK_AUTH':
 			return verifyToken();
 
@@ -176,11 +211,31 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			state.mode
 		);
 
-		// Step 3: Mark as done
+		// Step 3: Mark as done (derive urlPath from captured URL)
+		let urlPath: string | undefined;
+		try {
+			const parsedUrl = new URL(captured.url);
+			urlPath = parsedUrl.pathname + parsedUrl.search;
+		} catch {
+			// Keep undefined
+		}
 		await updatePageStatus(localId, PAGE_STATUS.DONE, {
 			id: result.id,
-			fileSize: result.fileSize
+			fileSize: result.fileSize,
+			urlPath
 		});
+
+		// Update badge with done count
+		const updatedState = await getCaptureState();
+		const totalDone = updatedState.pages.filter(
+			(p) => p.status === PAGE_STATUS.DONE
+		).length;
+		await updateBadge(totalDone);
+
+		// For single captures (non-auto), clear badge after 3s
+		if (state.mode !== 'auto') {
+			setTimeout(() => updateBadge(0), 3000);
+		}
 
 		// Update capture job if exists
 		if (state.jobId) {
@@ -223,3 +278,24 @@ chrome.alarms?.onAlarm.addListener(async (alarm) => {
 chrome.runtime.onInstalled.addListener(() => {
 	console.log('[Env. Simulés] Extension installed');
 });
+
+// ---------------------------------------------------------------------------
+// Side Panel — open on action click
+// ---------------------------------------------------------------------------
+
+chrome.action.onClicked.addListener(async (tab) => {
+	await chrome.sidePanel.open({ tabId: tab.id });
+});
+
+// ---------------------------------------------------------------------------
+// Badge helper
+// ---------------------------------------------------------------------------
+
+async function updateBadge(count: number): Promise<void> {
+	if (count > 0) {
+		await chrome.action.setBadgeText({ text: String(count) });
+		await chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
+	} else {
+		await chrome.action.setBadgeText({ text: '' });
+	}
+}

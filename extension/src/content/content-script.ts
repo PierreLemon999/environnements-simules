@@ -43,6 +43,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 			return false;
 		}
 
+		case 'DETECT_LL_PLAYER':
+			sendResponse(detectLLPlayer());
+			return false;
+
+		case 'SCAN_LL_GUIDES':
+			sendResponse(scanLLGuides());
+			return false;
+
 		case 'PING':
 			sendResponse({ pong: true });
 			return false;
@@ -154,6 +162,92 @@ function extractInternalLinks(blacklist: string[]): string[] {
 	});
 
 	return Array.from(links);
+}
+
+// ---------------------------------------------------------------------------
+// Lemon Learning Player detection
+// ---------------------------------------------------------------------------
+
+function detectLLPlayer(): { detected: boolean; method?: string } {
+	// Check known selectors
+	const selectors = [
+		'[class*="lemon-learning"]',
+		'[class*="lemonlearning"]',
+		'[class*="ll-player"]',
+		'#ll-player',
+		'#lemon-learning',
+		'iframe[src*="lemonlearning"]',
+		'iframe[src*="lemon-learning"]',
+		'[data-ll-guide]',
+		'[data-lemon-learning]'
+	];
+
+	for (const selector of selectors) {
+		if (document.querySelector(selector)) {
+			return { detected: true, method: `selector:${selector}` };
+		}
+	}
+
+	// Check global variables
+	const win = window as Record<string, unknown>;
+	if (win.__LEMON_LEARNING__ || win.LemonLearning || win.ll) {
+		return { detected: true, method: 'global_variable' };
+	}
+
+	// Check for LL-related scripts
+	const scripts = document.querySelectorAll('script[src]');
+	for (const script of Array.from(scripts)) {
+		const src = (script as HTMLScriptElement).src;
+		if (src.includes('lemonlearning') || src.includes('lemon-learning')) {
+			return { detected: true, method: `script:${src}` };
+		}
+	}
+
+	return { detected: false };
+}
+
+function scanLLGuides(): { guides: Array<{ id: string; name: string; stepCount: number }> } {
+	const guides: Array<{ id: string; name: string; stepCount: number }> = [];
+
+	// Strategy 1: LL Player internal state
+	const win = window as Record<string, unknown>;
+	const llState = win.__LEMON_LEARNING__ as Record<string, unknown> | undefined;
+	if (llState && typeof llState === 'object') {
+		const llGuides = (llState.guides || llState.walkthroughs || llState.flows) as Array<Record<string, unknown>> | undefined;
+		if (Array.isArray(llGuides)) {
+			for (const g of llGuides) {
+				guides.push({
+					id: String(g.id || g.guideId || Math.random().toString(36).slice(2)),
+					name: String(g.name || g.title || 'Guide sans nom'),
+					stepCount: Array.isArray(g.steps) ? g.steps.length : 0
+				});
+			}
+		}
+	}
+
+	// Strategy 2: Scan DOM for guide-related elements
+	if (guides.length === 0) {
+		const guideElements = document.querySelectorAll(
+			'[data-ll-guide], [data-guide-id], [class*="ll-guide-item"], [class*="guide-list"] li'
+		);
+		let idx = 0;
+		guideElements.forEach((el) => {
+			const name = el.getAttribute('data-guide-name') ||
+				el.getAttribute('title') ||
+				el.textContent?.trim().slice(0, 100) || `Guide ${idx + 1}`;
+			const id = el.getAttribute('data-ll-guide') ||
+				el.getAttribute('data-guide-id') || `dom-guide-${idx}`;
+			const stepCountAttr = el.getAttribute('data-step-count');
+			guides.push({
+				id,
+				name,
+				stepCount: stepCountAttr ? parseInt(stepCountAttr, 10) : 0
+			});
+			idx++;
+		});
+	}
+
+	return { guides };
 }
 
 // ---------------------------------------------------------------------------

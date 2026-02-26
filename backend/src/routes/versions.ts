@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { versions, pages, projects } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
@@ -38,7 +38,19 @@ router.get(
         .where(eq(versions.projectId, req.params.projectId))
         .all();
 
-      res.json({ data: versionList });
+      // Enrich with page counts
+      const enriched = await Promise.all(
+        versionList.map(async (v) => {
+          const pageCount = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(pages)
+            .where(eq(pages.versionId, v.id))
+            .get();
+          return { ...v, pageCount: pageCount?.count ?? 0 };
+        })
+      );
+
+      res.json({ data: enriched });
     } catch (error) {
       console.error('Error listing versions:', error);
       res.status(500).json({ error: 'Internal server error', code: 500 });

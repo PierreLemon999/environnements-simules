@@ -117,10 +117,26 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       .where(eq(versions.projectId, project.id))
       .all();
 
+    // Enrich versions with page counts
+    let totalPageCount = 0;
+    const enrichedVersions = await Promise.all(
+      versionList.map(async (v) => {
+        const pageCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(pages)
+          .where(eq(pages.versionId, v.id))
+          .get();
+        const count = pageCount?.count ?? 0;
+        totalPageCount += count;
+        return { ...v, pageCount: count };
+      })
+    );
+
     res.json({
       data: {
         ...project,
-        versions: versionList,
+        versions: enrichedVersions,
+        pageCount: totalPageCount,
       },
     });
   } catch (error) {

@@ -1,0 +1,23 @@
+Phase 4 review is complete. Here's a summary of what was done:
+
+## Phase 4: Admin Dashboard — Review Complete
+
+### Files Modified
+- `frontend/src/routes/admin/+page.svelte` — Dashboard page
+- `frontend/src/lib/components/layout/Header.svelte` — Header bar
+- `frontend/src/lib/components/layout/Sidebar.svelte` — Sidebar
+
+### Key Fixes (7 issues)
+1. **Critical: Activity log showed wrong project for all sessions** — Built a `versionId → project` map to correctly resolve each session's project name and tool name (was always showing "Salesforce CRM")
+2. **Stats delta badge showed total count instead of increment** — Fixed "+7 ce mois" → "+2 ce mois"
+3. **"Sessions ce mois" card missing inline metrics** — Added "20 pages" + "85m 00s temps moyen" with border-top separator and icons
+4. **Header missing breadcrumb on Dashboard** — Added "Accueil > Vue d'ensemble" with title-first layout
+5. **Sidebar tools section hid zero-count entries** — Now always shows page count for all tools
+6. **Company name display** — Fixed "acme-corp" → "Acme Corp"
+7. **Duration formatting** — Added proper `Xm XXs` format
+
+### Test Results
+- 5 Playwright tests: all passed
+- 12/13 existing functional tests: passed (1 pre-existing login test failure, unrelated)
+
+Report written to `review-logs/phase-4-report.md`.

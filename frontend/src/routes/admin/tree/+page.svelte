@@ -21,17 +21,15 @@
 		Calendar,
 		Camera,
 		Link2,
-		LinkIcon,
 		ExternalLink,
 		Pencil,
-		EyeOff,
 		Eye,
 		Shield,
 		BookOpen,
-		Layers,
 		AlertCircle,
 		GripVertical,
 		GitCompare,
+		Code,
 	} from 'lucide-svelte';
 
 	// Types
@@ -64,7 +62,7 @@
 		versions: Array<{
 			id: string;
 			name: string;
-			status: 'active' | 'test' | 'deprecated';
+			status: string;
 		}>;
 	}
 
@@ -156,61 +154,51 @@
 		return filterTree(tree, searchQuery);
 	});
 
-	// Category color palette for tree sections (cycles through for dynamic sections)
+	// Category color palette for tree sections
 	const sectionColors = [
-		'#3B82F6', // blue (Dashboard)
-		'#14B8A6', // teal (Contacts)
-		'#F59E0B', // orange (Opportunités)
-		'#8B5CF6', // purple (Rapports)
-		'#EF4444', // red (Administration)
-		'#10B981', // green (Paramètres)
-		'#EC4899', // pink
-		'#06B6D4', // cyan
-		'#F97316', // dark orange
-		'#6366F1', // indigo
+		'#3B82F6', '#14B8A6', '#F59E0B', '#8B5CF6', '#EF4444',
+		'#10B981', '#EC4899', '#06B6D4', '#F97316', '#6366F1',
+	];
+
+	// Background colors matching section colors
+	const sectionBgColors = [
+		'#DBEAFE', '#CCFBF1', '#FEF3C7', '#EDE9FE', '#FEE2E2',
+		'#D1FAE5', '#FCE7F3', '#CFFAFE', '#FFEDD5', '#E0E7FF',
 	];
 
 	function getSectionColor(index: number): string {
 		return sectionColors[index % sectionColors.length];
 	}
 
+	function getSectionBgColor(index: number): string {
+		return sectionBgColors[index % sectionBgColors.length];
+	}
+
 	// Status helpers
 	function getHealthDot(status: string): string {
 		switch (status) {
-			case 'ok':
-				return 'bg-success';
-			case 'warning':
-				return 'bg-warning';
-			case 'error':
-				return 'bg-destructive';
-			default:
-				return 'bg-muted';
+			case 'ok': return 'bg-success';
+			case 'warning': return 'bg-warning';
+			case 'error': return 'bg-destructive';
+			default: return 'bg-muted';
 		}
 	}
 
 	function getHealthLabel(status: string): string {
 		switch (status) {
-			case 'ok':
-				return 'OK';
-			case 'warning':
-				return 'Avertissement';
-			case 'error':
-				return 'Erreur';
-			default:
-				return status;
+			case 'ok': return 'OK';
+			case 'warning': return 'Avertissement';
+			case 'error': return 'Erreur';
+			default: return status;
 		}
 	}
 
 	function getCaptureLabel(mode: string): string {
 		switch (mode) {
-			case 'free':
-				return 'Capture libre';
-			case 'guided':
-				return 'Capture guidée';
-			case 'auto':
-				return 'Capture automatique';
-			default:
-				return mode;
+			case 'free': return 'Capture libre';
+			case 'guided': return 'Capture guidée';
+			case 'auto': return 'Capture automatique';
+			default: return mode;
 		}
 	}
 
@@ -241,8 +229,9 @@
 		expandedPaths = newSet;
 	}
 
-	function selectPage(page: Page) {
-		selectedPage = page;
+	function selectPage(p: Page) {
+		selectedPage = p;
+		detailSubTab = 'preview';
 	}
 
 	function countPages(node: TreeNode): number {
@@ -273,8 +262,8 @@
 	function getVersionStatusVariant(status: string): 'success' | 'warning' | 'secondary' {
 		switch (status) {
 			case 'active': return 'success';
-			case 'test': return 'warning';
-			case 'deprecated': return 'secondary';
+			case 'draft': return 'warning';
+			case 'archived': case 'deprecated': return 'secondary';
 			default: return 'secondary';
 		}
 	}
@@ -282,8 +271,8 @@
 	function getVersionStatusLabel(status: string): string {
 		switch (status) {
 			case 'active': return 'Active';
-			case 'test': return 'Test';
-			case 'deprecated': return 'Archivée';
+			case 'draft': return 'Brouillon';
+			case 'archived': case 'deprecated': return 'Archivée';
 			default: return status;
 		}
 	}
@@ -335,7 +324,6 @@
 	async function loadProjects() {
 		try {
 			const res = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
-			// Load full project details with versions
 			const detailed = await Promise.all(
 				res.data.map((p) =>
 					get<{ data: Project }>(`/projects/${p.id}`).then((r) => r.data)
@@ -343,7 +331,6 @@
 			);
 			projects = detailed;
 
-			// Check URL params for pre-selection
 			const urlVersion = $page.url.searchParams.get('version');
 			if (urlVersion) {
 				for (const p of projects) {
@@ -357,7 +344,6 @@
 			} else if (projects.length > 0) {
 				selectedProjectId = projects[0].id;
 				if (projects[0].versions.length > 0) {
-					// Prefer active version
 					const active = projects[0].versions.find((v) => v.status === 'active');
 					selectedVersionId = active?.id ?? projects[0].versions[0].id;
 				}
@@ -379,7 +365,6 @@
 		try {
 			const res = await get<{ data: TreeNode }>(`/versions/${selectedVersionId}/tree`);
 			tree = res.data;
-			// Auto-expand top-level
 			if (tree) {
 				const newExpanded = new Set<string>();
 				tree.children.forEach((c) => newExpanded.add(c.path));
@@ -413,7 +398,6 @@
 		}
 	}
 
-	// React to project changes
 	$effect(() => {
 		if (selectedProjectId) {
 			const proj = projects.find((p) => p.id === selectedProjectId);
@@ -427,7 +411,6 @@
 		}
 	});
 
-	// React to version changes
 	$effect(() => {
 		if (selectedVersionId) {
 			loadTree();
@@ -447,8 +430,15 @@
 <div class="flex h-[calc(100vh-56px)] overflow-hidden -m-6">
 	<!-- Tree Panel (left) -->
 	<div class="relative flex shrink-0 flex-col border-r border-border bg-card" style="width: {treePanelWidth}px">
-		<!-- Tree panel header -->
-		<div class="space-y-3 border-b border-border p-3">
+		<!-- Tree panel header with title -->
+		<div class="flex items-center justify-between border-b border-border px-4 py-3">
+			<h2 class="text-sm font-semibold text-foreground truncate">
+				{selectedProject?.name ?? 'Chargement...'}{selectedVersion ? ` — ${selectedVersion.name}` : ''}
+			</h2>
+		</div>
+
+		<!-- Project selector + Tabs + Search -->
+		<div class="space-y-2 border-b border-border px-3 py-2">
 			<!-- Project selector -->
 			<select
 				bind:value={selectedProjectId}
@@ -463,40 +453,35 @@
 				{/if}
 			</select>
 
-			<!-- Tabs -->
-			<Tabs value={treeTab} onValueChange={(v) => { treeTab = v; }}>
-				<TabsList class="w-full">
-					<TabsTrigger value="site" class="flex-1 text-xs">Arborescence</TabsTrigger>
-					<TabsTrigger value="list" class="flex-1 text-xs">Liste</TabsTrigger>
-					<TabsTrigger value="map" class="flex-1 text-xs">Carte du site</TabsTrigger>
-				</TabsList>
-			</Tabs>
-
-			<!-- Sub-tabs for Arborescence: Par site / Par guide -->
-			{#if treeTab === 'site'}
-				<div class="flex gap-1 rounded-md bg-accent/50 p-0.5">
-					<button
-						class="flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors {treeSubTab === 'site' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-						onclick={() => { treeSubTab = 'site'; }}
-					>
-						Par site
-					</button>
-					<button
-						class="flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors {treeSubTab === 'guide' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-						onclick={() => { treeSubTab = 'guide'; }}
-					>
-						Par guide
-					</button>
-				</div>
-			{/if}
+			<!-- Tabs: Arborescence / Liste / Carte du site -->
+			<div class="flex gap-1 text-xs">
+				<button
+					class="flex-1 rounded-md px-2 py-1.5 font-medium transition-colors {treeTab === 'site' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}"
+					onclick={() => { treeTab = 'site'; }}
+				>
+					Arborescence
+				</button>
+				<button
+					class="flex-1 rounded-md px-2 py-1.5 font-medium transition-colors {treeTab === 'list' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}"
+					onclick={() => { treeTab = 'list'; }}
+				>
+					Liste
+				</button>
+				<button
+					class="flex-1 rounded-md px-2 py-1.5 font-medium transition-colors {treeTab === 'map' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}"
+					onclick={() => { treeTab = 'map'; }}
+				>
+					Carte du site
+				</button>
+			</div>
 
 			<!-- Search -->
 			<div class="relative">
 				<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-				<Input
+				<input
 					bind:value={searchQuery}
 					placeholder="Filtrer les pages..."
-					class="h-8 pl-8 text-xs"
+					class="flex h-8 w-full rounded-md border border-border bg-accent/30 pl-8 pr-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors"
 				/>
 			</div>
 		</div>
@@ -504,43 +489,24 @@
 		<!-- Status bar -->
 		{#if tree && !treeLoading}
 			{@const stats = pageStats()}
-			<div class="border-b border-border px-3 py-2 space-y-1.5">
-				<div class="text-xs font-medium text-muted-foreground">
-					{stats.total} page{stats.total !== 1 ? 's' : ''} · {stats.modals} modale{stats.modals !== 1 ? 's' : ''} · {stats.error} erreur{stats.error !== 1 ? 's' : ''}
-				</div>
-				<div class="flex items-center gap-3 text-xs text-muted-foreground">
-					<span class="inline-flex items-center gap-1">
-						<span class="h-2 w-2 rounded-full bg-success"></span>
-						{stats.ok} OK
-					</span>
-					<span class="inline-flex items-center gap-1">
-						<span class="h-2 w-2 rounded-full bg-warning"></span>
-						{stats.warning} Avert.
-					</span>
-					<span class="inline-flex items-center gap-1">
-						<span class="h-2 w-2 rounded-full bg-destructive"></span>
-						{stats.error} Erreur{stats.error !== 1 ? 's' : ''}
-					</span>
-				</div>
-				<!-- Proportional health progress bar -->
-				{#if stats.total > 0}
-					<div class="flex h-1.5 w-full overflow-hidden rounded-full bg-accent">
-						{#if stats.ok > 0}
-							<div class="bg-success" style="width: {(stats.ok / stats.total) * 100}%"></div>
-						{/if}
-						{#if stats.warning > 0}
-							<div class="bg-warning" style="width: {(stats.warning / stats.total) * 100}%"></div>
-						{/if}
-						{#if stats.error > 0}
-							<div class="bg-destructive" style="width: {(stats.error / stats.total) * 100}%"></div>
-						{/if}
-					</div>
-				{/if}
+			<div class="flex items-center gap-3 border-b border-border bg-accent/20 px-3 py-1.5 text-[11px] text-muted-foreground">
+				<span class="inline-flex items-center gap-1 font-medium">
+					<span class="h-1.5 w-1.5 rounded-full bg-primary"></span>
+					{stats.total} pages
+				</span>
+				<span class="inline-flex items-center gap-1 font-medium">
+					<span class="h-1.5 w-1.5 rounded-full" style="background: #8b5cf6"></span>
+					{stats.modals} modales
+				</span>
+				<span class="inline-flex items-center gap-1 font-medium">
+					<span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>
+					{stats.error} erreurs
+				</span>
 			</div>
 		{/if}
 
 		<!-- Tree content -->
-		<div class="flex-1 overflow-y-auto px-1 py-2">
+		<div class="flex-1 overflow-y-auto py-1">
 			{#if treeTab === 'site' && treeSubTab === 'guide'}
 				<!-- Par guide sub-view -->
 				<div class="px-2 py-3">
@@ -570,13 +536,6 @@
 									{#if guide.description}
 										<p class="mt-1 ml-6 text-xs text-muted-foreground">{guide.description}</p>
 									{/if}
-									<div class="mt-2 ml-6 flex items-center gap-3 text-[10px] text-muted">
-										<span>{guide.playCount} lecture{guide.playCount !== 1 ? 's' : ''}</span>
-										<span>{guide.completionCount} terminé{guide.completionCount !== 1 ? 's' : ''}</span>
-										{#if guide.playCount > 0}
-											<span class="text-primary">{Math.round((guide.completionCount / guide.playCount) * 100)}% complétion</span>
-										{/if}
-									</div>
 								</div>
 							{/each}
 						</div>
@@ -584,7 +543,7 @@
 				</div>
 			{:else if treeTab === 'list'}
 				<!-- Flat list view of all pages -->
-				<div class="px-2 py-2">
+				<div class="px-1 py-1">
 					{#if loading || treeLoading}
 						<div class="space-y-1 px-2">
 							{#each Array(8) as _}
@@ -615,24 +574,20 @@
 						{#if allPages.length === 0}
 							<p class="py-8 text-center text-sm text-muted-foreground">Aucune page trouvée.</p>
 						{:else}
-							<div class="space-y-0">
-								{#each allPages as page}
-									<button
-										class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent {selectedPage?.id === page.id ? 'bg-accent text-primary' : ''}"
-										onclick={() => selectPage(page)}
-									>
-										<span class="h-1.5 w-1.5 shrink-0 rounded-full {getHealthDot(page.healthStatus)}"></span>
-										<FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-										<span class="truncate {selectedPage?.id === page.id ? 'font-medium text-primary' : 'text-foreground'}">{page.title}</span>
-										<span class="ml-auto shrink-0 text-[10px] text-muted">/{page.urlPath}</span>
-									</button>
-								{/each}
-							</div>
+							{#each allPages as pg}
+								<button
+									class="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[13px] transition-colors hover:bg-accent/50 {selectedPage?.id === pg.id ? 'bg-primary/10 text-primary' : ''}"
+									onclick={() => selectPage(pg)}
+								>
+									<span class="h-[7px] w-[7px] shrink-0 rounded-full {getHealthDot(pg.healthStatus)}"></span>
+									<FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+									<span class="truncate {selectedPage?.id === pg.id ? 'font-medium text-primary' : 'text-foreground'}">{pg.title}</span>
+								</button>
+							{/each}
 						{/if}
 					{/if}
 				</div>
 			{:else if treeTab === 'map'}
-				<!-- Carte du site (site map visualization) — placeholder -->
 				<div class="flex flex-col items-center justify-center py-12 px-4 text-center">
 					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
 						<Globe class="h-6 w-6 text-muted" />
@@ -660,23 +615,29 @@
 					</p>
 				</div>
 			{:else}
-				{#snippet treeNodeSnippet(node: TreeNode, depth: number, color: string)}
+				{#snippet treeNodeSnippet(node: TreeNode, depth: number, color: string, bgColor: string)}
 					{#if node.children.length > 0 && !node.page}
-						<!-- Folder node -->
+						<!-- Folder/group node -->
 						<button
-							class="group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-accent"
-							style="padding-left: {depth * 16 + 8}px"
+							class="group flex w-full items-center gap-1.5 py-[6px] text-left text-[12px] font-semibold transition-colors hover:bg-accent/50"
+							style="padding-left: {depth * 16 + 12}px; padding-right: 12px"
 							onclick={() => toggleExpand(node.path)}
 						>
-							{#if expandedPaths.has(node.path)}
-								<ChevronDown class="h-3 w-3 shrink-0 text-muted" />
-								<FolderOpen class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
-							{:else}
-								<ChevronRight class="h-3 w-3 shrink-0 text-muted" />
-								<Folder class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
-							{/if}
-							<span class="truncate text-foreground">{node.name}</span>
-							<span class="ml-auto text-[10px] text-muted-foreground">
+							<svg
+								class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
+								class:rotate-90={expandedPaths.has(node.path)}
+								viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							>
+								<path d="M9 18l6-6-6-6"/>
+							</svg>
+							<span
+								class="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] text-[8px] font-bold"
+								style="background: {bgColor}; color: {color}"
+							>
+								{node.name.charAt(0).toUpperCase()}
+							</span>
+							<span class="flex-1 truncate text-muted-foreground">{node.name}</span>
+							<span class="text-[11px] font-normal text-muted-foreground">
 								({countPages(node)})
 							</span>
 						</button>
@@ -686,20 +647,20 @@
 							{@const visibleChildren = node.children.slice(0, limit)}
 							{@const hiddenCount = node.children.length - visibleChildren.length}
 							{#each visibleChildren as child}
-								{@render treeNodeSnippet(child, depth + 1, color)}
+								{@render treeNodeSnippet(child, depth + 1, color, bgColor)}
 							{/each}
 							{#if hiddenCount > 0}
 								<button
-									class="w-full rounded-md px-2 py-1 text-left text-xs text-primary hover:bg-accent"
-									style="padding-left: {(depth + 1) * 16 + 8}px"
+									class="w-full py-1 text-left text-[11px] font-medium text-primary hover:underline"
+									style="padding-left: {(depth + 1) * 16 + 12}px"
 									onclick={() => toggleFullExpand(node.path)}
 								>
-									...et {hiddenCount} autre{hiddenCount !== 1 ? 's' : ''} page{hiddenCount !== 1 ? 's' : ''}
+									... et {hiddenCount} autre{hiddenCount !== 1 ? 's' : ''} page{hiddenCount !== 1 ? 's' : ''}
 								</button>
 							{:else if isFullyExpanded && node.children.length > SECTION_PAGE_LIMIT}
 								<button
-									class="w-full rounded-md px-2 py-1 text-left text-xs text-muted-foreground hover:bg-accent"
-									style="padding-left: {(depth + 1) * 16 + 8}px"
+									class="w-full py-1 text-left text-[11px] text-muted-foreground hover:underline"
+									style="padding-left: {(depth + 1) * 16 + 12}px"
 									onclick={() => toggleFullExpand(node.path)}
 								>
 									Réduire
@@ -707,66 +668,68 @@
 							{/if}
 						{/if}
 					{:else if node.page}
-						<!-- Page node -->
+						<!-- Page item -->
 						<button
-							class="group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-accent {selectedPage?.id === node.page.id ? 'bg-accent text-primary' : ''} {node.page.healthStatus === 'error' ? 'border-l-2 border-l-destructive' : ''}"
-							style="padding-left: {depth * 16 + 8}px"
+							class="group flex w-full items-center gap-2 py-[5px] text-left text-[13px] transition-colors hover:bg-accent/50 {selectedPage?.id === node.page.id ? 'bg-primary/10' : ''}"
+							style="padding-left: {depth * 16 + 12}px; padding-right: 12px"
 							onclick={() => selectPage(node.page!)}
 						>
-							<span class="h-1.5 w-1.5 shrink-0 rounded-full {getHealthDot(node.page.healthStatus)}"></span>
-							<FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-							<span class="truncate {selectedPage?.id === node.page.id ? 'font-medium text-primary' : 'text-foreground'}">
+							<FileText class="h-[15px] w-[15px] shrink-0 text-muted-foreground/50" />
+							<span class="flex-1 truncate {selectedPage?.id === node.page.id ? 'font-medium text-primary' : 'text-muted-foreground'}">
 								{node.page.title || node.name}
 							</span>
-							{#if node.page.captureMode === 'guided'}
-								<span class="ml-auto shrink-0 rounded bg-purple-100 px-1 py-0.5 text-[9px] font-medium text-purple-700">Modale</span>
-							{/if}
+							<span class="h-[7px] w-[7px] shrink-0 rounded-full {getHealthDot(node.page.healthStatus)}"></span>
 						</button>
-						<!-- Also render children if any -->
 						{#if node.children.length > 0}
 							{#each node.children as child}
-								{@render treeNodeSnippet(child, depth + 1, color)}
+								{@render treeNodeSnippet(child, depth + 1, color, bgColor)}
 							{/each}
 						{/if}
 					{:else}
 						<!-- Empty folder -->
 						<button
-							class="group flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-accent"
-							style="padding-left: {depth * 16 + 8}px"
+							class="group flex w-full items-center gap-1.5 py-[6px] text-left text-[12px] font-semibold transition-colors hover:bg-accent/50"
+							style="padding-left: {depth * 16 + 12}px; padding-right: 12px"
 							onclick={() => toggleExpand(node.path)}
 						>
-							{#if expandedPaths.has(node.path)}
-								<ChevronDown class="h-3 w-3 shrink-0 text-muted" />
-								<FolderOpen class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
-							{:else}
-								<ChevronRight class="h-3 w-3 shrink-0 text-muted" />
-								<Folder class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
-							{/if}
-							<span class="truncate text-foreground">{node.name}</span>
+							<svg
+								class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200"
+								class:rotate-90={expandedPaths.has(node.path)}
+								viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							>
+								<path d="M9 18l6-6-6-6"/>
+							</svg>
+							<span
+								class="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] text-[8px] font-bold"
+								style="background: {bgColor}; color: {color}"
+							>
+								{node.name.charAt(0).toUpperCase()}
+							</span>
+							<span class="flex-1 truncate text-muted-foreground">{node.name}</span>
 						</button>
 						{#if expandedPaths.has(node.path)}
 							{#each node.children as child}
-								{@render treeNodeSnippet(child, depth + 1, color)}
+								{@render treeNodeSnippet(child, depth + 1, color, bgColor)}
 							{/each}
 						{/if}
 					{/if}
 				{/snippet}
 
 				{#each filteredTree()!.children as child, ci}
-					{@render treeNodeSnippet(child, 0, getSectionColor(ci))}
+					{@render treeNodeSnippet(child, 0, getSectionColor(ci), getSectionBgColor(ci))}
 				{/each}
 			{/if}
 		</div>
 
-		<!-- Selected page breadcrumb path (tree hierarchy) -->
+		<!-- Breadcrumb at bottom of tree panel -->
 		{#if selectedPage}
 			{@const breadcrumb = selectedPageBreadcrumb()}
-			<div class="border-t border-border px-3 py-1.5 overflow-x-auto">
+			<div class="border-t border-border bg-accent/20 px-3 py-2 overflow-x-auto">
 				<div class="flex items-center gap-1 text-[11px] text-muted-foreground whitespace-nowrap">
 					{#if breadcrumb.length > 0}
 						{#each breadcrumb as segment, i}
 							{#if i > 0}
-								<ChevronRight class="h-2.5 w-2.5 shrink-0 text-muted" />
+								<span class="text-muted-foreground/40">/</span>
 							{/if}
 							<span class={i === breadcrumb.length - 1 ? 'font-medium text-foreground' : ''}>{segment}</span>
 						{/each}
@@ -777,14 +740,9 @@
 			</div>
 		{/if}
 
-		<!-- Tree footer -->
+		<!-- Tree footer: version selector + page count -->
 		<div class="border-t border-border px-3 py-2">
-			<div class="space-y-1">
-				{#if selectedProject}
-					<p class="text-[10px] font-medium text-muted-foreground truncate">{selectedProject.name} — {selectedProject.toolName}</p>
-				{/if}
-				<div class="flex items-center justify-between">
-				<!-- Version selector with arrows -->
+			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-1">
 					<button
 						class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
@@ -807,222 +765,167 @@
 						<ChevronRight class="h-3.5 w-3.5" />
 					</button>
 				</div>
-				<span class="text-xs text-muted-foreground">
+				<span class="text-[11px] text-muted-foreground">
 					{pageStats().total} page{pageStats().total !== 1 ? 's' : ''}
 				</span>
 			</div>
-			</div>
 		</div>
 	</div>
 
-	<!-- Visible resize handle -->
+	<!-- Resize handle -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="group relative flex w-2 shrink-0 cursor-col-resize items-center justify-center border-x border-border bg-accent/30 transition-colors hover:bg-primary/10 {isResizing ? 'bg-primary/20' : ''}"
+		class="relative flex w-1.5 shrink-0 cursor-col-resize items-center justify-center transition-colors hover:bg-primary/10 {isResizing ? 'bg-primary/20' : ''}"
 		onmousedown={startResize}
 	>
-		<div class="flex h-8 w-full items-center justify-center rounded-sm {isResizing ? 'text-primary' : 'text-muted-foreground/50 group-hover:text-muted-foreground'}">
-			<GripVertical class="h-4 w-4" />
-		</div>
+		<div class="absolute inset-0"></div>
 	</div>
 
 	<!-- Detail Panel (right) -->
-	<div class="flex-1 overflow-y-auto bg-background p-6">
+	<div class="flex flex-1 flex-col overflow-hidden bg-background">
 		{#if selectedPage}
-			<!-- Breadcrumb with "/" separators -->
-			<nav class="mb-4 flex items-center gap-1.5 text-sm">
-				<span class="text-muted-foreground">{selectedProject?.name ?? 'Projet'}</span>
-				{#each selectedPage.urlPath.split('/').filter(Boolean) as segment, i}
-					<span class="text-muted/40">/</span>
-					{#if i < selectedPage.urlPath.split('/').filter(Boolean).length - 1}
-						<span class="text-muted-foreground">{segment}</span>
-					{:else}
-						<span class="font-medium text-foreground">{segment}</span>
-					{/if}
-				{/each}
-			</nav>
+			<!-- Top bar: breadcrumb + sub-tabs + actions -->
+			<div class="flex items-center justify-between gap-4 border-b border-border bg-card px-5 py-2.5">
+				<!-- Breadcrumb -->
+				<nav class="flex items-center gap-1.5 text-[13px] shrink-0">
+					<span class="text-muted-foreground">{selectedProject?.name ?? 'Projet'}</span>
+					{#each selectedPage.urlPath.split('/').filter(Boolean) as segment, i}
+						<span class="text-muted-foreground/40">/</span>
+						{#if i < selectedPage.urlPath.split('/').filter(Boolean).length - 1}
+							<span class="text-muted-foreground">{segment}</span>
+						{:else}
+							<span class="font-medium text-foreground">{segment}</span>
+						{/if}
+					{/each}
+				</nav>
 
-			<!-- Browser frame preview -->
-			<div class="mb-4 overflow-hidden rounded-lg border border-border shadow-sm">
-				<!-- Browser chrome -->
-				<div class="flex items-center gap-2 border-b border-border bg-accent/50 px-3 py-2">
-					<!-- Traffic lights -->
-					<div class="flex items-center gap-1.5">
-						<span class="h-2.5 w-2.5 rounded-full bg-red-400"></span>
-						<span class="h-2.5 w-2.5 rounded-full bg-yellow-400"></span>
-						<span class="h-2.5 w-2.5 rounded-full bg-green-400"></span>
-					</div>
-					<!-- Address bar -->
-					<div class="flex flex-1 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1 text-xs text-muted-foreground">
-						<Globe class="h-3 w-3 shrink-0 text-muted" />
-						<span class="truncate">
-							{selectedProject?.subdomain ? `${selectedProject.subdomain}.demo.lemonlearning.com` : ''}/{selectedPage.urlPath}
-						</span>
-					</div>
+				<!-- Sub-tabs (inline in topbar) -->
+				<div class="flex items-center gap-0.5">
+					<button
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors border-b-2 {detailSubTab === 'preview' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+						onclick={() => { detailSubTab = 'preview'; }}
+					>
+						<Eye class="h-[15px] w-[15px]" />
+						Aperçu
+					</button>
+					<button
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors border-b-2 {detailSubTab === 'editor' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+						onclick={() => { detailSubTab = 'editor'; }}
+					>
+						<Code class="h-[15px] w-[15px]" />
+						Éditeur HTML
+					</button>
+					<button
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors border-b-2 {detailSubTab === 'links' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+						onclick={() => { detailSubTab = 'links'; }}
+					>
+						<Link2 class="h-[15px] w-[15px]" />
+						Liens & Navigation
+					</button>
+					<button
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors border-b-2 {detailSubTab === 'javascript' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+						onclick={() => { detailSubTab = 'javascript'; }}
+					>
+						<FileText class="h-[15px] w-[15px]" />
+						JavaScript
+					</button>
 				</div>
-				<!-- Iframe content -->
-				<div class="relative h-[280px] bg-white">
-					{#if previewUrl()}
-						<iframe
-							src={previewUrl()}
-							title="Aperçu de {selectedPage.title}"
-							class="h-full w-full border-0"
-							sandbox="allow-same-origin"
-						></iframe>
-					{:else}
-						<div class="flex h-full items-center justify-center">
-							<span class="text-sm text-muted-foreground">Aperçu non disponible</span>
-						</div>
-					{/if}
-				</div>
-			</div>
 
-			<!-- Page title and actions -->
-			<div class="mb-4 flex items-start justify-between">
-				<div>
-					<h2 class="text-lg font-semibold text-foreground">{selectedPage.title}</h2>
-					<p class="mt-1 text-sm text-muted-foreground">/{selectedPage.urlPath}</p>
-				</div>
-				<div class="flex items-center gap-2">
-					<Button variant="outline" size="sm" class="gap-1.5 text-xs">
-						<GitCompare class="h-3.5 w-3.5" />
+				<!-- Action buttons -->
+				<div class="flex items-center gap-2 shrink-0">
+					<Button variant="outline" size="sm" class="gap-1.5 text-xs h-8">
+						<Eye class="h-3.5 w-3.5" />
 						Comparer
 					</Button>
-					<Button variant="outline" size="sm" class="gap-1.5 text-xs">
-						<Camera class="h-3.5 w-3.5" />
-						Recapturer
-					</Button>
-					<Button size="sm" class="gap-1.5 text-xs bg-success text-white hover:bg-success/90" onclick={() => {
+					<Button variant="default" size="sm" class="gap-1.5 text-xs h-8" onclick={() => {
 						if (selectedProject?.subdomain && selectedPage) {
 							window.open(`/demo/${selectedProject.subdomain}/${selectedPage.urlPath}`, '_blank');
 						}
 					}}>
 						<ExternalLink class="h-3.5 w-3.5" />
-						Ouvrir démo
+						Recapturer
 					</Button>
 				</div>
 			</div>
 
-			<!-- Sub-tabs -->
-			<Tabs value={detailSubTab} onValueChange={(v) => { detailSubTab = v; }}>
-				<TabsList class="mb-4">
-					<TabsTrigger value="preview" class="text-xs">Aperçu</TabsTrigger>
-					<TabsTrigger value="editor" class="text-xs">Éditeur HTML</TabsTrigger>
-					<TabsTrigger value="links" class="text-xs">Liens & Navigation</TabsTrigger>
-					<TabsTrigger value="javascript" class="text-xs">JavaScript</TabsTrigger>
-				</TabsList>
-			</Tabs>
-
+			<!-- Content area -->
 			{#if detailSubTab === 'preview'}
-				<!-- Page metadata -->
-				<div class="grid gap-6 lg:grid-cols-2">
-					<Card>
-						<CardContent class="p-5">
-							<h3 class="mb-4 text-sm font-semibold text-foreground">Informations</h3>
-							<dl class="space-y-3">
-								<div class="flex items-start justify-between">
-									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-										<Globe class="h-3.5 w-3.5" />
-										URL source
-									</dt>
-									<dd class="max-w-[60%] text-right text-sm text-foreground">
-										<a href={selectedPage.urlSource} target="_blank" rel="noopener" class="text-primary hover:underline">
-											{selectedPage.urlSource}
-										</a>
-									</dd>
-								</div>
-								<Separator />
-								<div class="flex items-center justify-between">
-									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-										<HardDrive class="h-3.5 w-3.5" />
-										Taille
-									</dt>
-									<dd class="text-sm text-foreground">{formatFileSize(selectedPage.fileSize)}</dd>
-								</div>
-								<Separator />
-								<div class="flex items-center justify-between">
-									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-										<Calendar class="h-3.5 w-3.5" />
-										Capture le
-									</dt>
-									<dd class="text-sm text-foreground">{formatDate(selectedPage.createdAt)}</dd>
-								</div>
-								<Separator />
-								<div class="flex items-center justify-between">
-									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-										<Camera class="h-3.5 w-3.5" />
-										Mode
-									</dt>
-									<dd class="text-sm text-foreground">{getCaptureLabel(selectedPage.captureMode)}</dd>
-								</div>
-								<Separator />
-								<div class="flex items-center justify-between">
-									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-										<AlertCircle class="h-3.5 w-3.5" />
-										Santé
-									</dt>
-									<dd>
-										<Badge variant={selectedPage.healthStatus === 'ok' ? 'success' : selectedPage.healthStatus === 'warning' ? 'warning' : 'destructive'}>
-											<span class="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-current"></span>
-											{getHealthLabel(selectedPage.healthStatus)}
-										</Badge>
-									</dd>
-								</div>
-							</dl>
-						</CardContent>
-					</Card>
-
-					<div class="space-y-6">
-						<Card>
-							<CardContent class="p-5">
-								<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Obfuscation active</h3>
-								{#if obfuscationRules.filter((r) => r.isActive).length === 0}
-									<p class="text-sm text-muted-foreground">Aucune règle active pour ce projet.</p>
-								{:else}
-									<div class="flex flex-wrap gap-2">
-										{#each obfuscationRules.filter((r) => r.isActive) as rule}
-											<div class="inline-flex items-center gap-1.5 rounded-md border border-border bg-accent px-2.5 py-1 text-xs">
-												<Shield class="h-3 w-3 text-muted-foreground" />
-												<span class="text-muted-foreground">{rule.searchValue}</span>
-												<span class="text-muted">→</span>
-												<span class="font-medium text-foreground">{rule.replaceValue}</span>
-											</div>
-										{/each}
+				<!-- Browser preview fills remaining space -->
+				<div class="flex flex-1 overflow-hidden bg-[#ebebeb] p-5">
+					<div class="flex flex-1 flex-col overflow-hidden rounded-xl border border-black/5 bg-white shadow-lg">
+						<!-- Browser chrome -->
+						<div class="flex items-center gap-2.5 border-b border-border bg-[#f5f5f4] px-3.5 py-2.5">
+							<div class="flex items-center gap-[5px]">
+								<span class="h-[10px] w-[10px] rounded-full bg-[#ff5f57]"></span>
+								<span class="h-[10px] w-[10px] rounded-full bg-[#ffbd2e]"></span>
+								<span class="h-[10px] w-[10px] rounded-full bg-[#28c840]"></span>
+							</div>
+							<div class="flex flex-1 items-center gap-2 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-mono text-muted-foreground">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3 shrink-0 text-success">
+									<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+								</svg>
+								<span>
+									<span class="text-success">https://</span><span class="font-medium text-foreground">{selectedProject?.subdomain ?? ''}.demo.lemonlearning.com</span>/{selectedPage.urlPath}
+								</span>
+							</div>
+						</div>
+						<!-- Page content -->
+						<div class="flex-1 overflow-y-auto bg-[#f4f6f9]">
+							{#if previewUrl()}
+								<iframe
+									src={previewUrl()}
+									title="Aperçu de {selectedPage.title}"
+									class="h-full w-full border-0"
+									sandbox="allow-same-origin"
+								></iframe>
+							{:else}
+								<div class="flex h-full items-center justify-center">
+									<div class="text-center text-muted-foreground">
+										<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-border/50">
+											<Eye class="h-6 w-6" />
+										</div>
+										<p class="text-sm font-medium">Aperçu non disponible</p>
+										<p class="mt-1 text-xs">La page sera affichée ici après capture.</p>
 									</div>
-								{/if}
-							</CardContent>
-						</Card>
-						<Card>
-							<CardContent class="p-5">
-								<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Guides associés</h3>
-								<p class="text-sm text-muted-foreground">Aucun guide associé à cette page.</p>
-							</CardContent>
-						</Card>
+								</div>
+							{/if}
+						</div>
 					</div>
 				</div>
 			{:else if detailSubTab === 'editor'}
-				<div class="flex items-center justify-center py-12">
-					<a href="/admin/editor/{selectedPage.id}">
-						<Button class="gap-1.5">
-							<Pencil class="h-4 w-4" />
-							Ouvrir dans l'éditeur
-						</Button>
-					</a>
+				<div class="flex flex-1 items-center justify-center bg-accent/20">
+					<div class="text-center text-muted-foreground">
+						<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+							<Code class="h-7 w-7" />
+						</div>
+						<h3 class="text-[15px] font-semibold text-foreground/70">Éditeur HTML</h3>
+						<p class="mt-1 max-w-xs text-xs">Cette vue est détaillée dans la maquette Éditeur de Pages</p>
+						<a href="/admin/editor/{selectedPage.id}" class="mt-3 inline-block">
+							<Button variant="outline" size="sm" class="gap-1.5 text-xs">
+								<Pencil class="h-3.5 w-3.5" />
+								Ouvrir dans l'éditeur
+							</Button>
+						</a>
+					</div>
 				</div>
 			{:else if detailSubTab === 'links'}
-				<div class="flex items-center justify-center py-12 text-center">
-					<div>
-						<Link2 class="mx-auto h-8 w-8 text-muted" />
-						<p class="mt-3 text-sm text-muted-foreground">Liens détectés disponibles dans l'éditeur</p>
-						<a href="/admin/editor/{selectedPage.id}" class="mt-2 inline-block text-sm text-primary hover:underline">Ouvrir l'éditeur</a>
+				<div class="flex flex-1 items-center justify-center bg-accent/20">
+					<div class="text-center text-muted-foreground">
+						<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+							<Link2 class="h-7 w-7" />
+						</div>
+						<h3 class="text-[15px] font-semibold text-foreground/70">Liens & Navigation</h3>
+						<p class="mt-1 max-w-xs text-xs">Cette vue est détaillée dans la maquette Éditeur de Pages</p>
 					</div>
 				</div>
 			{:else if detailSubTab === 'javascript'}
-				<div class="flex items-center justify-center py-12 text-center">
-					<div>
-						<FileText class="mx-auto h-8 w-8 text-muted" />
-						<p class="mt-3 text-sm text-muted-foreground">Scripts détectés disponibles dans l'éditeur</p>
-						<a href="/admin/editor/{selectedPage.id}" class="mt-2 inline-block text-sm text-primary hover:underline">Ouvrir l'éditeur</a>
+				<div class="flex flex-1 items-center justify-center bg-accent/20">
+					<div class="text-center text-muted-foreground">
+						<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+							<FileText class="h-7 w-7" />
+						</div>
+						<h3 class="text-[15px] font-semibold text-foreground/70">JavaScript</h3>
+						<p class="mt-1 max-w-xs text-xs">Cette vue est détaillée dans la maquette Éditeur de Pages</p>
 					</div>
 				</div>
 			{/if}

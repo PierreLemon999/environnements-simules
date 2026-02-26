@@ -11,6 +11,7 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				popup: resolve(__dirname, 'src/popup/index.html'),
+				sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
 				background: resolve(__dirname, 'src/background/service-worker.ts'),
 				content: resolve(__dirname, 'src/content/content-script.ts')
 			},
@@ -22,12 +23,13 @@ export default defineConfig({
 				entryFileNames: (chunkInfo) => {
 					if (chunkInfo.name === 'background') return 'background/service-worker.js';
 					if (chunkInfo.name === 'content') return 'content/content-script.js';
+					if (chunkInfo.name === 'sidepanel') return 'sidepanel/[name].js';
 					return 'popup/[name].js';
 				},
 				chunkFileNames: 'shared/[name]-[hash].js',
 				assetFileNames: (assetInfo) => {
 					if (assetInfo.names?.[0]?.endsWith('.css')) {
-						return 'popup/[name][extname]';
+						return 'assets/[name][extname]';
 					}
 					return 'assets/[name][extname]';
 				}

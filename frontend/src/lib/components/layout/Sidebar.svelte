@@ -214,9 +214,7 @@
 							></span>
 							{#if !collapsed}
 								<span class="truncate flex-1">{project.toolName}</span>
-								{#if project.pageCount > 0}
-									<span class="ml-auto text-[10px] text-muted-foreground">{project.pageCount}</span>
-								{/if}
+								<span class="ml-auto font-mono text-[11px] text-muted-foreground">{project.pageCount}</span>
 							{/if}
 						</a>
 					</li>

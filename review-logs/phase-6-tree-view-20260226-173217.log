@@ -1,0 +1,20 @@
+Phase 6 review is complete. Here's a summary:
+
+## Phase 6: Tree View & Page Detail — Review Complete
+
+### Issues Found & Fixed (6 total)
+| Severity | Issue | Fix |
+|----------|-------|-----|
+| **CRITICAL** | Sidebar overlapping tree view (260px expanded) | Auto-collapse sidebar to 48px on `/admin/tree` route |
+| **MEDIUM** | Detail panel layout wrong (stacked cards vs topbar) | Restructured to single-row topbar (breadcrumb + sub-tabs + buttons) + full-height content |
+| **MEDIUM** | Tree panel missing compact title + custom tabs | Added "ProjectName — VersionName" header + custom dark pill tabs |
+| **MEDIUM** | Tree nodes missing colored category badges | Added colored letter badges for folder nodes |
+| **LOW** | Version status labels wrong (`test`/`deprecated` vs `draft`/`archived`) | Fixed type and label functions |
+| **LOW** | Resize handle too prominent | Slimmed to 1.5px with hover highlight only |
+
+### Files Modified
+- `frontend/src/routes/admin/+layout.svelte` — route-aware sidebar auto-collapse
+- `frontend/src/routes/admin/tree/+page.svelte` — complete rewrite of tree panel + detail panel
+
+### Report written to
+`review-logs/phase-6-report.md`

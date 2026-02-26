@@ -60,10 +60,28 @@ export interface CapturedPage {
 	localId: string;
 	title: string;
 	url: string;
+	urlPath?: string;
 	fileSize: number;
 	status: PageStatus;
 	error?: string;
 	capturedAt: string;
+}
+
+export interface LLGuide {
+	id: string;
+	name: string;
+	stepCount: number;
+	selected: boolean;
+}
+
+export interface GuidedCaptureState {
+	playerDetected: boolean;
+	guides: LLGuide[];
+	scanning: boolean;
+	capturing: boolean;
+	currentGuideIndex: number;
+	currentStepIndex: number;
+	executionMode: 'manual' | 'auto';
 }
 
 export interface CaptureState {

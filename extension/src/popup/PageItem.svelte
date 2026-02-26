@@ -1,12 +1,19 @@
 <script lang="ts">
 	import { PAGE_STATUS, type CapturedPage } from '$lib/constants';
 
-	let { page, formatSize, onRemove, onRecapture }: {
+	let { page, formatSize, onRemove, onRecapture, subdomain }: {
 		page: CapturedPage;
 		formatSize: (bytes: number) => string;
 		onRemove: () => void;
 		onRecapture: () => void;
+		subdomain?: string;
 	} = $props();
+
+	function openPreview() {
+		if (!subdomain || !page.urlPath) return;
+		const previewUrl = `${window.location.protocol}//localhost:5173/view/${subdomain}${page.urlPath}`;
+		chrome.tabs.create({ url: previewUrl });
+	}
 
 	let showActions = $state(false);
 
@@ -62,6 +69,17 @@
 	<!-- Right side: size or actions -->
 	<div class="shrink-0 flex items-center gap-1">
 		{#if showActions}
+			{#if page.status === PAGE_STATUS.DONE && subdomain && page.urlPath}
+				<button
+					onclick={openPreview}
+					class="p-1 text-gray-400 hover:text-primary rounded transition"
+					title="Prévisualiser"
+				>
+					<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+					</svg>
+				</button>
+			{/if}
 			{#if page.status === PAGE_STATUS.ERROR}
 				<button
 					onclick={onRecapture}

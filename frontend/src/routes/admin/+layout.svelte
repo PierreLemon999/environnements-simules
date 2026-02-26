@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Sidebar from '$components/layout/Sidebar.svelte';
 	import Header from '$components/layout/Header.svelte';
 	import CommandPalette from '$components/layout/CommandPalette.svelte';
@@ -10,6 +11,9 @@
 	let collapsed = $state(false);
 	let commandPalette: ReturnType<typeof CommandPalette> | undefined = $state();
 	let userHasToggled = $state(false);
+
+	// Auto-collapse sidebar on tree page (full-width three-panel layout)
+	let isTreePage = $derived($page.url.pathname === '/admin/tree');
 
 	// Restore persisted sidebar state, or auto-collapse on small screens
 	$effect(() => {
@@ -21,6 +25,14 @@
 			userHasToggled = true;
 		} else {
 			collapsed = window.innerWidth < 1024;
+		}
+	});
+
+	// Force collapse on tree page
+	$effect(() => {
+		if (!browser) return;
+		if (isTreePage && !collapsed) {
+			collapsed = true;
 		}
 	});
 
