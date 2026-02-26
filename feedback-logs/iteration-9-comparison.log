@@ -1,0 +1,20 @@
+Report written to `feedback-logs/iteration-9-issues.md`.
+
+## Summary
+
+**19 issues found** across all pages:
+
+| Severity | Count | Key Issues |
+|----------|-------|------------|
+| CRITICAL | 1 | "+ Nouveau projet" button appears globally in header on all admin pages (not in any mockup) |
+| HIGH | 5 | Dashboard hardcoded "19" demos value; Project detail fake health score; Tree view structure significantly different from mockup (missing collapsible folders, modale badges, colored icons); Obfuscation random occurrence counts |
+| MEDIUM | 8 | Login card viewport sizing; Dashboard header button placement; Project detail missing accents ("Cree" → "Créé"); Tree view tab naming mismatch; Analytics chart sizing; Command palette layout/categories differ from mockup |
+| LOW | 5 | Login tab shadow weight; Sidebar "Composants" extra item not in spec; Minor styling polish items |
+
+**Pages that passed:** Login (admin tab), Login (error state), Dashboard (collapsed sidebar), Users, Update Requests
+
+**Top priorities to fix:**
+1. Remove "+ Nouveau projet" from global header (CRITICAL)
+2. Fix tree view to match mockup structure (HIGH) 
+3. Replace hardcoded/random values in Dashboard and Obfuscation (HIGH)
+4. Rename command palette categories to match mockup (MEDIUM)

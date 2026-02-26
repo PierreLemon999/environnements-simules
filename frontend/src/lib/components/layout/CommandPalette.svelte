@@ -35,8 +35,9 @@
 		{ id: 'all', label: 'Tous' },
 		{ id: 'page', label: 'Pages' },
 		{ id: 'project', label: 'Projets' },
+		{ id: 'demo', label: 'Démos' },
 		{ id: 'user', label: 'Utilisateurs' },
-		{ id: 'action', label: 'Actions' },
+		{ id: 'capture', label: 'Captures' },
 	];
 
 	let tabCounts = $derived(() => {
@@ -113,10 +114,19 @@
 	}
 
 	function groupResults(items: SearchResult[]): Record<string, SearchResult[]> {
+		// Ordered: pages first, then projects, users, actions
+		const order = ['page', 'project', 'user', 'action'];
 		const groups: Record<string, SearchResult[]> = {};
+		for (const type of order) {
+			const matching = items.filter((r) => r.type === type);
+			if (matching.length > 0) groups[type] = matching;
+		}
+		// Include any types not in the predefined order
 		for (const r of items) {
-			if (!groups[r.type]) groups[r.type] = [];
-			groups[r.type].push(r);
+			if (!order.includes(r.type)) {
+				if (!groups[r.type]) groups[r.type] = [];
+				groups[r.type].push(r);
+			}
 		}
 		return groups;
 	}
@@ -295,7 +305,7 @@
 					oninput={handleInput}
 					onkeydown={handleKeydown}
 					type="text"
-					placeholder="Rechercher des pages, projets, utilisateurs..."
+					placeholder="Recherche admin — pages, projets, utilisateurs..."
 					class="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
 				/>
 				<kbd class="rounded border border-border bg-input px-1.5 py-0.5 font-mono text-[10px] text-muted">
@@ -399,6 +409,7 @@
 					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">ESC</kbd>
 					fermer
 				</span>
+				<span class="ml-auto text-[10px] font-medium text-muted">EnvSim</span>
 			</div>
 		</div>
 	</div>

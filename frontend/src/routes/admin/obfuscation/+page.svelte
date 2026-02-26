@@ -77,7 +77,9 @@
 
 	// Preview (persistent panel)
 	let previewInput = $state('<div class="user-name">Jean Dupont</div>\n<span class="email">jean.dupont@entreprise.fr</span>\n<p>Montant: 45 000 EUR</p>');
-	let previewOutput = $state('');
+	let previewOriginal = $state('');
+	let previewObfuscated = $state('');
+	let previewChangesCount = $state(0);
 	let previewLoading = $state(false);
 	let previewMode = $state<'before' | 'after'>('after');
 
@@ -100,9 +102,15 @@
 		return { rulesApplied: active, fieldsMasked, coverage };
 	});
 
-	// Simulated occurrence counts (would come from API in production)
-	function getRuleOccurrences(_rule: ObfuscationRule): number {
-		return Math.floor(Math.random() * 50) + 1;
+	// Deterministic occurrence count based on rule content (would come from API in production)
+	function getRuleOccurrences(rule: ObfuscationRule): number {
+		// Use a simple hash of the search term for a stable, deterministic value
+		let hash = 0;
+		for (let i = 0; i < rule.searchTerm.length; i++) {
+			hash = ((hash << 5) - hash) + rule.searchTerm.charCodeAt(i);
+			hash |= 0;
+		}
+		return Math.abs(hash % 47) + 3;
 	}
 
 	async function loadRules(projectId: string) {
@@ -124,7 +132,9 @@
 		selectedProjectId = value;
 		loadRules(value);
 		// Reset preview when project changes
-		previewOutput = '';
+		previewObfuscated = '';
+		previewOriginal = '';
+		previewChangesCount = 0;
 	}
 
 	// Add rule
@@ -229,13 +239,30 @@
 		previewLoading = true;
 
 		try {
-			const res = await post<{ data: string }>(`/projects/${selectedProjectId}/obfuscation/preview`, {
+			const res = await post<{ data: any }>(`/projects/${selectedProjectId}/obfuscation/preview`, {
 				sampleHtml: previewInput,
 			});
-			previewOutput = res.data;
+			const raw = res.data;
+			if (typeof raw === 'string') {
+				// Plain HTML string response
+				previewObfuscated = raw;
+				previewOriginal = previewInput;
+				previewChangesCount = 0;
+			} else if (raw && typeof raw === 'object') {
+				// Structured response with original/obfuscated/changesCount
+				previewOriginal = raw.original ?? previewInput;
+				previewObfuscated = raw.obfuscated ?? raw.html ?? raw.data ?? previewInput;
+				previewChangesCount = raw.changesCount ?? 0;
+			} else {
+				previewObfuscated = String(raw);
+				previewOriginal = previewInput;
+				previewChangesCount = 0;
+			}
 			previewMode = 'after';
 		} catch (err: any) {
-			previewOutput = `Erreur: ${err.message}`;
+			previewObfuscated = `Erreur: ${err.message}`;
+			previewOriginal = previewInput;
+			previewChangesCount = 0;
 		} finally {
 			previewLoading = false;
 		}
@@ -608,16 +635,21 @@
 						</Button>
 
 						<!-- Preview result -->
-						{#if previewOutput || previewInput}
+						{#if previewObfuscated || previewInput}
 							<div class="space-y-2">
-								<label class="text-xs font-medium text-muted-foreground">
-									{previewMode === 'before' ? 'Original' : 'Résultat'}
-								</label>
+								<div class="flex items-center justify-between">
+									<label class="text-xs font-medium text-muted-foreground">
+										{previewMode === 'before' ? 'Original' : 'Résultat'}
+									</label>
+									{#if previewChangesCount > 0 && previewMode === 'after'}
+										<span class="text-[10px] font-medium text-success">{previewChangesCount} modification{previewChangesCount !== 1 ? 's' : ''}</span>
+									{/if}
+								</div>
 								<div class="max-h-48 overflow-y-auto rounded-md border border-border bg-accent/50 p-3 font-mono text-xs leading-relaxed">
 									{#if previewMode === 'before'}
-										<pre class="whitespace-pre-wrap break-all text-foreground">{previewInput}</pre>
-									{:else if previewOutput}
-										<pre class="whitespace-pre-wrap break-all text-foreground">{previewOutput}</pre>
+										<pre class="whitespace-pre-wrap break-all text-foreground">{previewOriginal || previewInput}</pre>
+									{:else if previewObfuscated}
+										<pre class="whitespace-pre-wrap break-all text-foreground">{previewObfuscated}</pre>
 									{:else}
 										<p class="text-muted-foreground italic">Cliquez sur "Appliquer les règles" pour voir le résultat</p>
 									{/if}

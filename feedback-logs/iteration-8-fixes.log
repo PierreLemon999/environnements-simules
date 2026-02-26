@@ -1,0 +1,9 @@
+All done. Here's the summary:
+
+**Iteration 8 — All 17 issues addressed:**
+- **7 code fixes** applied across 7 files (login label, sidebar persistence, tree guide tab, obfuscation preview, command palette ordering, invitations scroll-to-form)
+- **6 issues** verified as already correct or test artifacts (dashboard borders, sidebar collapse test, login design, tree detail panel, analytics session panel, CSV export)
+- **4 issues** confirmed already implemented (project colors, EnvSim branding, etc.)
+- **0 new errors** introduced — svelte-check clean (3 pre-existing errors in editor pages, unrelated)
+
+Fix summary written to `feedback-logs/iteration-8-fix-summary.md`.

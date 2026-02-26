@@ -1,0 +1,19 @@
+The audit is complete. Here's the summary:
+
+**Report written to**: `feedback-logs/iteration-7-issues.md`
+
+### Results: 26 issues found
+
+| Severity | Count | Key Issues |
+|----------|-------|------------|
+| **CRITICAL** | 2 | Invitations page has raw Unicode escapes (`\u00e9` instead of `é`) throughout ALL French text |
+| **HIGH** | 8 | Sidebar collapse broken, obfuscation preview shows `[object Object]`, missing global search bar, old login design still visible, command palette shows actions not search results, invitations table headers broken |
+| **MEDIUM** | 11 | Missing "Composants" sidebar item, missing split analytics tables, missing tree detail panel, dashboard stat card styling differences, missing sitemap visualization |
+| **LOW** | 5 | Minor icon/color tweaks, breadcrumb format, seed data differences |
+
+### Top priority fixes:
+1. **Fix Unicode encoding in invitations page** — all French text is broken with raw `\u00XX` escapes
+2. **Fix obfuscation preview** — `[object Object]` displayed instead of actual result
+3. **Fix sidebar collapse** — toggle doesn't work, always shows expanded state
+4. **Add global search bar to header** — prominent in mockup, completely missing
+5. **Ensure old login design is fully removed** — two different login designs coexist in test screenshots

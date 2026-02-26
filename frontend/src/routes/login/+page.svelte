@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { login, loginWithGoogle } from '$lib/stores/auth';
-	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, Info } from 'lucide-svelte';
+	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-svelte';
 
+	let activeTab = $state<'client' | 'admin'>('client');
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
@@ -10,7 +11,6 @@
 	let showPassword = $state(false);
 	let success = $state(false);
 	let redirectTarget = $state('');
-	let rememberMe = $state(false);
 
 	async function handleClientLogin(e: Event) {
 		e.preventDefault();
@@ -66,18 +66,17 @@
 </script>
 
 <svelte:head>
-	<title>Connexion — Environnements de Démonstration</title>
+	<title>Connexion — Environnements Simulés</title>
 </svelte:head>
 
 <div class="login-page">
-	<!-- Animated background -->
+	<!-- Background decorations -->
 	<div class="bg-gradient"></div>
 	<div class="bg-dots"></div>
 	<div class="bg-shape shape-1"></div>
 
 	<div class="login-container">
 		{#if success}
-			<!-- Success overlay -->
 			<div class="login-card success-card fade-up">
 				<div class="success-content">
 					<div class="success-icon">
@@ -88,140 +87,135 @@
 				</div>
 			</div>
 		{:else}
-			<!-- Unified login card -->
 			<div class="login-card fade-up" style="animation-delay: 100ms">
-				<!-- Brand section inside card -->
+				<!-- Brand -->
 				<div class="brand">
-					<div class="brand-logo">ED</div>
-					<h1 class="brand-title">Environnements de Démonstration</h1>
-					<p class="brand-subtitle">Lemon Learning</p>
+					<div class="brand-logo">ES</div>
+					<h1 class="brand-title">Environnements Simulés</h1>
+					<p class="brand-subtitle">Plateforme de démonstrations Lemon Learning</p>
 				</div>
 
-				<!-- IDENTIFIANTS section label -->
-				<div class="section-label">
-					<Lock size={12} />
-					<span>IDENTIFIANTS</span>
-				</div>
-
-				<!-- Unified form -->
-				<form onsubmit={handleClientLogin} class="login-form">
-					<div class="form-group">
-						<label for="email" class="form-label">Adresse e-mail</label>
-						<div class="input-wrapper">
-							<Mail size={16} class="input-icon" />
-							<input
-								id="email"
-								type="email"
-								placeholder="vous@entreprise.com"
-								bind:value={email}
-								disabled={loading}
-								class="form-input"
-							/>
-						</div>
-					</div>
-
-					<div class="form-group">
-						<label for="password" class="form-label">Mot de passe</label>
-						<div class="input-wrapper">
-							<Lock size={16} class="input-icon" />
-							<input
-								id="password"
-								type={showPassword ? 'text' : 'password'}
-								placeholder="Votre mot de passe"
-								bind:value={password}
-								disabled={loading}
-								class="form-input has-toggle"
-							/>
-							<button
-								type="button"
-								class="password-toggle"
-								onclick={() => showPassword = !showPassword}
-								tabindex={-1}
-								aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-							>
-								{#if showPassword}
-									<EyeOff size={16} />
-								{:else}
-									<Eye size={16} />
-								{/if}
-							</button>
-						</div>
-					</div>
-
-					<!-- Remember me + Forgot password -->
-					<div class="form-options">
-						<label class="remember-me">
-							<input type="checkbox" bind:checked={rememberMe} />
-							<span>Se souvenir de moi</span>
-						</label>
-						<a href="/forgot-password" class="forgot-link">Mot de passe oublié ?</a>
-					</div>
-
-					{#if error}
-						<div class="error-banner">
-							<XCircle size={16} />
-							<span>{error}</span>
-						</div>
-					{/if}
-
-					<button type="submit" class="btn-primary" disabled={loading}>
-						{#if loading}
-							<Loader2 size={16} class="animate-spin" />
-						{:else}
-							<LogIn size={16} />
-						{/if}
-						Se connecter
-					</button>
-
-					<!-- Hint below submit -->
-					<p class="login-hint">
-						<Info size={12} />
-						Accès pour les équipes et les clients avec leurs identifiants
-					</p>
-				</form>
-
-				<!-- Divider -->
-				<div class="divider">
-					<span>ou se connecter avec</span>
-				</div>
-
-				<!-- Google SSO -->
-				<div class="google-section">
+				<!-- Tabs -->
+				<div class="tabs">
 					<button
-						class="btn-google"
-						onclick={handleGoogleLogin}
-						disabled={loading}
+						class="tab {activeTab === 'client' ? 'tab-active' : ''}"
+						onclick={() => { activeTab = 'client'; error = ''; }}
 					>
-						{#if loading}
-							<Loader2 size={16} class="animate-spin" />
-						{:else}
-							<svg width="18" height="18" viewBox="0 0 48 48">
-								<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-								<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-								<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-								<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-							</svg>
-						{/if}
-						Se connecter avec Google
+						Accès client
 					</button>
-					<p class="admin-hint">(admin uniquement)</p>
+					<button
+						class="tab {activeTab === 'admin' ? 'tab-active' : ''}"
+						onclick={() => { activeTab = 'admin'; error = ''; }}
+					>
+						Administration
+					</button>
 				</div>
+
+				{#if activeTab === 'client'}
+					<!-- Client login form -->
+					<form onsubmit={handleClientLogin} class="login-form">
+						<div class="form-group">
+							<label for="email" class="form-label">Email</label>
+							<div class="input-wrapper">
+								<Mail size={16} class="input-icon" />
+								<input
+									id="email"
+									type="email"
+									placeholder="vous@entreprise.com"
+									bind:value={email}
+									disabled={loading}
+									class="form-input"
+								/>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label for="password" class="form-label">Mot de passe</label>
+							<div class="input-wrapper">
+								<Lock size={16} class="input-icon" />
+								<input
+									id="password"
+									type={showPassword ? 'text' : 'password'}
+									placeholder="Votre mot de passe"
+									bind:value={password}
+									disabled={loading}
+									class="form-input has-toggle"
+								/>
+								<button
+									type="button"
+									class="password-toggle"
+									onclick={() => showPassword = !showPassword}
+									tabindex={-1}
+									aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+								>
+									{#if showPassword}
+										<EyeOff size={16} />
+									{:else}
+										<Eye size={16} />
+									{/if}
+								</button>
+							</div>
+						</div>
+
+						{#if error}
+							<div class="error-banner">
+								<XCircle size={16} />
+								<span>{error}</span>
+							</div>
+						{/if}
+
+						<button type="submit" class="btn-primary" disabled={loading}>
+							{#if loading}
+								<Loader2 size={16} class="animate-spin" />
+							{:else}
+								<LogIn size={16} />
+							{/if}
+							Se connecter
+						</button>
+					</form>
+				{:else}
+					<!-- Admin Google SSO -->
+					<div class="admin-section">
+						<p class="admin-description">
+							Connectez-vous avec votre compte Google Lemon Learning pour accéder à l'administration.
+						</p>
+
+						{#if error}
+							<div class="error-banner">
+								<XCircle size={16} />
+								<span>{error}</span>
+							</div>
+						{/if}
+
+						<button
+							class="btn-google"
+							onclick={handleGoogleLogin}
+							disabled={loading}
+						>
+							{#if loading}
+								<Loader2 size={16} class="animate-spin" />
+							{:else}
+								<svg width="18" height="18" viewBox="0 0 48 48">
+									<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+									<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+									<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+									<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+								</svg>
+							{/if}
+							Continuer avec Google
+						</button>
+						<p class="admin-hint">(admin uniquement)</p>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
 </div>
 
 <style>
-	/* Animations */
 	@keyframes fadeUp {
-		from {
-			opacity: 0;
-			transform: translateY(16px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+		from { opacity: 0; transform: translateY(16px); }
+		to { opacity: 1; transform: translateY(0); }
 	}
 
 	@keyframes shapeFloat {
@@ -231,11 +225,8 @@
 		75% { transform: translate(20px, 10px) scale(1.02); opacity: 0.9; }
 	}
 
-	.fade-up {
-		animation: fadeUp 0.6s ease-out both;
-	}
+	.fade-up { animation: fadeUp 0.6s ease-out both; }
 
-	/* Page layout */
 	.login-page {
 		position: relative;
 		display: flex;
@@ -246,7 +237,6 @@
 		background: #fafafa;
 	}
 
-	/* Background elements */
 	.bg-gradient {
 		position: absolute;
 		inset: 0;
@@ -277,10 +267,8 @@
 		top: -200px;
 		right: -150px;
 		background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.06) 50%, transparent 70%);
-		animation-delay: 0s;
 	}
 
-	/* Container */
 	.login-container {
 		position: relative;
 		z-index: 10;
@@ -289,7 +277,6 @@
 		padding: 0 16px;
 	}
 
-	/* Card */
 	.login-card {
 		background: white;
 		border: 1px solid var(--color-border);
@@ -303,7 +290,6 @@
 		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
 	}
 
-	/* Brand inside card */
 	.brand {
 		text-align: center;
 		margin-bottom: 28px;
@@ -338,21 +324,40 @@
 		color: var(--color-muted-foreground);
 	}
 
-	/* Section label */
-	.section-label {
+	/* Tabs */
+	.tabs {
 		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 11px;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: var(--color-muted);
-		margin-bottom: 16px;
+		gap: 0;
+		margin-bottom: 24px;
+		border: 1px solid var(--color-border);
+		border-radius: 10px;
+		padding: 3px;
+		background: var(--color-accent, #f9fafb);
 	}
 
-	.section-label :global(svg) {
-		opacity: 0.7;
+	.tab {
+		flex: 1;
+		padding: 8px 16px;
+		border: none;
+		border-radius: 8px;
+		background: transparent;
+		font-size: 14px;
+		font-weight: 500;
+		font-family: inherit;
+		color: var(--color-muted-foreground);
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.tab:hover:not(.tab-active) {
+		color: var(--color-foreground);
+	}
+
+	.tab-active {
+		background: white;
+		color: var(--color-foreground);
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+		font-weight: 600;
 	}
 
 	/* Form */
@@ -441,40 +446,6 @@
 		background: var(--color-input);
 	}
 
-	/* Form options row */
-	.form-options {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.remember-me {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 13px;
-		color: var(--color-muted-foreground);
-		cursor: pointer;
-	}
-
-	.remember-me input[type="checkbox"] {
-		width: 14px;
-		height: 14px;
-		border-radius: 3px;
-		accent-color: var(--color-primary);
-	}
-
-	.forgot-link {
-		font-size: 13px;
-		color: var(--color-primary);
-		text-decoration: none;
-		transition: color 0.2s;
-	}
-
-	.forgot-link:hover {
-		color: var(--color-primary-hover);
-	}
-
 	/* Error banner */
 	.error-banner {
 		display: flex;
@@ -521,50 +492,18 @@
 		cursor: not-allowed;
 	}
 
-	/* Login hint */
-	.login-hint {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		font-size: 12px;
-		color: var(--color-muted);
-		text-align: center;
-	}
-
-	.login-hint :global(svg) {
-		flex-shrink: 0;
-		opacity: 0.7;
-	}
-
-	/* Divider */
-	.divider {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		margin: 24px 0;
-	}
-
-	.divider::before,
-	.divider::after {
-		content: '';
-		flex: 1;
-		height: 1px;
-		background: var(--color-border);
-	}
-
-	.divider span {
-		font-size: 12px;
-		color: var(--color-muted);
-		white-space: nowrap;
-	}
-
-	/* Google section */
-	.google-section {
+	/* Admin section */
+	.admin-section {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		gap: 8px;
+		gap: 16px;
+	}
+
+	.admin-description {
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--color-muted-foreground);
+		text-align: center;
 	}
 
 	/* Google button */
@@ -597,14 +536,13 @@
 		cursor: not-allowed;
 	}
 
-	/* Admin hint */
 	.admin-hint {
 		text-align: center;
 		font-size: 12px;
 		color: var(--color-muted);
 	}
 
-	/* Success card */
+	/* Success */
 	.success-card {
 		display: flex;
 		align-items: center;
@@ -612,9 +550,7 @@
 		min-height: 300px;
 	}
 
-	.success-content {
-		text-align: center;
-	}
+	.success-content { text-align: center; }
 
 	.success-icon {
 		display: flex;
@@ -636,10 +572,7 @@
 		color: var(--color-muted-foreground);
 	}
 
-	/* Responsive */
 	@media (max-width: 480px) {
-		.login-card {
-			padding: 32px 24px 28px;
-		}
+		.login-card { padding: 32px 24px 28px; }
 	}
 </style>

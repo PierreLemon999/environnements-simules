@@ -254,7 +254,7 @@
 		const daysLeft = getDaysUntilExpiry(assignment.expiresAt);
 
 		if (expired) {
-			return { label: 'Expir\u00e9', dotColor: 'bg-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700' };
+			return { label: 'Expiré', dotColor: 'bg-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700' };
 		}
 		if (daysLeft < 7) {
 			return { label: 'En attente', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', textColor: 'text-orange-700' };
@@ -262,7 +262,7 @@
 		if (daysLeft < 30) {
 			return { label: 'Lien ouvert', dotColor: 'bg-blue-500', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700' };
 		}
-		return { label: 'Connect\u00e9', dotColor: 'bg-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700' };
+		return { label: 'Connecté', dotColor: 'bg-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700' };
 	}
 
 	function formatDate(dateStr: string): string {
@@ -285,7 +285,7 @@
 	function getVersionName(versionId: string): string {
 		for (const p of projects) {
 			const v = p.versions?.find(v => v.id === versionId);
-			if (v) return `${p.toolName} \u2014 ${v.name}`;
+			if (v) return `${p.toolName} — ${v.name}`;
 		}
 		return 'Version inconnue';
 	}
@@ -380,11 +380,11 @@
 				email: formEmail.trim(),
 			};
 			showCredentials = true;
-			toast.success('Invitation cr\u00e9\u00e9e avec succ\u00e8s');
+			toast.success('Invitation créée avec succès');
 
 			await loadAllAssignments();
 		} catch (err: any) {
-			formError = err.message || 'Erreur lors de la cr\u00e9ation.';
+			formError = err.message || 'Erreur lors de la création.';
 		} finally {
 			formSubmitting = false;
 		}
@@ -408,11 +408,11 @@
 
 			const baseUrl = window.location.origin;
 			linkGenerated = `${baseUrl}/demo/${res.data.accessToken}`;
-			toast.success('Lien g\u00e9n\u00e9r\u00e9 avec succ\u00e8s');
+			toast.success('Lien généré avec succès');
 
 			await loadAllAssignments();
 		} catch (err: any) {
-			formError = err.message || 'Erreur lors de la g\u00e9n\u00e9ration du lien.';
+			formError = err.message || 'Erreur lors de la génération du lien.';
 		} finally {
 			linkGenerating = false;
 		}
@@ -425,7 +425,7 @@
 	}
 
 	async function handleResend(assignment: Assignment) {
-		toast.info(`Invitation renvoy\u00e9e \u00e0 ${assignment.user.email}`);
+		toast.info(`Invitation renvoyée à ${assignment.user.email}`);
 	}
 
 	function openDeleteDialog(assignment: Assignment) {
@@ -442,9 +442,9 @@
 			assignments = assignments.filter(a => a.id !== deletingAssignment!.id);
 			deleteDialogOpen = false;
 			deletingAssignment = null;
-			toast.success('Acc\u00e8s r\u00e9voqu\u00e9');
+			toast.success('Accès révoqué');
 		} catch (err) {
-			toast.error('Erreur lors de la r\u00e9vocation');
+			toast.error('Erreur lors de la révocation');
 		} finally {
 			deleteSubmitting = false;
 		}
@@ -452,7 +452,7 @@
 
 	function exportCSV() {
 		const data = filteredAssignments();
-		const headers = ['Client', 'Email', 'Entreprise', 'Projet/D\u00e9mo', 'Statut', 'Envoy\u00e9 le', 'Expiration'];
+		const headers = ['Client', 'Email', 'Entreprise', 'Projet/Démo', 'Statut', 'Envoyé le', 'Expiration'];
 		const rows = data.map(a => [
 			a.user.name,
 			a.user.email,
@@ -498,7 +498,7 @@
 </script>
 
 <svelte:head>
-	<title>Invitations — Environnements Simul\u00e9s</title>
+	<title>Invitations — Environnements Simulés</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -507,12 +507,12 @@
 		<div>
 			<h1 class="text-lg font-semibold text-foreground">Invitations</h1>
 			<p class="text-sm text-muted-foreground">
-				G\u00e9rez les acc\u00e8s d\u00e9mo pour vos clients et prospects
+				Gérez les accès démo pour vos clients et prospects
 			</p>
 		</div>
-		<Button size="sm" class="gap-1.5" onclick={resetEmailForm}>
+		<Button size="sm" class="gap-1.5" onclick={() => { resetEmailForm(); setTimeout(() => document.getElementById('generate-access-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); }}>
 			<Plus class="h-3.5 w-3.5" />
-			Nouvel acc\u00e8s
+			Nouvel accès
 		</Button>
 	</div>
 
@@ -522,7 +522,7 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium text-muted-foreground">Invitations envoy\u00e9es</p>
+						<p class="text-xs font-medium text-muted-foreground">Invitations envoyées</p>
 						<p class="mt-1 text-2xl font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>
@@ -559,7 +559,7 @@
 						{#if !loading}
 							<span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
 								<Link2 class="h-3 w-3" />
-								{expiredLinks} expir\u00e9{expiredLinks !== 1 ? 's' : ''}
+								{expiredLinks} expiré{expiredLinks !== 1 ? 's' : ''}
 							</span>
 						{/if}
 					</div>
@@ -624,9 +624,9 @@
 						class="flex h-8 rounded-md border border-border bg-transparent px-2.5 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
 						<option value="all">Tous les statuts</option>
-						<option value="connected">Connect\u00e9</option>
+						<option value="connected">Connecté</option>
 						<option value="pending">En attente</option>
-						<option value="expired">Expir\u00e9</option>
+						<option value="expired">Expiré</option>
 					</select>
 					<select
 						bind:value={projectFilter}
@@ -658,11 +658,11 @@
 							<Send class="h-6 w-6 text-muted" />
 						</div>
 						<p class="mt-4 text-sm font-medium text-foreground">Aucune invitation</p>
-						<p class="mt-1 text-sm text-muted-foreground">Invitez vos premiers clients \u00e0 d\u00e9couvrir vos d\u00e9mos.</p>
+						<p class="mt-1 text-sm text-muted-foreground">Invitez vos premiers clients à découvrir vos démos.</p>
 					</div>
 				{:else if filteredAssignments().length === 0}
 					<div class="flex flex-col items-center justify-center py-12">
-						<p class="text-sm text-muted-foreground">Aucun r\u00e9sultat pour ces filtres.</p>
+						<p class="text-sm text-muted-foreground">Aucun résultat pour ces filtres.</p>
 					</div>
 				{:else}
 					<div class="overflow-x-auto">
@@ -691,7 +691,7 @@
 									</th>
 									<th class="pb-2 text-left">
 										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('project')}>
-											Projet/D\u00e9mo
+											Projet/Démo
 											{#if sortColumn === 'project'}
 												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
 											{:else}
@@ -711,7 +711,7 @@
 									</th>
 									<th class="pb-2 text-left">
 										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('date')}>
-											Envoy\u00e9 le
+											Envoyé le
 											{#if sortColumn === 'date'}
 												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
 											{:else}
@@ -777,7 +777,7 @@
 												<button
 													class="rounded-md p-1.5 text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
 													onclick={() => openDeleteDialog(assignment)}
-													title="R\u00e9voquer"
+													title="Révoquer"
 												>
 													<X class="h-3.5 w-3.5" />
 												</button>
@@ -829,11 +829,11 @@
 			</CardContent>
 		</Card>
 
-		<!-- RIGHT: Persistent "G\u00e9n\u00e9rer un acc\u00e8s" form card -->
+		<!-- RIGHT: Persistent "Générer un accès" form card -->
 		<div class="space-y-4">
-			<Card>
+			<Card id="generate-access-card">
 				<CardHeader class="pb-3">
-					<CardTitle class="text-base">G\u00e9n\u00e9rer un acc\u00e8s</CardTitle>
+					<CardTitle class="text-base">Générer un accès</CardTitle>
 					<!-- Tabs: email vs link -->
 					<div class="mt-3 flex rounded-lg border border-border bg-accent/50 p-0.5">
 						<button
@@ -861,16 +861,16 @@
 								<div class="rounded-lg border border-success/30 bg-success/5 p-3">
 									<div class="flex items-center gap-2 mb-3">
 										<Check class="h-4 w-4 text-success" />
-										<span class="text-sm font-medium text-success">Invitation cr\u00e9\u00e9e</span>
+										<span class="text-sm font-medium text-success">Invitation créée</span>
 									</div>
 									<p class="text-xs text-muted-foreground mb-3">
-										Les identifiants ci-dessous ne seront affich\u00e9s qu'une seule fois.
+										Les identifiants ci-dessous ne seront affichés qu'une seule fois.
 									</p>
 								</div>
 
 								<!-- Mail template block -->
 								<div class="rounded-lg border-2 border-dashed border-border p-4">
-									<p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Bloc \u00e0 ins\u00e9rer dans votre mail</p>
+									<p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Bloc à insérer dans votre mail</p>
 									<div class="space-y-2.5 rounded-md bg-accent/50 p-3">
 										<div class="flex items-center justify-between">
 											<span class="text-xs text-muted-foreground">Email</span>
@@ -890,7 +890,7 @@
 											<span class="text-xs text-muted-foreground">Mot de passe</span>
 											<div class="flex items-center gap-1.5">
 												<code class="rounded bg-background px-2 py-0.5 font-mono text-xs">
-													{passwordVisible ? createdCredentials.password : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
+													{passwordVisible ? createdCredentials.password : '••••••••'}
 												</code>
 												<button onclick={() => { passwordVisible = !passwordVisible; }} class="rounded p-1 hover:bg-background">
 													{#if passwordVisible}
@@ -910,7 +910,7 @@
 										</div>
 										<Separator />
 										<div class="flex items-center justify-between">
-											<span class="text-xs text-muted-foreground">Token d'acc\u00e8s</span>
+											<span class="text-xs text-muted-foreground">Token d'accès</span>
 											<div class="flex items-center gap-1.5">
 												<code class="max-w-[140px] truncate rounded bg-background px-2 py-0.5 font-mono text-xs">{createdCredentials.accessToken}</code>
 												<button onclick={() => copyToClipboard(createdCredentials!.accessToken, 'cred-token')} class="rounded p-1 hover:bg-background">
@@ -934,7 +934,7 @@
 									>
 										{#if copiedField === 'cred-block'}
 											<Check class="h-3.5 w-3.5 text-success" />
-											Copi\u00e9 !
+											Copié !
 										{:else}
 											<Copy class="h-3.5 w-3.5" />
 											Tout copier
@@ -979,7 +979,7 @@
 										onchange={() => { formVersionId = ''; }}
 										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 									>
-										<option value="" disabled>S\u00e9lectionner un projet</option>
+										<option value="" disabled>Sélectionner un projet</option>
 										{#each projects as project}
 											<option value={project.id}>{project.name}</option>
 										{/each}
@@ -993,7 +993,7 @@
 										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										disabled={!formProjectId}
 									>
-										<option value="" disabled>S\u00e9lectionner une version</option>
+										<option value="" disabled>Sélectionner une version</option>
 										{#each availableVersions() as version}
 											<option value={version.id}>{version.name} ({version.status})</option>
 										{/each}
@@ -1007,7 +1007,7 @@
 										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 									>
 										<option value={30}>1 mois</option>
-										<option value={90}>3 mois (recommand\u00e9)</option>
+										<option value={90}>3 mois (recommandé)</option>
 										<option value={180}>6 mois</option>
 										<option value={365}>1 an</option>
 										<option value={730}>2 ans</option>
@@ -1022,8 +1022,8 @@
 										class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
 									/>
 									<div>
-										<label for="invite-require-account" class="text-xs font-medium text-foreground">Exiger la cr\u00e9ation d'un compte</label>
-										<p class="text-[10px] text-muted-foreground">Le client devra cr\u00e9er un compte</p>
+										<label for="invite-require-account" class="text-xs font-medium text-foreground">Exiger la création d'un compte</label>
+										<p class="text-[10px] text-muted-foreground">Le client devra créer un compte</p>
 									</div>
 								</div>
 
@@ -1033,7 +1033,7 @@
 
 								<Button type="submit" disabled={formSubmitting} class="w-full gap-1.5">
 									{#if formSubmitting}
-										Cr\u00e9ation...
+										Création...
 									{:else}
 										<Send class="h-3.5 w-3.5" />
 										Envoyer l'invitation
@@ -1048,7 +1048,7 @@
 								<div class="rounded-lg border border-success/30 bg-success/5 p-3">
 									<div class="flex items-center gap-2 mb-2">
 										<Check class="h-4 w-4 text-success" />
-										<span class="text-sm font-medium text-success">Lien g\u00e9n\u00e9r\u00e9</span>
+										<span class="text-sm font-medium text-success">Lien généré</span>
 									</div>
 								</div>
 
@@ -1070,7 +1070,7 @@
 									class="w-full"
 									onclick={() => { linkGenerated = ''; resetLinkForm(); }}
 								>
-									G\u00e9n\u00e9rer un autre lien
+									Générer un autre lien
 								</Button>
 							</div>
 						{:else}
@@ -1087,7 +1087,7 @@
 										onchange={() => { linkVersionId = ''; }}
 										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 									>
-										<option value="" disabled>S\u00e9lectionner un projet</option>
+										<option value="" disabled>Sélectionner un projet</option>
 										{#each projects as project}
 											<option value={project.id}>{project.name}</option>
 										{/each}
@@ -1101,7 +1101,7 @@
 										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 										disabled={!linkProjectId}
 									>
-										<option value="" disabled>S\u00e9lectionner une version</option>
+										<option value="" disabled>Sélectionner une version</option>
 										{#each linkAvailableVersions() as version}
 											<option value={version.id}>{version.name} ({version.status})</option>
 										{/each}
@@ -1115,7 +1115,7 @@
 										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 									>
 										<option value={30}>1 mois</option>
-										<option value={90}>3 mois (recommand\u00e9)</option>
+										<option value={90}>3 mois (recommandé)</option>
 										<option value={180}>6 mois</option>
 										<option value={365}>1 an</option>
 									</select>
@@ -1128,7 +1128,7 @@
 										<Lock class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
 										<Input id="link-password" bind:value={linkPassword} placeholder="Laisser vide pour aucun" type="password" class="h-8 pl-8 text-sm" />
 									</div>
-									<p class="text-[10px] text-muted-foreground">Prot\u00e9gez l'acc\u00e8s au lien avec un mot de passe</p>
+									<p class="text-[10px] text-muted-foreground">Protégez l'accès au lien avec un mot de passe</p>
 								</div>
 
 								{#if formError}
@@ -1137,10 +1137,10 @@
 
 								<Button type="submit" disabled={linkGenerating} class="w-full gap-1.5">
 									{#if linkGenerating}
-										G\u00e9n\u00e9ration...
+										Génération...
 									{:else}
 										<Link2 class="h-3.5 w-3.5" />
-										G\u00e9n\u00e9rer le lien
+										Générer le lien
 									{/if}
 								</Button>
 							</form>
@@ -1156,15 +1156,15 @@
 <Dialog bind:open={deleteDialogOpen}>
 	<DialogContent>
 		<DialogHeader>
-			<DialogTitle>R\u00e9voquer l'acc\u00e8s</DialogTitle>
+			<DialogTitle>Révoquer l'accès</DialogTitle>
 			<DialogDescription>
-				\u00cates-vous s\u00fbr de vouloir r\u00e9voquer l'acc\u00e8s de <strong>{deletingAssignment?.user.name}</strong> ? Le client ne pourra plus acc\u00e9der \u00e0 la d\u00e9mo.
+				Êtes-vous sûr de vouloir révoquer l'accès de <strong>{deletingAssignment?.user.name}</strong> ? Le client ne pourra plus accéder à la démo.
 			</DialogDescription>
 		</DialogHeader>
 		<DialogFooter>
 			<Button variant="outline" onclick={() => { deleteDialogOpen = false; }}>Annuler</Button>
 			<Button variant="destructive" onclick={handleDelete} disabled={deleteSubmitting}>
-				{deleteSubmitting ? 'R\u00e9vocation...' : 'R\u00e9voquer'}
+				{deleteSubmitting ? 'Révocation...' : 'Révoquer'}
 			</Button>
 		</DialogFooter>
 	</DialogContent>

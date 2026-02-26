@@ -20,7 +20,7 @@
 		ChevronsLeft,
 	} from 'lucide-svelte';
 
-	let { collapsed = $bindable(false) }: { collapsed?: boolean } = $props();
+	let { collapsed = $bindable(false), onToggle }: { collapsed?: boolean; onToggle?: () => void } = $props();
 
 	let projects: Array<{ id: string; name: string; toolName: string; pageCount: number }> = $state([]);
 	let sessionCount = $state(0);
@@ -227,7 +227,7 @@
 	{#if (hovered && !collapsed) || collapsed}
 		<button
 			class="absolute -right-3 top-1/2 z-50 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-opacity hover:bg-accent"
-			onclick={() => (collapsed = !collapsed)}
+			onclick={() => { collapsed = !collapsed; onToggle?.(); }}
 			title={collapsed ? 'Développer' : 'Réduire'}
 		>
 			<ChevronsLeft class="h-3 w-3 text-muted-foreground {collapsed ? 'rotate-180' : ''}" />

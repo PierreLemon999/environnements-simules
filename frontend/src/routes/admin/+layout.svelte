@@ -9,18 +9,27 @@
 
 	let collapsed = $state(false);
 	let commandPalette: ReturnType<typeof CommandPalette> | undefined = $state();
+	let userHasToggled = $state(false);
 
-	// Auto-collapse on small screens
+	// Restore persisted sidebar state, or auto-collapse on small screens
 	$effect(() => {
 		if (!browser) return;
 
-		function handleResize() {
+		const stored = localStorage.getItem('sidebar-collapsed');
+		if (stored !== null) {
+			collapsed = stored === 'true';
+			userHasToggled = true;
+		} else {
 			collapsed = window.innerWidth < 1024;
 		}
+	});
 
-		handleResize();
-		window.addEventListener('resize', handleResize);
-		return () => window.removeEventListener('resize', handleResize);
+	// Persist collapse state whenever user toggles
+	$effect(() => {
+		if (!browser) return;
+		if (userHasToggled) {
+			localStorage.setItem('sidebar-collapsed', String(collapsed));
+		}
 	});
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
@@ -37,7 +46,7 @@
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="min-h-screen bg-background">
-	<Sidebar bind:collapsed />
+	<Sidebar bind:collapsed onToggle={() => { userHasToggled = true; }} />
 	<Header {collapsed} onOpenCommandPalette={() => commandPalette?.toggle()} />
 	<CommandPalette bind:this={commandPalette} />
 

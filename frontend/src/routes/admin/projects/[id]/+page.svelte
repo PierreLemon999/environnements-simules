@@ -185,8 +185,14 @@
 		return p ? (p.guideCount ?? 12) : 12;
 	});
 
-	// Health score (simulated — in a real app computed from backend analytics)
-	let healthScore = 86;
+	// Health score computed from actual page health data
+	let pageHealthData = $state<{ ok: number; warning: number; error: number; total: number }>({ ok: 0, warning: 0, error: 0, total: 0 });
+
+	let healthScore = $derived(
+		pageHealthData.total > 0
+			? Math.round((pageHealthData.ok / pageHealthData.total) * 100)
+			: 0
+	);
 
 	// -----------------------------------------------------------------------
 	// Helpers
@@ -236,19 +242,19 @@
 		switch (status) {
 			case 'active': return 'Actif';
 			case 'test': return 'Test';
-			case 'deprecated': return 'Obsolete';
+			case 'deprecated': return 'Obsolète';
 			default: return status;
 		}
 	}
 
 	function getLanguageLabel(lang: string): string {
 		const labels: Record<string, string> = {
-			fr: 'Francais',
+			fr: 'Français',
 			en: 'English',
 			de: 'Deutsch',
-			es: 'Espanol',
+			es: 'Español',
 			it: 'Italiano',
-			pt: 'Portugues',
+			pt: 'Português',
 		};
 		return labels[lang] ?? lang;
 	}
@@ -293,7 +299,7 @@
 	function getAssignmentStatusLabel(status: string): string {
 		switch (status) {
 			case 'active': return 'Actif';
-			case 'expired': return 'Expire';
+			case 'expired': return 'Expiré';
 			case 'pending': return 'En attente';
 			default: return status;
 		}
@@ -312,8 +318,8 @@
 		switch (status) {
 			case 'pending': return 'En attente';
 			case 'in_progress': return 'En cours';
-			case 'resolved': return 'Resolue';
-			case 'rejected': return 'Rejetee';
+			case 'resolved': return 'Résolue';
+			case 'rejected': return 'Rejetée';
 			default: return status;
 		}
 	}
@@ -400,13 +406,13 @@
 						v.id === editingVersion!.id ? res.data : v
 					);
 				}
-				toast.success('Version modifiee');
+				toast.success('Version modifiée');
 			} else {
 				const res = await post<{ data: Version }>(`/projects/${projectId}/versions`, body);
 				if (project) {
 					project.versions = [...project.versions, res.data];
 				}
-				toast.success('Version creee');
+				toast.success('Version créée');
 			}
 
 			versionDialogOpen = false;
@@ -434,7 +440,7 @@
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
-			toast.success('Export telecharge');
+			toast.success('Export téléchargé');
 		} catch (err: any) {
 			toast.error("Erreur lors de l'export");
 		} finally {
@@ -451,7 +457,7 @@
 			if (project) {
 				project.versions = [...project.versions, res.data];
 			}
-			toast.success('Version dupliquee');
+			toast.success('Version dupliquée');
 		} catch (err: any) {
 			toast.error('Erreur lors de la duplication');
 		} finally {
@@ -470,7 +476,7 @@
 			}
 			deleteVersionDialogOpen = false;
 			deletingVersion = null;
-			toast.success('Version supprimee');
+			toast.success('Version supprimée');
 		} catch (err: any) {
 			toast.error('Erreur lors de la suppression de la version');
 		} finally {
@@ -531,6 +537,22 @@
 		try {
 			const res = await get<{ data: ProjectDetail }>(`/projects/${projectId}`);
 			project = res.data;
+
+			// Compute health score from actual page data
+			const activeVersion = res.data.versions?.find(v => v.status === 'active') ?? res.data.versions?.[0];
+			if (activeVersion) {
+				try {
+					const pagesRes = await get<{ data: Array<{ healthStatus: 'ok' | 'warning' | 'error' }> }>(`/versions/${activeVersion.id}/pages`);
+					const stats = { ok: 0, warning: 0, error: 0, total: 0 };
+					for (const p of pagesRes.data) {
+						stats.total++;
+						stats[p.healthStatus]++;
+					}
+					pageHealthData = stats;
+				} catch {
+					// Keep default zeros
+				}
+			}
 		} catch (err: any) {
 			error = err.message || 'Projet introuvable.';
 		} finally {
@@ -540,7 +562,7 @@
 </script>
 
 <svelte:head>
-	<title>{project?.name ?? 'Projet'} — Environnements Simules</title>
+	<title>{project?.name ?? 'Projet'} — Environnements Simulés</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -653,7 +675,7 @@
 							</svg>
 							<div class="relative text-center">
 								<span class="text-base font-bold text-foreground">{healthScore}%</span>
-								<span class="block text-[9px] text-muted-foreground -mt-0.5">sante</span>
+								<span class="block text-[9px] text-muted-foreground -mt-0.5">santé</span>
 							</div>
 						</div>
 
@@ -678,7 +700,7 @@
 					<Separator orientation="vertical" class="h-4" />
 					<div class="flex items-center gap-2">
 						<Play class="h-4 w-4 text-muted-foreground" />
-						<span class="text-sm"><span class="font-semibold text-foreground">{activeAssignments}</span> <span class="text-muted-foreground">demos actives</span></span>
+						<span class="text-sm"><span class="font-semibold text-foreground">{activeAssignments}</span> <span class="text-muted-foreground">démos actives</span></span>
 					</div>
 					<Separator orientation="vertical" class="h-4" />
 					<div class="flex items-center gap-2">
@@ -693,11 +715,11 @@
 				<div class="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[10px] font-medium text-foreground">
 					{project.creatorName ? project.creatorName[0].toUpperCase() : 'A'}
 				</div>
-				<span>Cree par <span class="font-medium text-foreground">{project.creatorName ?? 'Admin'}</span></span>
+				<span>Créé par <span class="font-medium text-foreground">{project.creatorName ?? 'Admin'}</span></span>
 				<span>·</span>
 				<span>{formatDate(project.createdAt)}</span>
 				<span>·</span>
-				<span>Derniere MAJ {formatRelativeTime(project.updatedAt)}</span>
+				<span>Dernière MAJ {formatRelativeTime(project.updatedAt)}</span>
 			</div>
 		</Card>
 
@@ -739,7 +761,7 @@
 								<Layers class="h-7 w-7 text-muted-foreground" />
 							</div>
 							<p class="mt-4 text-sm font-medium text-foreground">Aucune version</p>
-							<p class="mt-1 text-sm text-muted-foreground">Creez la premiere version de ce projet.</p>
+							<p class="mt-1 text-sm text-muted-foreground">Créez la première version de ce projet.</p>
 							<Button size="sm" class="mt-4 gap-1.5" onclick={openCreateVersionDialog}>
 								<Plus class="h-3.5 w-3.5" />
 								Nouvelle version
@@ -797,7 +819,7 @@
 											}}
 										>
 											<ExternalLink class="h-3 w-3" />
-											Ouvrir demo
+											Ouvrir démo
 										</Button>
 										<Button
 											variant="outline"
@@ -860,7 +882,7 @@
 							bind:checked={showDeprecated}
 							class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
 						/>
-						Afficher les versions obsoletes ({deprecatedCount})
+						Afficher les versions obsolètes ({deprecatedCount})
 					</label>
 				{/if}
 			{/if}
@@ -874,7 +896,7 @@
 				<CardHeader class="pb-3">
 					<div class="flex items-center justify-between">
 						<CardTitle class="text-base">
-							Assignations de demo
+							Assignations de démo
 							<span class="ml-1 text-sm font-normal text-muted-foreground">
 								({assignments.length})
 							</span>
@@ -900,7 +922,7 @@
 								<Link2 class="h-7 w-7 text-muted-foreground" />
 							</div>
 							<p class="mt-4 text-sm font-medium text-foreground">Aucune assignation</p>
-							<p class="mt-1 text-sm text-muted-foreground">Les assignations de demo apparaitront ici.</p>
+							<p class="mt-1 text-sm text-muted-foreground">Les assignations de démo apparaîtront ici.</p>
 						</div>
 					{:else}
 						<div class="overflow-x-auto">
@@ -911,7 +933,7 @@
 										<th class="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Version</th>
 										<th class="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Lien</th>
 										<th class="hidden pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Engagement</th>
-										<th class="hidden pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Dernier acces</th>
+										<th class="hidden pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Dernier accès</th>
 										<th class="hidden pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Expire le</th>
 										<th class="pb-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Statut</th>
 									</tr>
@@ -973,7 +995,7 @@
 											<!-- Expires -->
 											<td class="hidden py-3 pr-4 md:table-cell">
 												<span class="text-xs text-muted-foreground">
-													{assignment.expiresAt ? formatDate(assignment.expiresAt) : 'Illimitee'}
+													{assignment.expiresAt ? formatDate(assignment.expiresAt) : 'Illimitée'}
 												</span>
 											</td>
 											<!-- Status pill -->
@@ -1000,7 +1022,7 @@
 				<CardHeader class="pb-3">
 					<div class="flex items-center justify-between">
 						<CardTitle class="text-base">
-							Demandes de mise a jour
+							Demandes de mise à jour
 							<span class="ml-1 text-sm font-normal text-muted-foreground">
 								({updateRequests.length})
 							</span>
@@ -1026,7 +1048,7 @@
 								<AlertCircle class="h-7 w-7 text-muted-foreground" />
 							</div>
 							<p class="mt-4 text-sm font-medium text-foreground">Aucune demande</p>
-							<p class="mt-1 text-sm text-muted-foreground">Les demandes de mise a jour apparaitront ici.</p>
+							<p class="mt-1 text-sm text-muted-foreground">Les demandes de mise à jour apparaîtront ici.</p>
 						</div>
 					{:else}
 						<div class="overflow-x-auto">
@@ -1071,13 +1093,13 @@
 		<!-- ============================================================= -->
 		{#if detailTab === 'config'}
 			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-				<!-- Domaine & Acces -->
+				<!-- Domaine & Accès -->
 				<Card class="border border-border rounded-xl overflow-hidden">
 					<div class="border-b border-border bg-blue-50/60 px-4 py-3 flex items-center gap-2">
 						<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
 							<Globe class="h-3.5 w-3.5 text-blue-600" />
 						</div>
-						<span class="text-sm font-semibold text-foreground">Domaine & Acces</span>
+						<span class="text-sm font-semibold text-foreground">Domaine & Accès</span>
 					</div>
 					<CardContent class="p-4 space-y-3">
 						<div>
@@ -1097,7 +1119,7 @@
 							</dd>
 						</div>
 						<div>
-							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Outil simule</dt>
+							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Outil simulé</dt>
 							<dd class="mt-0.5 text-sm text-foreground">{project.toolName}</dd>
 						</div>
 					</CardContent>
@@ -1113,8 +1135,8 @@
 					</div>
 					<CardContent class="p-4 space-y-3">
 						<div>
-							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Regles d'obfuscation</dt>
-							<dd class="mt-0.5 text-sm text-foreground">Configurees au niveau projet</dd>
+							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Règles d'obfuscation</dt>
+							<dd class="mt-0.5 text-sm text-foreground">Configurées au niveau projet</dd>
 						</div>
 						<Button
 							variant="outline"
@@ -1123,7 +1145,7 @@
 							onclick={() => goto('/admin/obfuscation')}
 						>
 							<Settings class="h-3 w-3" />
-							Gerer les regles
+							Gérer les règles
 						</Button>
 					</CardContent>
 				</Card>
@@ -1142,19 +1164,19 @@
 							<dd class="mt-0.5 text-sm text-foreground">Capture via Manifest V3</dd>
 						</div>
 						<div>
-							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Pages capturees</dt>
+							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Pages capturées</dt>
 							<dd class="mt-0.5 text-sm text-foreground">{totalPages} pages au total</dd>
 						</div>
 					</CardContent>
 				</Card>
 
-				<!-- General -->
+				<!-- Général -->
 				<Card class="border border-border rounded-xl overflow-hidden">
 					<div class="border-b border-border bg-emerald-50/60 px-4 py-3 flex items-center gap-2">
 						<div class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100">
 							<Settings class="h-3.5 w-3.5 text-emerald-600" />
 						</div>
-						<span class="text-sm font-semibold text-foreground">General</span>
+						<span class="text-sm font-semibold text-foreground">Général</span>
 					</div>
 					<CardContent class="p-4 space-y-3">
 						<div>
@@ -1166,7 +1188,7 @@
 							<dd class="mt-0.5 text-sm text-foreground">{project.description ?? 'Aucune description'}</dd>
 						</div>
 						<div>
-							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Cree le</dt>
+							<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Créé le</dt>
 							<dd class="mt-0.5 text-sm text-foreground">{formatDate(project.createdAt)}</dd>
 						</div>
 					</CardContent>
@@ -1186,7 +1208,7 @@
 		<DialogHeader>
 			<DialogTitle>{editingVersion ? 'Modifier la version' : 'Nouvelle version'}</DialogTitle>
 			<DialogDescription>
-				{editingVersion ? 'Modifiez les informations de la version.' : 'Creez une nouvelle version du projet.'}
+				{editingVersion ? 'Modifiez les informations de la version.' : 'Créez une nouvelle version du projet.'}
 			</DialogDescription>
 		</DialogHeader>
 
@@ -1244,7 +1266,7 @@
 					{#if versionSubmitting}
 						Enregistrement...
 					{:else}
-						{editingVersion ? 'Enregistrer' : 'Creer la version'}
+						{editingVersion ? 'Enregistrer' : 'Créer la version'}
 					{/if}
 				</Button>
 			</DialogFooter>
@@ -1258,7 +1280,7 @@
 		<DialogHeader>
 			<DialogTitle>Supprimer la version</DialogTitle>
 			<DialogDescription>
-				Etes-vous sur de vouloir supprimer la version <strong>{deletingVersion?.name}</strong> ? Cette action est irreversible et supprimera toutes les pages associees.
+				Êtes-vous sûr de vouloir supprimer la version <strong>{deletingVersion?.name}</strong> ? Cette action est irréversible et supprimera toutes les pages associées.
 			</DialogDescription>
 		</DialogHeader>
 		<DialogFooter>

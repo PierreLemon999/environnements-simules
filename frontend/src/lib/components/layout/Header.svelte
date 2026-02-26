@@ -10,6 +10,7 @@
 		ChevronRight,
 		AlertTriangle,
 		HelpCircle,
+		Search,
 	} from 'lucide-svelte';
 
 	let { collapsed = false, onOpenCommandPalette }: { collapsed?: boolean; onOpenCommandPalette?: () => void } = $props();
@@ -77,8 +78,8 @@
 		window.postMessage({ type: 'ES_EXTENSION_PING' }, '*');
 	}
 
-	// Determine if we're on the projects page (to show Nouveau projet button)
-	let isOnProjectsPage = $derived(
+	// Show Nouveau projet button only on the projects page
+	let showNewProjectButton = $derived(
 		$page.url.pathname === '/admin/projects'
 	);
 
@@ -155,6 +156,18 @@
 
 	<div class="flex-1"></div>
 
+	<!-- Global search bar -->
+	<button
+		class="flex h-8 w-64 items-center gap-2 rounded-md border border-border bg-accent/50 px-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+		onclick={() => onOpenCommandPalette?.()}
+	>
+		<Search class="h-3.5 w-3.5" />
+		<span class="flex-1 text-left text-xs">Rechercher pages, projets, utilisateurs...</span>
+		<kbd class="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted">⌘K</kbd>
+	</button>
+
+	<div class="flex-1"></div>
+
 	<!-- Action buttons -->
 	<button
 		class="relative rounded-md p-2 text-muted transition-colors hover:bg-accent hover:text-foreground"
@@ -192,7 +205,7 @@
 		</Button>
 	{/if}
 
-	{#if isOnProjectsPage}
+	{#if showNewProjectButton}
 		<Button size="sm" class="gap-1.5" onclick={() => { window.dispatchEvent(new CustomEvent('open-create-project')); }}>
 			<Plus class="h-3.5 w-3.5" />
 			Nouveau projet

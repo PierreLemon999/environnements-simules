@@ -1,0 +1,23 @@
+The iteration 8 audit is complete. Here's the summary:
+
+## Iteration 8 Results: 17 issues (0 CRITICAL, 5 HIGH, 7 MEDIUM, 5 LOW)
+
+**Major progress since iteration 7** — 6 issues resolved:
+- Search bar, "+ Nouveau projet" button, bar charts, Composants nav item, unicode encoding, and [object Object] preview all fixed
+
+**Remaining HIGH issues (5):**
+1. **Login — stale old screenshots** coexist with new correct design (test artifact)
+2. **Dashboard — sidebar collapse** not working in tests (05-dashboard-collapsed identical to expanded)
+3. **Tree view — missing page detail panel** (right panel still placeholder)
+4. **Sidebar — collapse never triggers** across all 14 screenshots
+5. (Sidebar collapse counted as cross-cutting)
+
+**Key MEDIUM issues (7):**
+- Dashboard stat cards still have orange top borders (mockup shows clean white)
+- Tree view "Par guide" and "Carte du site" tabs may be unimplemented
+- Analytics missing session detail side panel
+- Obfuscation résultat shows raw JSON instead of formatted HTML
+- Invitations form always visible (minor UX)
+- Command palette should prioritize page results over actions
+
+Report written to `feedback-logs/iteration-8-issues.md`.

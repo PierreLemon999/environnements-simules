@@ -50,9 +50,16 @@
 		last7Days: { sessions: number; uniqueUsers: number };
 	}
 
+	interface Assignment {
+		id: string;
+		clientEmail: string;
+		expiresAt: string | null;
+	}
+
 	let projects: Project[] = $state([]);
 	let sessions: Session[] = $state([]);
 	let overview: Overview | null = $state(null);
+	let activeDemoCount = $state(0);
 	let loading = $state(true);
 	let activityFilter = $state('all');
 	let searchQuery = $state('');
@@ -161,6 +168,22 @@
 			projects = projectsRes.data;
 			sessions = sessionsRes.data;
 			overview = overviewRes.data;
+
+			// Fetch active demo assignment count
+			let totalAssignments = 0;
+			for (const p of projectsRes.data) {
+				try {
+					const detail = await get<{ data: { versions: Array<{ id: string; status: string }> } }>(`/projects/${p.id}`);
+					const activeVersion = detail.data.versions?.find(v => v.status === 'active');
+					if (activeVersion) {
+						const res = await get<{ data: Assignment[] }>(`/versions/${activeVersion.id}/assignments`);
+						totalAssignments += res.data.filter(a => !a.expiresAt || new Date(a.expiresAt) > new Date()).length;
+					}
+				} catch {
+					// Skip
+				}
+			}
+			activeDemoCount = totalAssignments;
 		} catch (err) {
 			console.error('Dashboard fetch error:', err);
 		} finally {
@@ -196,8 +219,8 @@
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-primary/10">
-						<FolderKanban class="h-4 w-4 text-primary" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
+						<FolderKanban class="h-4 w-4 text-muted-foreground" />
 					</div>
 				</div>
 			</CardContent>
@@ -223,8 +246,8 @@
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-success/10">
-						<FileText class="h-4 w-4 text-success" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
+						<FileText class="h-4 w-4 text-muted-foreground" />
 					</div>
 				</div>
 			</CardContent>
@@ -240,15 +263,15 @@
 							{#if loading}
 								<span class="skeleton inline-block h-7 w-10"></span>
 							{:else}
-								19
+								{activeDemoCount}
 							{/if}
 						</p>
 						{#if !loading}
-							<span class="text-[11px] text-muted-foreground">11 clients · 5 internes · 3 tests</span>
+							<span class="text-[11px] text-muted-foreground">{activeDemoCount} assignation{activeDemoCount !== 1 ? 's' : ''} active{activeDemoCount !== 1 ? 's' : ''}</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-purple/10">
-						<Eye class="h-4 w-4 text-purple" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
+						<Eye class="h-4 w-4 text-muted-foreground" />
 					</div>
 				</div>
 			</CardContent>
@@ -271,13 +294,41 @@
 							<span class="text-[11px] text-muted-foreground">{overview.totalPageViews} pages · {Math.round(overview.averageSessionDurationSeconds / 60)}min moy.</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-warning/10">
-						<BarChart3 class="h-4 w-4 text-warning" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
+						<BarChart3 class="h-4 w-4 text-muted-foreground" />
 					</div>
 				</div>
 			</CardContent>
 		</Card>
 	</div>
+
+	<!-- Project overview bars -->
+	{#if !loading && projects.length > 0}
+		<Card>
+			<CardContent class="p-4">
+				<div class="flex items-center justify-between mb-3">
+					<h3 class="text-sm font-semibold text-foreground">Répartition par projet</h3>
+					<a href="/admin/projects" class="text-xs text-primary hover:underline">Voir tous</a>
+				</div>
+				<div class="space-y-2.5">
+					{#each projects.slice(0, 6) as project}
+						{@const maxPages = Math.max(...projects.map(p => p.pageCount), 1)}
+						{@const width = Math.max(8, (project.pageCount / maxPages) * 100)}
+						<div class="flex items-center gap-3">
+							<span class="w-28 truncate text-xs text-muted-foreground">{project.toolName}</span>
+							<div class="flex-1 h-2 rounded-full bg-accent overflow-hidden">
+								<div
+									class="h-full rounded-full transition-all duration-500"
+									style="width: {width}%; background-color: {getToolColor(project.toolName)}"
+								></div>
+							</div>
+							<span class="w-8 text-right text-xs font-medium text-foreground">{project.pageCount}</span>
+						</div>
+					{/each}
+				</div>
+			</CardContent>
+		</Card>
+	{/if}
 
 	<!-- Activity journal -->
 	<Card>

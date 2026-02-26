@@ -74,6 +74,16 @@
 		isActive: number;
 	}
 
+	interface Guide {
+		id: string;
+		versionId: string;
+		name: string;
+		description: string | null;
+		pageCount: number;
+		playCount: number;
+		completionCount: number;
+	}
+
 	// State
 	let projects: Project[] = $state([]);
 	let selectedProjectId = $state('');
@@ -81,6 +91,7 @@
 	let tree: TreeNode | null = $state(null);
 	let selectedPage: Page | null = $state(null);
 	let obfuscationRules: ObfuscationRule[] = $state([]);
+	let guides: Guide[] = $state([]);
 	let loading = $state(true);
 	let treeLoading = $state(false);
 	let searchQuery = $state('');
@@ -331,6 +342,15 @@
 		}
 	}
 
+	async function loadGuides() {
+		try {
+			const res = await get<{ data: Guide[] }>('/analytics/guides');
+			guides = res.data.filter((g) => g.versionId === selectedVersionId);
+		} catch {
+			guides = [];
+		}
+	}
+
 	// React to project changes
 	$effect(() => {
 		if (selectedProjectId) {
@@ -349,6 +369,7 @@
 	$effect(() => {
 		if (selectedVersionId) {
 			loadTree();
+			loadGuides();
 		}
 	});
 
@@ -383,8 +404,8 @@
 			<!-- Tabs -->
 			<Tabs value={treeTab} onValueChange={(v) => { treeTab = v; }}>
 				<TabsList class="w-full">
-					<TabsTrigger value="site" class="flex-1 text-xs">Par site</TabsTrigger>
-					<TabsTrigger value="guide" class="flex-1 text-xs">Par guide</TabsTrigger>
+					<TabsTrigger value="site" class="flex-1 text-xs">Arborescence</TabsTrigger>
+					<TabsTrigger value="guide" class="flex-1 text-xs">Liste</TabsTrigger>
 					<TabsTrigger value="map" class="flex-1 text-xs">Carte du site</TabsTrigger>
 				</TabsList>
 			</Tabs>
@@ -404,6 +425,9 @@
 		{#if tree && !treeLoading}
 			{@const stats = pageStats()}
 			<div class="border-b border-border px-3 py-2 space-y-1.5">
+				<div class="text-xs font-medium text-muted-foreground">
+					{stats.total} page{stats.total !== 1 ? 's' : ''} · {stats.modals} modale{stats.modals !== 1 ? 's' : ''} · {stats.error} erreur{stats.error !== 1 ? 's' : ''}
+				</div>
 				<div class="flex items-center gap-3 text-xs text-muted-foreground">
 					<span class="inline-flex items-center gap-1">
 						<span class="h-2 w-2 rounded-full bg-success"></span>
@@ -415,9 +439,8 @@
 					</span>
 					<span class="inline-flex items-center gap-1">
 						<span class="h-2 w-2 rounded-full bg-destructive"></span>
-						{stats.error} Erreur
+						{stats.error} Erreur{stats.error !== 1 ? 's' : ''}
 					</span>
-					<span class="ml-auto text-muted">{stats.total} page{stats.total !== 1 ? 's' : ''}</span>
 				</div>
 				<!-- Proportional health progress bar -->
 				{#if stats.total > 0}
@@ -438,7 +461,48 @@
 
 		<!-- Tree content -->
 		<div class="flex-1 overflow-y-auto px-1 py-2">
-			{#if treeTab === 'map'}
+			{#if treeTab === 'guide'}
+				<!-- Par guide view -->
+				<div class="px-2 py-3">
+					{#if loading || treeLoading}
+						<div class="space-y-2 px-2">
+							{#each Array(3) as _}
+								<div class="skeleton h-16 w-full rounded-lg"></div>
+							{/each}
+						</div>
+					{:else if guides.length === 0}
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<BookOpen class="h-8 w-8 text-muted" />
+							<p class="mt-3 text-sm text-muted-foreground">Aucun guide pour cette version</p>
+							<p class="mt-1 text-xs text-muted">Les guides apparaîtront ici une fois créés.</p>
+						</div>
+					{:else}
+						<div class="space-y-1">
+							{#each guides as guide}
+								<div class="rounded-lg border border-border p-3 transition-colors hover:bg-accent/50">
+									<div class="flex items-center justify-between">
+										<div class="flex items-center gap-2">
+											<BookOpen class="h-4 w-4 text-primary" />
+											<span class="text-sm font-medium text-foreground">{guide.name}</span>
+										</div>
+										<span class="text-xs text-muted-foreground">{guide.pageCount} page{guide.pageCount !== 1 ? 's' : ''}</span>
+									</div>
+									{#if guide.description}
+										<p class="mt-1 ml-6 text-xs text-muted-foreground">{guide.description}</p>
+									{/if}
+									<div class="mt-2 ml-6 flex items-center gap-3 text-[10px] text-muted">
+										<span>{guide.playCount} lecture{guide.playCount !== 1 ? 's' : ''}</span>
+										<span>{guide.completionCount} terminé{guide.completionCount !== 1 ? 's' : ''}</span>
+										{#if guide.playCount > 0}
+											<span class="text-primary">{Math.round((guide.completionCount / guide.playCount) * 100)}% complétion</span>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{:else if treeTab === 'map'}
 				<!-- Carte du site (site map visualization) -->
 				<div class="flex flex-col items-center justify-center py-8 px-4 text-center">
 					{#if loading || treeLoading || !tree}
@@ -597,7 +661,11 @@
 
 		<!-- Tree footer -->
 		<div class="border-t border-border px-3 py-2">
-			<div class="flex items-center justify-between">
+			<div class="space-y-1">
+				{#if selectedProject}
+					<p class="text-[10px] font-medium text-muted-foreground truncate">{selectedProject.name} — {selectedProject.toolName}</p>
+				{/if}
+				<div class="flex items-center justify-between">
 				<!-- Version selector with arrows -->
 				<div class="flex items-center gap-1">
 					<button
@@ -624,6 +692,7 @@
 				<span class="text-xs text-muted-foreground">
 					{pageStats().total} page{pageStats().total !== 1 ? 's' : ''}
 				</span>
+			</div>
 			</div>
 		</div>
 	</div>

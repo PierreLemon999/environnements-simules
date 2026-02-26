@@ -123,6 +123,34 @@
 		})
 	);
 
+	// Split sessions by type
+	let adminSessions = $derived(filteredSessions.filter(s => !s.assignmentId && s.user));
+	let clientSessions = $derived(filteredSessions.filter(s => !!s.assignmentId || !s.user));
+
+	// Search per column
+	let adminSearchQuery = $state('');
+	let clientSearchQuery = $state('');
+
+	let filteredAdminSessions = $derived(
+		adminSessions.filter(s => {
+			if (!adminSearchQuery.trim()) return true;
+			const q = adminSearchQuery.toLowerCase();
+			const name = (s.user?.name ?? '').toLowerCase();
+			const email = (s.user?.email ?? '').toLowerCase();
+			return name.includes(q) || email.includes(q);
+		})
+	);
+
+	let filteredClientSessions = $derived(
+		clientSessions.filter(s => {
+			if (!clientSearchQuery.trim()) return true;
+			const q = clientSearchQuery.toLowerCase();
+			const name = getClientDisplayName(s).toLowerCase();
+			const email = getClientDisplaySubtitle(s).toLowerCase();
+			return name.includes(q) || email.includes(q);
+		})
+	);
+
 	// Formatting helpers
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -483,7 +511,7 @@
 							<div class="flex items-center justify-between mb-2">
 								<span class="text-[10px] font-medium uppercase tracking-wider text-muted">7 derniers jours</span>
 							</div>
-							<svg viewBox="0 0 200 40" class="h-16 w-full" preserveAspectRatio="none">
+							<svg viewBox="0 0 200 40" class="h-20 w-full" preserveAspectRatio="none">
 								<defs>
 									<linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
 										<stop offset="0%" stop-color="#3B82F6" stop-opacity="0.3" />
@@ -507,115 +535,127 @@
 				</CardContent>
 			</Card>
 
-			<!-- Unified sessions table -->
-			<Card>
-				<CardHeader class="pb-3">
-					<div class="flex items-center justify-between">
-						<CardTitle class="text-base">
-							Sessions récentes
-							<span class="ml-1 text-sm font-normal text-muted-foreground">— {sessions.length} sessions</span>
-						</CardTitle>
-						<div class="flex items-center gap-2">
-							<div class="relative">
-								<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-								<Input
-									bind:value={searchQuery}
-									placeholder="Rechercher..."
-									class="h-8 w-56 pl-8 text-sm"
-								/>
+			<!-- Split sessions tables: Admins (left) vs Clients (right) -->
+			<div class="grid grid-cols-2 gap-4">
+				<!-- Admin sessions -->
+				<Card>
+					<CardHeader class="pb-3">
+						<div class="flex items-center justify-between">
+							<CardTitle class="text-sm">
+								Admins & Commerciaux
+								<span class="ml-1 text-xs font-normal text-muted-foreground">— {adminSessions.length} sessions</span>
+							</CardTitle>
+						</div>
+						<div class="relative mt-2">
+							<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+							<Input
+								bind:value={adminSearchQuery}
+								placeholder="Rechercher..."
+								class="h-8 pl-8 text-sm"
+							/>
+						</div>
+					</CardHeader>
+					<CardContent>
+						{#if loading}
+							<div class="space-y-2">
+								{#each Array(3) as _}
+									<div class="skeleton h-12 w-full rounded"></div>
+								{/each}
 							</div>
-							<Button variant="outline" size="sm" class="gap-1.5" onclick={exportCSV}>
-								<Download class="h-3.5 w-3.5" />
-								Exporter CSV
+						{:else if filteredAdminSessions.length === 0}
+							<p class="py-6 text-center text-sm text-muted-foreground">Aucune session admin.</p>
+						{:else}
+							<div class="space-y-0">
+								{#each filteredAdminSessions.slice(0, 10) as session}
+									{@const displayName = session.user?.name ?? 'Anonyme'}
+									{@const displaySubtitle = session.user?.email ?? ''}
+									<button
+										class="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-accent"
+										onclick={() => openSessionDetail(session)}
+									>
+										<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+											{getInitials(displayName)}
+										</div>
+										<div class="min-w-0 flex-1">
+											<p class="truncate text-sm font-medium text-foreground">{displayName}</p>
+											<p class="truncate text-xs text-muted-foreground">{displaySubtitle}</p>
+										</div>
+										<div class="shrink-0 text-right">
+											<p class="text-xs text-muted-foreground">{getSessionDuration(session)}</p>
+											<p class="text-[10px] text-muted">{formatRelativeTime(session.startedAt)}</p>
+										</div>
+										<ChevronRight class="h-3.5 w-3.5 shrink-0 text-muted" />
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
+
+				<!-- Client sessions -->
+				<Card>
+					<CardHeader class="pb-3">
+						<div class="flex items-center justify-between">
+							<CardTitle class="text-sm">
+								Clients
+								<span class="ml-1 text-xs font-normal text-muted-foreground">— {clientSessions.length} sessions</span>
+							</CardTitle>
+							<Button variant="outline" size="sm" class="gap-1.5 text-xs h-7" onclick={exportCSV}>
+								<Download class="h-3 w-3" />
+								CSV
 							</Button>
 						</div>
-					</div>
-				</CardHeader>
-				<CardContent>
-					{#if loading}
-						<div class="space-y-3">
-							{#each Array(5) as _}
-								<div class="flex items-center gap-4 rounded-lg border border-border p-3">
-									<div class="skeleton h-8 w-8 rounded-full"></div>
-									<div class="flex-1 space-y-2">
-										<div class="skeleton h-4 w-32"></div>
-										<div class="skeleton h-3 w-48"></div>
-									</div>
-								</div>
-							{/each}
+						<div class="relative mt-2">
+							<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+							<Input
+								bind:value={clientSearchQuery}
+								placeholder="Rechercher..."
+								class="h-8 pl-8 text-sm"
+							/>
 						</div>
-					{:else if filteredSessions.length === 0}
-						<p class="py-8 text-center text-sm text-muted-foreground">Aucune session trouvée.</p>
-					{:else}
-						<div class="overflow-x-auto">
-							<table class="w-full">
-								<thead>
-									<tr class="border-b border-border">
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Utilisateur</th>
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Début</th>
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Durée</th>
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Événements</th>
-										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
-										<th class="pb-2"></th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each filteredSessions as session}
-										{@const isClient = !!session.assignmentId || !session.user}
-										{@const displayName = getClientDisplayName(session)}
-										{@const displaySubtitle = getClientDisplaySubtitle(session)}
-										<tr
-											class="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent"
-											onclick={() => openSessionDetail(session)}
-										>
-											<td class="py-3 pr-4">
-												<div class="flex items-center gap-3">
-													<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full {isClient ? 'bg-warning/10 text-warning' : 'bg-primary/10 text-primary'} text-xs font-medium">
-														{#if displayName !== 'Visiteur anonyme'}
-															{getInitials(displayName)}
-														{:else}
-															?
-														{/if}
-													</div>
-													<div>
-														<p class="text-sm font-medium text-foreground">{displayName}</p>
-														<p class="text-xs text-muted-foreground">{displaySubtitle}</p>
-													</div>
-												</div>
-											</td>
-											<td class="py-3 pr-4">
-												<Badge variant={isClient ? 'warning' : 'default'} class="text-[10px]">
-													{isClient ? 'Client' : 'Admin'}
-												</Badge>
-											</td>
-											<td class="py-3 pr-4">
-												<span class="text-sm text-muted-foreground">{formatDateTime(session.startedAt)}</span>
-											</td>
-											<td class="py-3 pr-4">
-												<span class="text-sm text-foreground">{getSessionDuration(session)}</span>
-											</td>
-											<td class="py-3 pr-4">
-												<span class="text-sm text-foreground">{session.eventCount}</span>
-											</td>
-											<td class="py-3 pr-4">
-												{#if !session.endedAt}
-													<Badge variant="success">En cours</Badge>
-												{:else}
-													<Badge variant="default">Terminée</Badge>
-												{/if}
-											</td>
-											<td class="py-3">
-												<ChevronRight class="h-4 w-4 text-muted" />
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
-						</div>
-					{/if}
-				</CardContent>
-			</Card>
+					</CardHeader>
+					<CardContent>
+						{#if loading}
+							<div class="space-y-2">
+								{#each Array(3) as _}
+									<div class="skeleton h-12 w-full rounded"></div>
+								{/each}
+							</div>
+						{:else if filteredClientSessions.length === 0}
+							<p class="py-6 text-center text-sm text-muted-foreground">Aucune session client.</p>
+						{:else}
+							<div class="space-y-0">
+								{#each filteredClientSessions.slice(0, 10) as session}
+									{@const displayName = getClientDisplayName(session)}
+									{@const displaySubtitle = getClientDisplaySubtitle(session)}
+									<button
+										class="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-accent"
+										onclick={() => openSessionDetail(session)}
+									>
+										<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warning/10 text-xs font-medium text-warning">
+											{#if displayName !== 'Visiteur anonyme'}
+												{getInitials(displayName)}
+											{:else}
+												?
+											{/if}
+										</div>
+										<div class="min-w-0 flex-1">
+											<p class="truncate text-sm font-medium text-foreground">{displayName}</p>
+											<p class="truncate text-xs text-muted-foreground">{displaySubtitle}</p>
+										</div>
+										<div class="shrink-0 text-right">
+											<p class="text-xs text-muted-foreground">{getSessionDuration(session)}</p>
+											<p class="text-[10px] text-muted">{formatRelativeTime(session.startedAt)}</p>
+										</div>
+										<ChevronRight class="h-3.5 w-3.5 shrink-0 text-muted" />
+									</button>
+								{/each}
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
+			</div>
+
 		{/if}
 
 		{#if activeTab === 'clients' || activeTab === 'tools'}
