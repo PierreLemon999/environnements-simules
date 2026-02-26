@@ -553,6 +553,8 @@
 					// Keep default zeros
 				}
 			}
+		// Eagerly load assignment counts for tab badge
+			loadAssignments();
 		} catch (err: any) {
 			error = err.message || 'Projet introuvable.';
 		} finally {
@@ -676,6 +678,22 @@
 							<div class="relative text-center">
 								<span class="text-base font-bold text-foreground">{healthScore}%</span>
 								<span class="block text-[9px] text-muted-foreground -mt-0.5">santé</span>
+							</div>
+						</div>
+
+						<!-- Health breakdown -->
+						<div class="flex flex-col gap-1.5 text-xs">
+							<div class="flex items-center gap-2">
+								<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+								<span class="text-muted-foreground">{pageHealthData.ok} pages OK</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<span class="h-2 w-2 rounded-full bg-amber-500"></span>
+								<span class="text-muted-foreground">{pageHealthData.warning} avertissements</span>
+							</div>
+							<div class="flex items-center gap-2">
+								<span class="h-2 w-2 rounded-full bg-red-500"></span>
+								<span class="text-muted-foreground">{pageHealthData.error} erreurs</span>
 							</div>
 						</div>
 

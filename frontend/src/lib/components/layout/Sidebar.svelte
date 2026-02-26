@@ -16,6 +16,7 @@
 		EyeOff,
 		RefreshCw,
 		Settings,
+		Blocks,
 		ChevronDown,
 		ChevronsLeft,
 	} from 'lucide-svelte';
@@ -40,6 +41,7 @@
 		{ href: '/admin/users', label: 'Utilisateurs', icon: Users, badgeKey: null },
 		{ href: '/admin/obfuscation', label: 'Obfuscation', icon: EyeOff, badgeKey: null },
 		{ href: '/admin/update-requests', label: 'Demandes MAJ', icon: RefreshCw, badgeKey: 'updateRequests' },
+		{ href: '/admin/components', label: 'Composants', icon: Blocks, badgeKey: null },
 		{ href: '/admin/settings', label: 'Paramètres', icon: Settings, badgeKey: null },
 	];
 

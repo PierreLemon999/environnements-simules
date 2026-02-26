@@ -9,7 +9,7 @@
 		FileText,
 		ArrowUpRight,
 		Eye,
-		BarChart3,
+		Clock,
 		Search,
 		Filter,
 		Download,
@@ -50,16 +50,9 @@
 		last7Days: { sessions: number; uniqueUsers: number };
 	}
 
-	interface Assignment {
-		id: string;
-		clientEmail: string;
-		expiresAt: string | null;
-	}
-
 	let projects: Project[] = $state([]);
 	let sessions: Session[] = $state([]);
 	let overview: Overview | null = $state(null);
-	let activeDemoCount = $state(0);
 	let loading = $state(true);
 	let activityFilter = $state('all');
 	let searchQuery = $state('');
@@ -168,22 +161,6 @@
 			projects = projectsRes.data;
 			sessions = sessionsRes.data;
 			overview = overviewRes.data;
-
-			// Fetch active demo assignment count
-			let totalAssignments = 0;
-			for (const p of projectsRes.data) {
-				try {
-					const detail = await get<{ data: { versions: Array<{ id: string; status: string }> } }>(`/projects/${p.id}`);
-					const activeVersion = detail.data.versions?.find(v => v.status === 'active');
-					if (activeVersion) {
-						const res = await get<{ data: Assignment[] }>(`/versions/${activeVersion.id}/assignments`);
-						totalAssignments += res.data.filter(a => !a.expiresAt || new Date(a.expiresAt) > new Date()).length;
-					}
-				} catch {
-					// Skip
-				}
-			}
-			activeDemoCount = totalAssignments;
 		} catch (err) {
 			console.error('Dashboard fetch error:', err);
 		} finally {
@@ -219,8 +196,8 @@
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
-						<FolderKanban class="h-4 w-4 text-muted-foreground" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-blue-50">
+						<FolderKanban class="h-4 w-4 text-blue-600" />
 					</div>
 				</div>
 			</CardContent>
@@ -246,89 +223,62 @@
 							</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
-						<FileText class="h-4 w-4 text-muted-foreground" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-emerald-50">
+						<FileText class="h-4 w-4 text-emerald-600" />
 					</div>
 				</div>
 			</CardContent>
 		</Card>
 
-		<!-- Démos actives -->
+		<!-- Pages consultées -->
 		<Card class="border-border">
 			<CardContent class="p-3.5">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-[13px] font-medium text-muted-foreground">Démos actives</p>
+						<p class="text-[13px] font-medium text-muted-foreground">Pages consultées</p>
 						<p class="mt-0.5 text-[22px] font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-7 w-10"></span>
 							{:else}
-								{activeDemoCount}
-							{/if}
-						</p>
-						{#if !loading}
-							<span class="text-[11px] text-muted-foreground">{activeDemoCount} assignation{activeDemoCount !== 1 ? 's' : ''} active{activeDemoCount !== 1 ? 's' : ''}</span>
-						{/if}
-					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
-						<Eye class="h-4 w-4 text-muted-foreground" />
-					</div>
-				</div>
-			</CardContent>
-		</Card>
-
-		<!-- Sessions ce mois -->
-		<Card class="border-border">
-			<CardContent class="p-3.5">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-[13px] font-medium text-muted-foreground">Sessions ce mois</p>
-						<p class="mt-0.5 text-[22px] font-bold text-foreground">
-							{#if loading}
-								<span class="skeleton inline-block h-7 w-10"></span>
-							{:else}
-								{overview?.totalSessions ?? 0}
+								{overview?.totalPageViews ?? 0}
 							{/if}
 						</p>
 						{#if !loading && overview}
-							<span class="text-[11px] text-muted-foreground">{overview.totalPageViews} pages · {Math.round(overview.averageSessionDurationSeconds / 60)}min moy.</span>
+							<span class="text-[11px] text-muted-foreground">{overview.last7Days.sessions} sessions cette semaine</span>
 						{/if}
 					</div>
-					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
-						<BarChart3 class="h-4 w-4 text-muted-foreground" />
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-purple-50">
+						<Eye class="h-4 w-4 text-purple-600" />
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+
+		<!-- Temps passé -->
+		<Card class="border-border">
+			<CardContent class="p-3.5">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-[13px] font-medium text-muted-foreground">Temps passé</p>
+						<p class="mt-0.5 text-[22px] font-bold text-foreground">
+							{#if loading}
+								<span class="skeleton inline-block h-7 w-10"></span>
+							{:else}
+								{@const avgMin = Math.round((overview?.averageSessionDurationSeconds ?? 0) / 60)}
+								{avgMin < 60 ? `${avgMin}min` : `${Math.floor(avgMin / 60)}h${avgMin % 60}m`}
+							{/if}
+						</p>
+						{#if !loading && overview}
+							<span class="text-[11px] text-muted-foreground">durée moyenne par session</span>
+						{/if}
+					</div>
+					<div class="flex h-9 w-9 items-center justify-center rounded-[10px] bg-amber-50">
+						<Clock class="h-4 w-4 text-amber-600" />
 					</div>
 				</div>
 			</CardContent>
 		</Card>
 	</div>
-
-	<!-- Project overview bars -->
-	{#if !loading && projects.length > 0}
-		<Card>
-			<CardContent class="p-4">
-				<div class="flex items-center justify-between mb-3">
-					<h3 class="text-sm font-semibold text-foreground">Répartition par projet</h3>
-					<a href="/admin/projects" class="text-xs text-primary hover:underline">Voir tous</a>
-				</div>
-				<div class="space-y-2.5">
-					{#each projects.slice(0, 6) as project}
-						{@const maxPages = Math.max(...projects.map(p => p.pageCount), 1)}
-						{@const width = Math.max(8, (project.pageCount / maxPages) * 100)}
-						<div class="flex items-center gap-3">
-							<span class="w-28 truncate text-xs text-muted-foreground">{project.toolName}</span>
-							<div class="flex-1 h-2 rounded-full bg-accent overflow-hidden">
-								<div
-									class="h-full rounded-full transition-all duration-500"
-									style="width: {width}%; background-color: {getToolColor(project.toolName)}"
-								></div>
-							</div>
-							<span class="w-8 text-right text-xs font-medium text-foreground">{project.pageCount}</span>
-						</div>
-					{/each}
-				</div>
-			</CardContent>
-		</Card>
-	{/if}
 
 	<!-- Activity journal -->
 	<Card>
@@ -354,12 +304,13 @@
 						onclick={() => { activityFilter = 'sessions'; currentPage = 1; }}
 					>
 						Sessions
+						<span class="ml-1 text-[10px] {activityFilter === 'sessions' ? 'text-white/70' : 'text-muted'}">{sessionCount}</span>
 					</button>
 					<button
 						class="rounded-md px-3 py-1 text-xs font-medium transition-colors {activityFilter === 'guides' ? 'bg-foreground text-white' : 'text-muted-foreground hover:text-foreground'}"
 						onclick={() => { activityFilter = 'guides'; currentPage = 1; }}
 					>
-						Guides
+						Guides terminés
 						<span class="ml-1 text-[10px] {activityFilter === 'guides' ? 'text-white/70' : 'text-muted'}">{guideCount}</span>
 					</button>
 				</div>
@@ -426,6 +377,8 @@
 							{#each paginatedSessions() as session}
 								{@const action = getActionBadge(session)}
 								{@const company = getCompanyName(session)}
+								{@const toolName = getToolNameForSession(session)}
+								{@const toolColor = getToolColor(toolName)}
 								<tr class="group border-b border-border last:border-0 transition-colors hover:bg-accent">
 									<td class="py-3 pr-2">
 										<input type="checkbox" class="h-3.5 w-3.5 rounded border-border accent-primary" />
@@ -433,20 +386,24 @@
 									<td class="py-3 pr-4">
 										<div class="flex items-center gap-3">
 											<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-												{session.user ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : '?'}
+												{company ? company.slice(0, 2).toUpperCase() : (session.user ? session.user.name.split(' ').map(n => n[0]).join('').slice(0, 2) : '?')}
 											</div>
 											<div class="min-w-0">
-												<p class="truncate text-sm font-medium text-foreground">{session.user?.name ?? 'Anonyme'}</p>
-												<p class="truncate text-xs text-muted-foreground">{company || 'Visiteur'}</p>
+												<p class="truncate text-sm font-medium text-foreground">{company || session.user?.name || 'Anonyme'}</p>
+												<p class="truncate text-xs text-muted-foreground">{company ? (session.user?.name ?? 'Visiteur') : 'Visiteur'}</p>
 											</div>
 										</div>
 									</td>
 									<td class="py-3 pr-4">
 										<div class="flex items-center gap-2">
 											<span class="text-sm text-foreground">{getDemoNameForSession(session)}</span>
-											<Badge variant="secondary" class="text-[10px] font-normal">
-												{getToolNameForSession(session)}
-											</Badge>
+											<span
+												class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium"
+												style="background-color: {toolColor}15; color: {toolColor}"
+											>
+												<span class="h-1.5 w-1.5 rounded-full" style="background-color: {toolColor}"></span>
+												{toolName}
+											</span>
 										</div>
 									</td>
 									<td class="py-3 pr-4">

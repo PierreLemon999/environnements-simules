@@ -1,0 +1,19 @@
+All done. Here's the summary:
+
+**Iteration 12 QA — All 39 issues addressed**
+
+- **4 CRITICAL**: All fixed (editor rendering, demo viewer loading, prospect viewer, hardcoded URLs)
+- **14 HIGH**: All fixed (analytics layout, tree view, invitations, editor features, demo viewer UI, project detail)
+- **13 MEDIUM**: 12 fixed, 1 deferred (editable config tab — low impact)
+- **8 LOW**: 7 fixed, 1 no-action needed (obfuscation seed data timing)
+
+**svelte-check**: 0 errors, 8 warnings (a11y labels only — non-blocking)
+
+Key changes this session:
+- Dashboard: distinct stat card icon colors, "Guides terminés" tab label, company name as primary in CLIENT column, colorful tool badges, removed bar chart section
+- Command palette: tool badges on project results too
+- Sidebar: added "Composants" nav item
+- Editor: search field + "Personnaliser" toggle in toolbar
+- Screenshot test: improved sidebar collapse detection
+
+Full summary written to `feedback-logs/iteration-12-fix-summary.md`.

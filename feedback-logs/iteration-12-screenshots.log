@@ -1,0 +1,21 @@
+
+Running 17 tests using 1 worker
+
+[1A[2K[1/17] [screenshots] › tests/e2e/screenshots.spec.ts:59:7 › Screenshot all pages › 01 - Login page
+[1A[2K[2/17] [screenshots] › tests/e2e/screenshots.spec.ts:66:7 › Screenshot all pages › 02 - Login page - Form filled
+[1A[2K[3/17] [screenshots] › tests/e2e/screenshots.spec.ts:78:7 › Screenshot all pages › 03 - Login page - Error state
+[1A[2K[4/17] [screenshots] › tests/e2e/screenshots.spec.ts:96:7 › Screenshot all pages › 04 - Admin Dashboard
+[1A[2K[5/17] [screenshots] › tests/e2e/screenshots.spec.ts:104:7 › Screenshot all pages › 05 - Admin Dashboard - Sidebar collapsed
+[1A[2K[6/17] [screenshots] › tests/e2e/screenshots.spec.ts:124:7 › Screenshot all pages › 06 - Projects list
+[1A[2K[7/17] [screenshots] › tests/e2e/screenshots.spec.ts:132:7 › Screenshot all pages › 07 - Project detail
+[1A[2K[8/17] [screenshots] › tests/e2e/screenshots.spec.ts:147:7 › Screenshot all pages › 08 - Tree view
+[1A[2K[9/17] [screenshots] › tests/e2e/screenshots.spec.ts:155:7 › Screenshot all pages › 09 - Analytics
+[1A[2K[10/17] [screenshots] › tests/e2e/screenshots.spec.ts:163:7 › Screenshot all pages › 10 - Invitations
+[1A[2K[11/17] [screenshots] › tests/e2e/screenshots.spec.ts:171:7 › Screenshot all pages › 11 - Users
+[1A[2K[12/17] [screenshots] › tests/e2e/screenshots.spec.ts:179:7 › Screenshot all pages › 12 - Obfuscation
+[1A[2K[13/17] [screenshots] › tests/e2e/screenshots.spec.ts:187:7 › Screenshot all pages › 13 - Update requests
+[1A[2K[14/17] [screenshots] › tests/e2e/screenshots.spec.ts:195:7 › Screenshot all pages › 14 - Command palette
+[1A[2K[15/17] [screenshots] › tests/e2e/screenshots.spec.ts:206:7 › Screenshot all pages › 15 - Page editor
+[1A[2K[16/17] [screenshots] › tests/e2e/screenshots.spec.ts:230:7 › Screenshot all pages › 16 - Demo viewer
+[1A[2K[17/17] [screenshots] › tests/e2e/screenshots.spec.ts:245:7 › Screenshot all pages › 17 - Commercial viewer
+[1A[2K  17 passed (46.9s)

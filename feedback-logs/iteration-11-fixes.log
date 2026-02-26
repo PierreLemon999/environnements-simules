@@ -1,0 +1,13 @@
+All done. Here's a summary of what was fixed:
+
+**Files modified:**
+1. **`frontend/src/routes/admin/tree/+page.svelte`** — Added "Par site" / "Par guide" sub-tabs within the Arborescence view, plus a proper flat page list for the "Liste" tab
+2. **`frontend/src/routes/admin/analytics/+page.svelte`** — Merged the split "Admins & Commerciaux" / "Clients" panels into a single unified "Sessions récentes" list with search and "Exporter CSV" button
+3. **`tests/e2e/screenshots.spec.ts`** — Fixed sidebar collapse test to hover before clicking, added 3 new tests for editor, demo viewer, and commercial viewer
+
+**Issues verified as already resolved (no code changes needed):**
+- Issue 1: Dashboard stat cards already have clean border styling
+- Issue 2, 8, 9: No fix needed per issue descriptions
+- Issue 10: Command palette already implements rich API search with tool badges and metadata
+
+**svelte-check**: 0 new errors. 3 pre-existing errors in editor/live-edit files (unrelated to these changes).

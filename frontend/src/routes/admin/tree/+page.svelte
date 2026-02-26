@@ -96,6 +96,12 @@
 	let treeLoading = $state(false);
 	let searchQuery = $state('');
 	let treeTab = $state('site');
+	let treeSubTab = $state<'site' | 'guide'>('site');
+	let detailSubTab = $state('preview');
+
+	// Resizable tree panel
+	let treePanelWidth = $state(320);
+	let isResizing = $state(false);
 	let expandedPaths = $state<Set<string>>(new Set());
 
 	// Derived
@@ -243,6 +249,23 @@
 		return count;
 	}
 
+	function startResize(e: MouseEvent) {
+		isResizing = true;
+		const startX = e.clientX;
+		const startWidth = treePanelWidth;
+		function onMove(e: MouseEvent) {
+			const delta = e.clientX - startX;
+			treePanelWidth = Math.max(240, Math.min(600, startWidth + delta));
+		}
+		function onUp() {
+			isResizing = false;
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseup', onUp);
+		}
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup', onUp);
+	}
+
 	function getVersionStatusVariant(status: string): 'success' | 'warning' | 'secondary' {
 		switch (status) {
 			case 'active': return 'success';
@@ -384,7 +407,13 @@
 
 <div class="flex h-[calc(100vh-56px)] overflow-hidden -m-6">
 	<!-- Tree Panel (left) -->
-	<div class="flex w-72 shrink-0 flex-col border-r border-border bg-card lg:w-80">
+	<div class="relative flex shrink-0 flex-col border-r border-border bg-card" style="width: {treePanelWidth}px">
+		<!-- Resize handle -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize transition-colors hover:bg-primary/30 {isResizing ? 'bg-primary/40' : ''}"
+			onmousedown={startResize}
+		></div>
 		<!-- Tree panel header -->
 		<div class="space-y-3 border-b border-border p-3">
 			<!-- Project selector -->
@@ -405,10 +434,28 @@
 			<Tabs value={treeTab} onValueChange={(v) => { treeTab = v; }}>
 				<TabsList class="w-full">
 					<TabsTrigger value="site" class="flex-1 text-xs">Arborescence</TabsTrigger>
-					<TabsTrigger value="guide" class="flex-1 text-xs">Liste</TabsTrigger>
+					<TabsTrigger value="list" class="flex-1 text-xs">Liste</TabsTrigger>
 					<TabsTrigger value="map" class="flex-1 text-xs">Carte du site</TabsTrigger>
 				</TabsList>
 			</Tabs>
+
+			<!-- Sub-tabs for Arborescence: Par site / Par guide -->
+			{#if treeTab === 'site'}
+				<div class="flex gap-1 rounded-md bg-accent/50 p-0.5">
+					<button
+						class="flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors {treeSubTab === 'site' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+						onclick={() => { treeSubTab = 'site'; }}
+					>
+						Par site
+					</button>
+					<button
+						class="flex-1 rounded px-2 py-1 text-[11px] font-medium transition-colors {treeSubTab === 'guide' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+						onclick={() => { treeSubTab = 'guide'; }}
+					>
+						Par guide
+					</button>
+				</div>
+			{/if}
 
 			<!-- Search -->
 			<div class="relative">
@@ -461,8 +508,8 @@
 
 		<!-- Tree content -->
 		<div class="flex-1 overflow-y-auto px-1 py-2">
-			{#if treeTab === 'guide'}
-				<!-- Par guide view -->
+			{#if treeTab === 'site' && treeSubTab === 'guide'}
+				<!-- Par guide sub-view -->
 				<div class="px-2 py-3">
 					{#if loading || treeLoading}
 						<div class="space-y-2 px-2">
@@ -502,42 +549,65 @@
 						</div>
 					{/if}
 				</div>
-			{:else if treeTab === 'map'}
-				<!-- Carte du site (site map visualization) -->
-				<div class="flex flex-col items-center justify-center py-8 px-4 text-center">
-					{#if loading || treeLoading || !tree}
-						<div class="skeleton h-48 w-full rounded-lg"></div>
-					{:else}
-						<div class="w-full space-y-3">
-							{#each tree.children as section}
-								{@const sectionPages = countPages(section)}
-								<div class="rounded-lg border border-border p-3">
-									<div class="flex items-center justify-between">
-										<div class="flex items-center gap-2">
-											<div class="h-3 w-3 rounded-full bg-primary/60"></div>
-											<span class="text-sm font-medium text-foreground">{section.name}</span>
-										</div>
-										<span class="text-xs text-muted-foreground">{sectionPages} page{sectionPages !== 1 ? 's' : ''}</span>
-									</div>
-									{#if section.children.length > 0}
-										<div class="mt-2 ml-5 flex flex-wrap gap-1.5">
-											{#each section.children.slice(0, 4) as child}
-												<div class="inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
-													<span class="h-1.5 w-1.5 rounded-full {child.page ? getHealthDot(child.page.healthStatus) : 'bg-muted'}"></span>
-													{child.name}
-												</div>
-											{/each}
-											{#if section.children.length > 4}
-												<span class="inline-flex items-center px-2 py-0.5 text-[10px] text-primary">
-													... et {section.children.length - 4} autres
-												</span>
-											{/if}
-										</div>
-									{/if}
-								</div>
+			{:else if treeTab === 'list'}
+				<!-- Flat list view of all pages -->
+				<div class="px-2 py-2">
+					{#if loading || treeLoading}
+						<div class="space-y-1 px-2">
+							{#each Array(8) as _}
+								<div class="skeleton h-8 w-full rounded"></div>
 							{/each}
 						</div>
+					{:else if !tree}
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<FileText class="h-8 w-8 text-muted" />
+							<p class="mt-3 text-sm text-muted-foreground">
+								{selectedVersionId ? 'Aucune page capturée' : 'Sélectionnez une version'}
+							</p>
+						</div>
+					{:else}
+						{@const allPages = (() => {
+							const pages: Page[] = [];
+							function walk(node: TreeNode) {
+								if (node.page) pages.push(node.page);
+								node.children.forEach(walk);
+							}
+							walk(tree);
+							return pages.filter(p => {
+								if (!searchQuery.trim()) return true;
+								const q = searchQuery.toLowerCase();
+								return p.title.toLowerCase().includes(q) || p.urlPath.toLowerCase().includes(q);
+							});
+						})()}
+						{#if allPages.length === 0}
+							<p class="py-8 text-center text-sm text-muted-foreground">Aucune page trouvée.</p>
+						{:else}
+							<div class="space-y-0">
+								{#each allPages as page}
+									<button
+										class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent {selectedPage?.id === page.id ? 'bg-accent text-primary' : ''}"
+										onclick={() => selectPage(page)}
+									>
+										<span class="h-1.5 w-1.5 shrink-0 rounded-full {getHealthDot(page.healthStatus)}"></span>
+										<FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+										<span class="truncate {selectedPage?.id === page.id ? 'font-medium text-primary' : 'text-foreground'}">{page.title}</span>
+										<span class="ml-auto shrink-0 text-[10px] text-muted">/{page.urlPath}</span>
+									</button>
+								{/each}
+							</div>
+						{/if}
 					{/if}
+				</div>
+			{:else if treeTab === 'map'}
+				<!-- Carte du site (site map visualization) — placeholder -->
+				<div class="flex flex-col items-center justify-center py-12 px-4 text-center">
+					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+						<Globe class="h-6 w-6 text-muted" />
+					</div>
+					<p class="mt-3 text-sm font-medium text-foreground">Carte du site</p>
+					<p class="mt-1 text-xs text-muted-foreground">
+						La visualisation interactive du graphe de navigation sera bientôt disponible.
+					</p>
 				</div>
 			{:else if loading || treeLoading}
 				<div class="space-y-1 px-2">
@@ -606,7 +676,7 @@
 								{node.page.title || node.name}
 							</span>
 							{#if node.page.captureMode === 'guided'}
-								<span class="ml-auto shrink-0 rounded bg-warning/15 px-1 py-0.5 text-[9px] font-medium text-warning">Modale</span>
+								<span class="ml-auto shrink-0 rounded bg-purple-100 px-1 py-0.5 text-[9px] font-medium text-purple-700">Modale</span>
 							{/if}
 						</button>
 						<!-- Also render children if any -->
@@ -700,14 +770,13 @@
 	<!-- Detail Panel (right) -->
 	<div class="flex-1 overflow-y-auto bg-background p-6">
 		{#if selectedPage}
-			<!-- Breadcrumb -->
-			<nav class="mb-4 flex items-center gap-1 text-sm">
+			<!-- Breadcrumb with "/" separators -->
+			<nav class="mb-4 flex items-center gap-1.5 text-sm">
 				<span class="text-muted-foreground">{selectedProject?.name ?? 'Projet'}</span>
-				<ChevronRight class="h-3.5 w-3.5 text-muted" />
 				{#each selectedPage.urlPath.split('/').filter(Boolean) as segment, i}
+					<span class="text-muted/40">/</span>
 					{#if i < selectedPage.urlPath.split('/').filter(Boolean).length - 1}
 						<span class="text-muted-foreground">{segment}</span>
-						<ChevronRight class="h-3.5 w-3.5 text-muted" />
 					{:else}
 						<span class="font-medium text-foreground">{segment}</span>
 					{/if}
@@ -715,28 +784,22 @@
 			</nav>
 
 			<!-- Page preview placeholder -->
-			<div class="mb-6 flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-accent/30">
+			<div class="mb-4 flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-accent/30 overflow-hidden">
 				<span class="text-sm text-muted-foreground">Aperçu — 1300x800</span>
 			</div>
 
 			<!-- Page title and actions -->
-			<div class="mb-6 flex items-start justify-between">
+			<div class="mb-4 flex items-start justify-between">
 				<div>
 					<h2 class="text-lg font-semibold text-foreground">{selectedPage.title}</h2>
 					<p class="mt-1 text-sm text-muted-foreground">/{selectedPage.urlPath}</p>
 				</div>
 				<div class="flex items-center gap-2">
-					<a href="/admin/live-edit/{selectedPage.id}">
-						<Button variant="outline" size="sm" class="gap-1.5">
-							<Pencil class="h-3.5 w-3.5" />
-							Édition en direct
-						</Button>
-					</a>
-					<Button variant="outline" size="sm" class="gap-1.5">
-						<EyeOff class="h-3.5 w-3.5" />
-						Obfuscation
+					<Button variant="outline" size="sm" class="gap-1.5 text-xs">
+						<Camera class="h-3.5 w-3.5" />
+						Recapturer
 					</Button>
-					<Button size="sm" class="gap-1.5 bg-success text-white hover:bg-success/90" onclick={() => {
+					<Button size="sm" class="gap-1.5 text-xs bg-success text-white hover:bg-success/90" onclick={() => {
 						if (selectedProject?.subdomain && selectedPage) {
 							window.open(`/demo/${selectedProject.subdomain}/${selectedPage.urlPath}`, '_blank');
 						}
@@ -747,112 +810,129 @@
 				</div>
 			</div>
 
-			<!-- Metadata grid -->
-			<div class="grid gap-6 lg:grid-cols-2">
-				<!-- Page information -->
-				<Card>
-					<CardContent class="p-5">
-						<h3 class="mb-4 text-sm font-semibold text-foreground">Informations</h3>
-						<dl class="space-y-3">
-							<div class="flex items-start justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<Globe class="h-3.5 w-3.5" />
-									URL source
-								</dt>
-								<dd class="max-w-[60%] text-right text-sm text-foreground">
-									<a href={selectedPage.urlSource} target="_blank" rel="noopener" class="text-primary hover:underline">
-										{selectedPage.urlSource}
-									</a>
-								</dd>
-							</div>
-							<Separator />
-							<div class="flex items-center justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<HardDrive class="h-3.5 w-3.5" />
-									Taille
-								</dt>
-								<dd class="text-sm text-foreground">{formatFileSize(selectedPage.fileSize)}</dd>
-							</div>
-							<Separator />
-							<div class="flex items-center justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<Calendar class="h-3.5 w-3.5" />
-									Capture le
-								</dt>
-								<dd class="text-sm text-foreground">{formatDate(selectedPage.createdAt)}</dd>
-							</div>
-							<Separator />
-							<div class="flex items-center justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<Camera class="h-3.5 w-3.5" />
-									Mode
-								</dt>
-								<dd class="text-sm text-foreground">{getCaptureLabel(selectedPage.captureMode)}</dd>
-							</div>
-							<Separator />
-							<div class="flex items-center justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<Link2 class="h-3.5 w-3.5" />
-									Liens sortants
-								</dt>
-								<dd class="text-sm text-foreground">—</dd>
-							</div>
-							<Separator />
-							<div class="flex items-center justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<LinkIcon class="h-3.5 w-3.5" />
-									Liens cassés
-								</dt>
-								<dd class="text-sm text-foreground">—</dd>
-							</div>
-							<Separator />
-							<div class="flex items-center justify-between">
-								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
-									<AlertCircle class="h-3.5 w-3.5" />
-									Santé
-								</dt>
-								<dd>
-									<Badge variant={selectedPage.healthStatus === 'ok' ? 'success' : selectedPage.healthStatus === 'warning' ? 'warning' : 'destructive'}>
-										<span class="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-current"></span>
-										{getHealthLabel(selectedPage.healthStatus)}
-									</Badge>
-								</dd>
-							</div>
-						</dl>
-					</CardContent>
-				</Card>
+			<!-- Sub-tabs -->
+			<Tabs value={detailSubTab} onValueChange={(v) => { detailSubTab = v; }}>
+				<TabsList class="mb-4">
+					<TabsTrigger value="preview" class="text-xs">Aperçu</TabsTrigger>
+					<TabsTrigger value="editor" class="text-xs">Éditeur HTML</TabsTrigger>
+					<TabsTrigger value="links" class="text-xs">Liens & Navigation</TabsTrigger>
+					<TabsTrigger value="javascript" class="text-xs">JavaScript</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
-				<div class="space-y-6">
-					<!-- Obfuscation rules -->
+			{#if detailSubTab === 'preview'}
+				<!-- Page metadata -->
+				<div class="grid gap-6 lg:grid-cols-2">
 					<Card>
 						<CardContent class="p-5">
-							<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Obfuscation active</h3>
-							{#if obfuscationRules.filter((r) => r.isActive).length === 0}
-								<p class="text-sm text-muted-foreground">Aucune règle active pour ce projet.</p>
-							{:else}
-								<div class="flex flex-wrap gap-2">
-									{#each obfuscationRules.filter((r) => r.isActive) as rule}
-										<div class="inline-flex items-center gap-1.5 rounded-md border border-border bg-accent px-2.5 py-1 text-xs">
-											<Shield class="h-3 w-3 text-muted-foreground" />
-											<span class="text-muted-foreground">{rule.searchValue}</span>
-											<span class="text-muted">→</span>
-											<span class="font-medium text-foreground">{rule.replaceValue}</span>
-										</div>
-									{/each}
+							<h3 class="mb-4 text-sm font-semibold text-foreground">Informations</h3>
+							<dl class="space-y-3">
+								<div class="flex items-start justify-between">
+									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+										<Globe class="h-3.5 w-3.5" />
+										URL source
+									</dt>
+									<dd class="max-w-[60%] text-right text-sm text-foreground">
+										<a href={selectedPage.urlSource} target="_blank" rel="noopener" class="text-primary hover:underline">
+											{selectedPage.urlSource}
+										</a>
+									</dd>
 								</div>
-							{/if}
+								<Separator />
+								<div class="flex items-center justify-between">
+									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+										<HardDrive class="h-3.5 w-3.5" />
+										Taille
+									</dt>
+									<dd class="text-sm text-foreground">{formatFileSize(selectedPage.fileSize)}</dd>
+								</div>
+								<Separator />
+								<div class="flex items-center justify-between">
+									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+										<Calendar class="h-3.5 w-3.5" />
+										Capture le
+									</dt>
+									<dd class="text-sm text-foreground">{formatDate(selectedPage.createdAt)}</dd>
+								</div>
+								<Separator />
+								<div class="flex items-center justify-between">
+									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+										<Camera class="h-3.5 w-3.5" />
+										Mode
+									</dt>
+									<dd class="text-sm text-foreground">{getCaptureLabel(selectedPage.captureMode)}</dd>
+								</div>
+								<Separator />
+								<div class="flex items-center justify-between">
+									<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+										<AlertCircle class="h-3.5 w-3.5" />
+										Santé
+									</dt>
+									<dd>
+										<Badge variant={selectedPage.healthStatus === 'ok' ? 'success' : selectedPage.healthStatus === 'warning' ? 'warning' : 'destructive'}>
+											<span class="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-current"></span>
+											{getHealthLabel(selectedPage.healthStatus)}
+										</Badge>
+									</dd>
+								</div>
+							</dl>
 						</CardContent>
 					</Card>
 
-					<!-- Guides associés -->
-					<Card>
-						<CardContent class="p-5">
-							<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Guides associés</h3>
-							<p class="text-sm text-muted-foreground">Aucun guide associé à cette page.</p>
-						</CardContent>
-					</Card>
+					<div class="space-y-6">
+						<Card>
+							<CardContent class="p-5">
+								<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Obfuscation active</h3>
+								{#if obfuscationRules.filter((r) => r.isActive).length === 0}
+									<p class="text-sm text-muted-foreground">Aucune règle active pour ce projet.</p>
+								{:else}
+									<div class="flex flex-wrap gap-2">
+										{#each obfuscationRules.filter((r) => r.isActive) as rule}
+											<div class="inline-flex items-center gap-1.5 rounded-md border border-border bg-accent px-2.5 py-1 text-xs">
+												<Shield class="h-3 w-3 text-muted-foreground" />
+												<span class="text-muted-foreground">{rule.searchValue}</span>
+												<span class="text-muted">→</span>
+												<span class="font-medium text-foreground">{rule.replaceValue}</span>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent class="p-5">
+								<h3 class="mb-4 text-[10px] font-semibold uppercase tracking-wider text-muted">Guides associés</h3>
+								<p class="text-sm text-muted-foreground">Aucun guide associé à cette page.</p>
+							</CardContent>
+						</Card>
+					</div>
 				</div>
-			</div>
+			{:else if detailSubTab === 'editor'}
+				<div class="flex items-center justify-center py-12">
+					<a href="/admin/editor/{selectedPage.id}">
+						<Button class="gap-1.5">
+							<Pencil class="h-4 w-4" />
+							Ouvrir dans l'éditeur
+						</Button>
+					</a>
+				</div>
+			{:else if detailSubTab === 'links'}
+				<div class="flex items-center justify-center py-12 text-center">
+					<div>
+						<Link2 class="mx-auto h-8 w-8 text-muted" />
+						<p class="mt-3 text-sm text-muted-foreground">Liens détectés disponibles dans l'éditeur</p>
+						<a href="/admin/editor/{selectedPage.id}" class="mt-2 inline-block text-sm text-primary hover:underline">Ouvrir l'éditeur</a>
+					</div>
+				</div>
+			{:else if detailSubTab === 'javascript'}
+				<div class="flex items-center justify-center py-12 text-center">
+					<div>
+						<FileText class="mx-auto h-8 w-8 text-muted" />
+						<p class="mt-3 text-sm text-muted-foreground">Scripts détectés disponibles dans l'éditeur</p>
+						<a href="/admin/editor/{selectedPage.id}" class="mt-2 inline-block text-sm text-primary hover:underline">Ouvrir l'éditeur</a>
+					</div>
+				</div>
+			{/if}
 		{:else}
 			<!-- Empty state -->
 			<div class="flex h-full flex-col items-center justify-center text-center">

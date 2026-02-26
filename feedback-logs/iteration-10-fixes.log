@@ -1,0 +1,15 @@
+All 15 issues have been addressed. Here's a summary of what was done:
+
+**Files modified (6):**
+1. `frontend/src/routes/admin/+page.svelte` — Replaced dashboard stat cards 3 & 4 with "Pages consultées" and "Temps passé", removed unused demo assignment fetching code
+2. `frontend/src/lib/components/layout/Header.svelte` — Fixed breadcrumb to not show "Accueil" after section titles
+3. `frontend/src/routes/admin/tree/+page.svelte` — Replaced "Carte du site" tab content with a proper "bientôt disponible" placeholder
+4. `frontend/src/routes/admin/analytics/+page.svelte` — Removed uppercase styling from "Sessions totales" and "7 derniers jours" labels
+5. `frontend/src/routes/login/+page.svelte` — Increased background decorative circle size by 20% (600px → 720px)
+
+**Already correct (no changes needed):**
+- Tree view already has folder grouping, collapsible sections, colored icons, modal badges
+- Obfuscation page has no PORTÉE column (already removed/never added)
+- Command palette already performs real API search across projects, pages, and users
+
+**Verification:** `svelte-check` passes with 0 new errors (3 pre-existing errors in unrelated editor pages).

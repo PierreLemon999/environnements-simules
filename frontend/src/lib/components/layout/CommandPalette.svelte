@@ -373,11 +373,11 @@
 								<div class="min-w-0 flex-1 text-left">
 									<div class="flex items-center gap-2">
 										<p class="truncate font-medium">{result.title}</p>
-										{#if result.type === 'page' && result.subtitle}
+										{#if (result.type === 'page' || result.type === 'project') && result.subtitle}
 											<span class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white" style="background-color: {getToolBadgeColor(result.subtitle)}">{result.subtitle}</span>
 										{/if}
 									</div>
-									{#if result.subtitle && result.type !== 'page'}
+									{#if result.subtitle && result.type !== 'page' && result.type !== 'project'}
 										<p class="truncate text-xs text-muted-foreground">{result.subtitle}</p>
 									{/if}
 									{#if result.meta}

@@ -1,0 +1,31 @@
+The iteration 11 QA report has been written to `feedback-logs/iteration-11-issues.md`.
+
+**Summary:**
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 0 |
+| HIGH | 2 |
+| MEDIUM | 5 |
+| LOW | 4 |
+| **TOTAL** | **11** |
+
+**Progress from iteration 10**: Reduced from 15 issues to 11. All iteration-10 fixes verified as resolved.
+
+**Key remaining issues:**
+
+**HIGH (2):**
+1. **Tree view** — Still shows flat list instead of rich grouped folders with page detail panel, breadcrumb, and action buttons (per mockup R001-R003)
+2. (part of tree) — Missing page detail right panel with metadata, links, health, obfuscation rules, and guides
+
+**MEDIUM (5):**
+3. Sidebar collapse screenshot appears identical to expanded (test issue)
+4. Tree view missing "Par site" / "Par guide" sub-tabs
+5. Analytics splits sessions into Admins/Clients panels — mockup shows single "Sessions récentes" list
+6. Dashboard stat card left-border style differs from mockup (minor)
+7. Command palette still shows quick actions rather than real search results with rich metadata
+
+**LOW (4):**
+8-9. Obfuscation extras beyond mockup (acceptable)
+10. Analytics missing "Exporter CSV" button
+11. Missing screenshot tests for editor, demo viewer, commercial viewer

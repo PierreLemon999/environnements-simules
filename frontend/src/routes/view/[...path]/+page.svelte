@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { post } from '$lib/api';
-	import { Loader2 } from 'lucide-svelte';
+	import { Loader2, FileText } from 'lucide-svelte';
 
 	// Parse the URL path to get subdomain and page path
 	let fullPath = $derived($page.params.path ?? '');
@@ -16,9 +16,9 @@
 	let iframeUrl = $state('');
 	let widgetExpanded = $state(false);
 
-	// Build the demo API URL
+	// Build the demo API URL — use proxy path instead of hardcoded localhost
 	let demoApiUrl = $derived(
-		subdomain ? `http://localhost:3001/demo/${subdomain}/${pagePath}` : ''
+		subdomain ? `/demo-api/${subdomain}/${pagePath}` : ''
 	);
 
 	// Check for access token in URL params
@@ -72,7 +72,9 @@
 	{:else if error || !iframeUrl}
 		<div class="flex h-full items-center justify-center">
 			<div class="text-center">
-				<p class="text-sm text-gray-500">Cette démo n'est pas disponible.</p>
+				<FileText class="mx-auto h-10 w-10 text-gray-300" />
+				<p class="mt-3 text-sm font-medium text-gray-700">Cette démo n'est pas disponible</p>
+				<p class="mt-1 text-sm text-gray-400">Le lien est peut-être expiré ou la démo n'existe plus.</p>
 			</div>
 		</div>
 	{:else}

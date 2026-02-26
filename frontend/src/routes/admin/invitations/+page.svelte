@@ -103,6 +103,7 @@
 	let linkVersionId = $state('');
 	let linkExpiryDays = $state(90);
 	let linkPassword = $state('');
+	let linkRequireAccount = $state(false);
 	let linkGenerated = $state('');
 	let linkGenerating = $state(false);
 
@@ -355,6 +356,7 @@
 		linkVersionId = '';
 		linkExpiryDays = 90;
 		linkPassword = '';
+		linkRequireAccount = false;
 		linkGenerated = '';
 	}
 
@@ -372,6 +374,7 @@
 				email: formEmail.trim(),
 				name: formName.trim(),
 				expiresInDays: formExpiryDays,
+				requireAccount: formRequireAccount ? 1 : 0,
 			});
 
 			createdCredentials = {
@@ -1118,6 +1121,7 @@
 										<option value={90}>3 mois (recommandé)</option>
 										<option value={180}>6 mois</option>
 										<option value={365}>1 an</option>
+										<option value={730}>2 ans</option>
 									</select>
 								</div>
 								<div class="space-y-1.5">
@@ -1129,6 +1133,19 @@
 										<Input id="link-password" bind:value={linkPassword} placeholder="Laisser vide pour aucun" type="password" class="h-8 pl-8 text-sm" />
 									</div>
 									<p class="text-[10px] text-muted-foreground">Protégez l'accès au lien avec un mot de passe</p>
+								</div>
+
+								<div class="flex items-center gap-3 rounded-lg border border-border p-3">
+									<input
+										type="checkbox"
+										id="link-require-account"
+										bind:checked={linkRequireAccount}
+										class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+									/>
+									<div>
+										<label for="link-require-account" class="text-xs font-medium text-foreground">Exiger la création d'un compte</label>
+										<p class="text-[10px] text-muted-foreground">Le client devra créer un compte</p>
+									</div>
 								</div>
 
 								{#if formError}

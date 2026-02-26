@@ -462,129 +462,148 @@
 		</div>
 
 		{#if activeTab === 'overview'}
-			<!-- Single prominent sessions card with embedded area chart -->
-			<Card>
-				<CardContent class="p-5">
-					<div class="flex items-start justify-between">
-						<div>
-							<p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Sessions totales</p>
-							<div class="mt-1 flex items-baseline gap-3">
-								{#if loading}
-									<span class="skeleton inline-block h-9 w-16"></span>
-								{:else}
-									<p class="text-3xl font-bold text-foreground">{overview?.totalSessions ?? 0}</p>
-								{/if}
+			<!-- 3 separate stat cards -->
+			<div class="grid gap-4 sm:grid-cols-3">
+				<Card>
+					<CardContent class="p-5">
+						<div class="flex items-start justify-between">
+							<div>
+								<p class="text-xs font-medium text-muted-foreground">Sessions totales</p>
+								<div class="mt-1 flex items-baseline gap-2">
+									{#if loading}
+										<span class="skeleton inline-block h-9 w-16"></span>
+									{:else}
+										<p class="text-3xl font-bold text-foreground">{overview?.totalSessions ?? 0}</p>
+									{/if}
+								</div>
 								{#if !loading && overview}
-									<span class="inline-flex items-center gap-1 text-xs font-medium text-success">
+									<span class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-success">
 										<ArrowUpRight class="h-3 w-3" />
-										{overview.last7Days.sessions} cette semaine
+										+{overview.last7Days.sessions} cette semaine
 									</span>
 								{/if}
 							</div>
-							{#if !loading && overview}
-								<div class="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-									<span class="flex items-center gap-1">
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+								<Activity class="h-5 w-5 text-primary" />
+							</div>
+						</div>
+						{#if !loading}
+							{@const data = getSparklineData()}
+							<div class="mt-3">
+								<svg viewBox="0 0 200 30" class="h-8 w-full" preserveAspectRatio="none">
+									<defs>
+										<linearGradient id="areaGradientBlue" x1="0" y1="0" x2="0" y2="1">
+											<stop offset="0%" stop-color="#3B82F6" stop-opacity="0.2" />
+											<stop offset="100%" stop-color="#3B82F6" stop-opacity="0" />
+										</linearGradient>
+									</defs>
+									<path d={areaPath(data)} fill="url(#areaGradientBlue)" />
+									<path d={sparklinePath(data)} fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</div>
+						{/if}
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardContent class="p-5">
+						<div class="flex items-start justify-between">
+							<div>
+								<p class="text-xs font-medium text-muted-foreground">Utilisateurs uniques</p>
+								<div class="mt-1 flex items-baseline gap-2">
+									{#if loading}
+										<span class="skeleton inline-block h-9 w-16"></span>
+									{:else}
+										<p class="text-3xl font-bold text-foreground">{overview?.last7Days.uniqueUsers ?? 0}</p>
+									{/if}
+								</div>
+								{#if !loading && overview}
+									<span class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
 										<Eye class="h-3 w-3" />
 										{overview.totalPageViews} pages vues
 									</span>
-									<span class="flex items-center gap-1">
-										<Users class="h-3 w-3" />
-										{overview.last7Days.uniqueUsers} utilisateurs (7j)
-									</span>
-									<span class="flex items-center gap-1">
-										<Clock class="h-3 w-3" />
-										{formatDuration(overview.averageSessionDurationSeconds)} en moyenne
-									</span>
+								{/if}
+							</div>
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+								<Users class="h-5 w-5 text-purple-600" />
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardContent class="p-5">
+						<div class="flex items-start justify-between">
+							<div>
+								<p class="text-xs font-medium text-muted-foreground">Temps moyen / session</p>
+								<div class="mt-1 flex items-baseline gap-2">
+									{#if loading}
+										<span class="skeleton inline-block h-9 w-16"></span>
+									{:else}
+										<p class="text-3xl font-bold text-foreground">{formatDuration(overview?.averageSessionDurationSeconds ?? 0)}</p>
+									{/if}
 								</div>
-							{/if}
-						</div>
-						<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-							<Activity class="h-5 w-5 text-primary" />
-						</div>
-					</div>
-
-					<!-- Embedded area chart (7 last days) -->
-					{#if !loading}
-						{@const data = getSparklineData()}
-						{@const max = Math.max(...data, 1)}
-						<div class="mt-4">
-							<div class="flex items-center justify-between mb-2">
-								<span class="text-[10px] font-medium uppercase tracking-wider text-muted">7 derniers jours</span>
+								{#if !loading && overview}
+									<span class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+										<Clock class="h-3 w-3" />
+										Basé sur {overview.totalSessions} sessions
+									</span>
+								{/if}
 							</div>
-							<svg viewBox="0 0 200 40" class="h-20 w-full" preserveAspectRatio="none">
-								<defs>
-									<linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-										<stop offset="0%" stop-color="#3B82F6" stop-opacity="0.3" />
-										<stop offset="100%" stop-color="#3B82F6" stop-opacity="0.02" />
-									</linearGradient>
-								</defs>
-								<!-- Filled area -->
-								<path d={areaPath(data)} fill="url(#areaGradient)" />
-								<!-- Stroke line -->
-								<path d={sparklinePath(data)} fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-							</svg>
-							<div class="flex justify-between px-0.5 mt-1">
-								{#each ['L', 'M', 'M', 'J', 'V', 'S', 'D'] as label, i}
-									<span class="text-[9px] text-muted">{label}</span>
-								{/each}
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
+								<Clock class="h-5 w-5 text-amber-600" />
 							</div>
 						</div>
-					{:else}
-						<div class="mt-4 skeleton h-16 w-full rounded"></div>
-					{/if}
-				</CardContent>
-			</Card>
+					</CardContent>
+				</Card>
+			</div>
 
-			<!-- Split sessions tables: Admins (left) vs Clients (right) -->
-			<div class="grid grid-cols-2 gap-4">
+			<!-- Two side-by-side session tables -->
+			<div class="grid gap-4 lg:grid-cols-2">
 				<!-- Admin sessions -->
 				<Card>
 					<CardHeader class="pb-3">
 						<div class="flex items-center justify-between">
 							<CardTitle class="text-sm">
 								Admins & Commerciaux
-								<span class="ml-1 text-xs font-normal text-muted-foreground">— {adminSessions.length} sessions</span>
+								<span class="ml-1 text-xs font-normal text-muted-foreground">— {filteredAdminSessions.length} sessions</span>
 							</CardTitle>
+							<Button variant="outline" size="sm" class="h-7 gap-1 text-[10px]" onclick={() => exportSessionsCSV(filteredAdminSessions, 'admin-sessions')}>
+								<Download class="h-3 w-3" />
+								CSV
+							</Button>
 						</div>
 						<div class="relative mt-2">
 							<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-							<Input
-								bind:value={adminSearchQuery}
-								placeholder="Rechercher..."
-								class="h-8 pl-8 text-sm"
-							/>
+							<Input bind:value={adminSearchQuery} placeholder="Rechercher..." class="h-7 pl-8 text-xs" />
 						</div>
 					</CardHeader>
 					<CardContent>
 						{#if loading}
 							<div class="space-y-2">
-								{#each Array(3) as _}
-									<div class="skeleton h-12 w-full rounded"></div>
-								{/each}
+								{#each Array(3) as _}<div class="skeleton h-10 w-full rounded"></div>{/each}
 							</div>
 						{:else if filteredAdminSessions.length === 0}
-							<p class="py-6 text-center text-sm text-muted-foreground">Aucune session admin.</p>
+							<p class="py-4 text-center text-xs text-muted-foreground">Aucune session admin.</p>
 						{:else}
 							<div class="space-y-0">
 								{#each filteredAdminSessions.slice(0, 10) as session}
-									{@const displayName = session.user?.name ?? 'Anonyme'}
-									{@const displaySubtitle = session.user?.email ?? ''}
+									{@const displayName = session.user?.name ?? 'Admin'}
 									<button
-										class="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-accent"
+										class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
 										onclick={() => openSessionDetail(session)}
 									>
-										<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
+										<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
 											{getInitials(displayName)}
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-foreground">{displayName}</p>
-											<p class="truncate text-xs text-muted-foreground">{displaySubtitle}</p>
+											<p class="truncate text-xs font-medium text-foreground">{displayName}</p>
+											<p class="truncate text-[10px] text-muted-foreground">{session.user?.email ?? ''}</p>
 										</div>
 										<div class="shrink-0 text-right">
-											<p class="text-xs text-muted-foreground">{getSessionDuration(session)}</p>
-											<p class="text-[10px] text-muted">{formatRelativeTime(session.startedAt)}</p>
+											<p class="text-[10px] text-muted-foreground">{getSessionDuration(session)}</p>
+											<p class="text-[9px] text-muted">{formatRelativeTime(session.startedAt)}</p>
 										</div>
-										<ChevronRight class="h-3.5 w-3.5 shrink-0 text-muted" />
 									</button>
 								{/each}
 							</div>
@@ -598,56 +617,45 @@
 						<div class="flex items-center justify-between">
 							<CardTitle class="text-sm">
 								Clients
-								<span class="ml-1 text-xs font-normal text-muted-foreground">— {clientSessions.length} sessions</span>
+								<span class="ml-1 text-xs font-normal text-muted-foreground">— {filteredClientSessions.length} sessions</span>
 							</CardTitle>
-							<Button variant="outline" size="sm" class="gap-1.5 text-xs h-7" onclick={exportCSV}>
+							<Button variant="outline" size="sm" class="h-7 gap-1 text-[10px]" onclick={() => exportSessionsCSV(filteredClientSessions, 'client-sessions')}>
 								<Download class="h-3 w-3" />
 								CSV
 							</Button>
 						</div>
 						<div class="relative mt-2">
 							<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-							<Input
-								bind:value={clientSearchQuery}
-								placeholder="Rechercher..."
-								class="h-8 pl-8 text-sm"
-							/>
+							<Input bind:value={clientSearchQuery} placeholder="Rechercher..." class="h-7 pl-8 text-xs" />
 						</div>
 					</CardHeader>
 					<CardContent>
 						{#if loading}
 							<div class="space-y-2">
-								{#each Array(3) as _}
-									<div class="skeleton h-12 w-full rounded"></div>
-								{/each}
+								{#each Array(3) as _}<div class="skeleton h-10 w-full rounded"></div>{/each}
 							</div>
 						{:else if filteredClientSessions.length === 0}
-							<p class="py-6 text-center text-sm text-muted-foreground">Aucune session client.</p>
+							<p class="py-4 text-center text-xs text-muted-foreground">Aucune session client.</p>
 						{:else}
 							<div class="space-y-0">
 								{#each filteredClientSessions.slice(0, 10) as session}
 									{@const displayName = getClientDisplayName(session)}
 									{@const displaySubtitle = getClientDisplaySubtitle(session)}
 									<button
-										class="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors hover:bg-accent"
+										class="flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent"
 										onclick={() => openSessionDetail(session)}
 									>
-										<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warning/10 text-xs font-medium text-warning">
-											{#if displayName !== 'Visiteur anonyme'}
-												{getInitials(displayName)}
-											{:else}
-												?
-											{/if}
+										<div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[10px] font-medium text-warning">
+											{#if displayName !== 'Visiteur anonyme'}{getInitials(displayName)}{:else}?{/if}
 										</div>
 										<div class="min-w-0 flex-1">
-											<p class="truncate text-sm font-medium text-foreground">{displayName}</p>
-											<p class="truncate text-xs text-muted-foreground">{displaySubtitle}</p>
+											<p class="truncate text-xs font-medium text-foreground">{displayName}</p>
+											<p class="truncate text-[10px] text-muted-foreground">{displaySubtitle}</p>
 										</div>
 										<div class="shrink-0 text-right">
-											<p class="text-xs text-muted-foreground">{getSessionDuration(session)}</p>
-											<p class="text-[10px] text-muted">{formatRelativeTime(session.startedAt)}</p>
+											<p class="text-[10px] text-muted-foreground">{getSessionDuration(session)}</p>
+											<p class="text-[9px] text-muted">{formatRelativeTime(session.startedAt)}</p>
 										</div>
-										<ChevronRight class="h-3.5 w-3.5 shrink-0 text-muted" />
 									</button>
 								{/each}
 							</div>
@@ -655,6 +663,51 @@
 					</CardContent>
 				</Card>
 			</div>
+
+			<!-- Sessions par jour bar chart -->
+			<Card>
+				<CardContent class="p-5">
+					<div class="mb-4 flex items-center justify-between">
+						<h3 class="text-sm font-semibold text-foreground">Sessions par jour</h3>
+						<div class="flex items-center gap-3">
+							<div class="flex items-center gap-2 text-[10px]">
+								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-primary"></span> Admin</span>
+								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-warning"></span> Client</span>
+							</div>
+						</div>
+					</div>
+					{#if !loading}
+						{@const days = 7}
+						{@const adminCounts = (() => { const c = Array(days).fill(0); const now = new Date(); for (const s of adminSessions) { const d = Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 86400000); if (d >= 0 && d < days) c[days - 1 - d]++; } return c; })()}
+						{@const clientCounts = (() => { const c = Array(days).fill(0); const now = new Date(); for (const s of clientSessions) { const d = Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 86400000); if (d >= 0 && d < days) c[days - 1 - d]++; } return c; })()}
+						{@const maxBar = Math.max(...adminCounts.map((a, i) => a + clientCounts[i]), 1)}
+						<div class="flex items-end gap-2 h-32">
+							{#each Array(days) as _, i}
+								{@const aH = (adminCounts[i] / maxBar) * 100}
+								{@const cH = (clientCounts[i] / maxBar) * 100}
+								<div class="flex flex-1 flex-col items-center gap-1">
+									<div class="flex w-full flex-col items-center" style="height: 100px">
+										<div class="mt-auto flex w-full flex-col items-center">
+											{#if clientCounts[i] > 0}
+												<div class="w-full max-w-6 rounded-t-sm bg-warning" style="height: {Math.max(cH, 4)}%"></div>
+											{/if}
+											{#if adminCounts[i] > 0}
+												<div class="w-full max-w-6 {clientCounts[i] > 0 ? '' : 'rounded-t-sm'} bg-primary" style="height: {Math.max(aH, 4)}%"></div>
+											{/if}
+											{#if adminCounts[i] === 0 && clientCounts[i] === 0}
+												<div class="w-full max-w-6 rounded-t-sm bg-border" style="height: 2px"></div>
+											{/if}
+										</div>
+									</div>
+									<span class="text-[9px] text-muted">{['L','M','M','J','V','S','D'][i]}</span>
+								</div>
+							{/each}
+						</div>
+					{:else}
+						<div class="skeleton h-32 w-full rounded"></div>
+					{/if}
+				</CardContent>
+			</Card>
 
 		{/if}
 

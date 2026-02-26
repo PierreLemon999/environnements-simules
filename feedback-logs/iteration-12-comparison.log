@@ -1,0 +1,29 @@
+Report written to `feedback-logs/iteration-12-issues.md`.
+
+**Summary of findings:**
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 4 |
+| HIGH | 14 |
+| MEDIUM | 13 |
+| LOW | 8 |
+| **TOTAL** | **39** |
+
+The high issue count is primarily due to **3 newly-tested pages** (Editor, Demo Viewer, Commercial Viewer) that were not captured in previous iterations:
+
+**CRITICAL issues (fix first):**
+1. **Demo Viewer** — "Page introuvable", content doesn't load (backend empty path handling + hardcoded `localhost:3001` URL)
+2. **Prospect Viewer** — Completely blank white page (same root cause)
+3. **Editor** — Doesn't render at all, shows dashboard instead (route/API failure)
+
+**Key HIGH issues:**
+- Invitations: `requireAccount` checkbox value never sent to backend (1-line fix)
+- Invitations: Missing "2 ans" expiry option in link-sharing (1-line fix)
+- Analytics: Should show two side-by-side tables (Admins/Clients), not unified list (mockup R005 confirms this)
+- Analytics: Should have 3 separate stat cards, not 1 combined
+- Tree View: Missing rich detail panel with preview, sub-tabs, metadata
+- Tree View: Missing resizable panel handle (R002 feedback)
+- Editor: Missing JavaScript tab, breadcrumb, tree sidebar
+
+**Pages that are OK:** Login, Projects, Project Detail (mostly), Users, Obfuscation, Update Requests.

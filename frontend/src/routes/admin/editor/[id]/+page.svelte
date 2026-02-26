@@ -17,6 +17,7 @@
 		ExternalLink,
 		Link2,
 		Code,
+		Braces,
 		Globe,
 		ArrowLeft,
 		CheckCircle2,
@@ -91,7 +92,31 @@
 	let internalLinks = $derived(detectedLinks().filter((l) => l.type === 'internal'));
 	let externalLinks = $derived(detectedLinks().filter((l) => l.type === 'external'));
 
+	// JavaScript detection from HTML content
+	let detectedScripts = $derived(() => {
+		if (!htmlContent) return [];
+		const scriptRegex = /<script[^>]*(?:src=["']([^"']+)["'])?[^>]*>([\s\S]*?)<\/script>/gi;
+		const scripts: Array<{ src: string | null; inline: boolean; snippet: string }> = [];
+		let match;
+		while ((match = scriptRegex.exec(htmlContent)) !== null) {
+			const src = match[1] || null;
+			const body = match[2]?.trim() || '';
+			scripts.push({
+				src,
+				inline: !src && body.length > 0,
+				snippet: src ? src : body.slice(0, 120) + (body.length > 120 ? '...' : ''),
+			});
+		}
+		return scripts;
+	});
+
 	let isDirty = $derived(htmlContent !== originalContent);
+	let editorSearchQuery = $state('');
+	let customizeMode = $state(false);
+
+	// Breadcrumb info
+	let breadcrumbProject = $derived(projects.find((p) => p.id === selectedProjectId));
+	let breadcrumbVersion = $derived(breadcrumbProject?.versions?.find((v) => v.id === selectedVersionId));
 
 	let filteredPages = $derived(
 		pages.filter((p) => {
@@ -195,41 +220,44 @@
 		window.location.href = `/admin/editor/${page.id}`;
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		window.addEventListener('keydown', handleKeyDown);
 
-		try {
-			// Load page content first
-			await loadPageContent(pageId);
+		// Initialize editor data
+		(async () => {
+			try {
+				// Load page content first
+				await loadPageContent(pageId ?? '');
 
-			// Load projects list for sidebar
-			const projectsRes = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
-			const detailed = await Promise.all(
-				projectsRes.data.map((p) =>
-					get<{ data: Project }>(`/projects/${p.id}`).then((r) => r.data)
-				)
-			);
-			projects = detailed;
+				// Load projects list for sidebar
+				const projectsRes = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
+				const detailed = await Promise.all(
+					projectsRes.data.map((p) =>
+						get<{ data: Project }>(`/projects/${p.id}`).then((r) => r.data)
+					)
+				);
+				projects = detailed;
 
-			// Find the project/version for current page
-			if (currentPage) {
-				for (const p of projects) {
-					const v = p.versions?.find((v) => v.id === currentPage!.versionId);
-					if (v) {
-						selectedProjectId = p.id;
-						selectedVersionId = v.id;
-						break;
+				// Find the project/version for current page
+				if (currentPage) {
+					for (const p of projects) {
+						const v = p.versions?.find((v) => v.id === currentPage!.versionId);
+						if (v) {
+							selectedProjectId = p.id;
+							selectedVersionId = v.id;
+							break;
+						}
+					}
+					if (selectedVersionId) {
+						await loadPages(selectedVersionId);
 					}
 				}
-				if (selectedVersionId) {
-					await loadPages(selectedVersionId);
-				}
+			} catch (err) {
+				console.error('Editor init error:', err);
+			} finally {
+				loading = false;
 			}
-		} catch (err) {
-			console.error('Editor init error:', err);
-		} finally {
-			loading = false;
-		}
+		})();
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
@@ -253,13 +281,25 @@
 	<div class="flex w-64 shrink-0 flex-col border-r border-border bg-card">
 		<!-- Sidebar header -->
 		<div class="space-y-2 border-b border-border p-3">
-			<a
-				href="/admin/tree"
-				class="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-			>
-				<ArrowLeft class="h-3 w-3" />
-				Retour à l'arborescence
-			</a>
+			<!-- Breadcrumb navigation -->
+			<nav class="flex flex-wrap items-center gap-1 text-[11px]">
+				<a href="/admin/tree" class="text-muted-foreground hover:text-foreground transition-colors">
+					<ArrowLeft class="inline h-3 w-3 mr-0.5" />
+					Arborescence
+				</a>
+				{#if breadcrumbProject}
+					<span class="text-muted">/</span>
+					<span class="text-muted-foreground">{breadcrumbProject.toolName}</span>
+				{/if}
+				{#if breadcrumbVersion}
+					<span class="text-muted">/</span>
+					<span class="text-muted-foreground">{breadcrumbVersion.name}</span>
+				{/if}
+				{#if currentPage}
+					<span class="text-muted">/</span>
+					<span class="font-medium text-foreground truncate max-w-[120px]">{currentPage.title}</span>
+				{/if}
+			</nav>
 
 			<!-- Project selector -->
 			<select
@@ -349,12 +389,36 @@
 					{/if}
 				</div>
 				<div class="flex items-center gap-2">
+					<!-- Search in editor -->
+					<div class="relative">
+						<Search class="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted" />
+						<input
+							type="text"
+							bind:value={editorSearchQuery}
+							placeholder="Recherche..."
+							class="h-7 w-36 rounded-md border border-border bg-transparent pl-7 pr-2 text-xs text-foreground outline-none transition-colors placeholder:text-muted focus:w-48 focus:border-primary focus:ring-1 focus:ring-primary/20"
+						/>
+					</div>
+
+					<Separator orientation="vertical" class="h-5" />
+
 					{#if saved}
 						<span class="inline-flex items-center gap-1 text-xs font-medium text-success">
 							<CheckCircle2 class="h-3.5 w-3.5" />
 							Enregistré
 						</span>
 					{/if}
+
+					<!-- Personnaliser toggle -->
+					<Button
+						variant={customizeMode ? 'default' : 'outline'}
+						size="sm"
+						class="gap-1.5 text-xs"
+						onclick={() => { customizeMode = !customizeMode; }}
+					>
+						Personnaliser
+					</Button>
+
 					<Button variant="outline" size="sm" class="gap-1.5" onclick={() => {
 						window.open(`/demo/${projects.find(p => p.id === selectedProjectId)?.subdomain ?? ''}/${currentPage!.urlPath}`, '_blank');
 					}}>
@@ -384,6 +448,13 @@
 						<TabsTrigger value="links" class="gap-1.5 text-xs">
 							<Link2 class="h-3 w-3" />
 							Liens & Navigation
+						</TabsTrigger>
+						<TabsTrigger value="javascript" class="gap-1.5 text-xs">
+							<Braces class="h-3 w-3" />
+							JavaScript
+							{#if detectedScripts().length > 0}
+								<Badge variant="secondary" class="ml-1 text-[9px] px-1 py-0">{detectedScripts().length}</Badge>
+							{/if}
 						</TabsTrigger>
 					</TabsList>
 				</Tabs>
@@ -545,6 +616,72 @@
 								</CardContent>
 							</Card>
 						</div>
+					{/if}
+				</div>
+			{:else if activeEditorTab === 'javascript'}
+				<div class="flex-1 overflow-y-auto p-6">
+					<div class="mb-6 grid gap-4 sm:grid-cols-2">
+						<Card>
+							<CardContent class="p-4">
+								<div class="flex items-center justify-between">
+									<div>
+										<p class="text-xs font-medium text-muted-foreground">Scripts externes</p>
+										<p class="mt-1 text-2xl font-bold text-foreground">{detectedScripts().filter(s => s.src).length}</p>
+									</div>
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+										<ExternalLink class="h-5 w-5 text-primary" />
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardContent class="p-4">
+								<div class="flex items-center justify-between">
+									<div>
+										<p class="text-xs font-medium text-muted-foreground">Scripts inline</p>
+										<p class="mt-1 text-2xl font-bold text-foreground">{detectedScripts().filter(s => s.inline).length}</p>
+									</div>
+									<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-warning/10">
+										<Braces class="h-5 w-5 text-warning" />
+									</div>
+								</div>
+							</CardContent>
+						</Card>
+					</div>
+
+					{#if detectedScripts().length === 0}
+						<div class="flex flex-col items-center justify-center py-16">
+							<Braces class="h-10 w-10 text-muted" />
+							<p class="mt-3 text-sm font-medium text-foreground">Aucun script détecté</p>
+							<p class="mt-1 text-sm text-muted-foreground">Le contenu HTML ne contient pas de balises script.</p>
+						</div>
+					{:else}
+						<Card>
+							<CardContent class="p-0">
+								<table class="w-full">
+									<thead>
+										<tr class="border-b border-border">
+											<th class="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
+											<th class="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Source / Contenu</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each detectedScripts() as script}
+											<tr class="border-b border-border last:border-0">
+												<td class="px-4 py-2.5">
+													<Badge variant={script.src ? 'default' : 'warning'} class="text-[10px]">
+														{script.src ? 'Externe' : 'Inline'}
+													</Badge>
+												</td>
+												<td class="px-4 py-2.5">
+													<span class="font-mono text-xs text-foreground">{script.snippet}</span>
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</CardContent>
+						</Card>
 					{/if}
 				</div>
 			{/if}

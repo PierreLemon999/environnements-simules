@@ -262,11 +262,11 @@
 	}
 
 	.shape-1 {
-		width: 600px;
-		height: 600px;
-		top: -200px;
-		right: -150px;
-		background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.06) 50%, transparent 70%);
+		width: 720px;
+		height: 720px;
+		top: -220px;
+		right: -160px;
+		background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(124, 58, 237, 0.07) 50%, transparent 70%);
 	}
 
 	.login-container {

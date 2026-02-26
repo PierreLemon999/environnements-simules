@@ -106,10 +106,19 @@ test.describe('Screenshot all pages', () => {
     await page.goto('/admin');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(500);
-    // Try to collapse sidebar
-    const collapseBtn = page.locator('[aria-label*="collapse"], [aria-label*="Réduire"], button:has(.lucide-panel-left-close), button:has(.lucide-chevrons-left)');
-    if (await collapseBtn.isVisible()) await collapseBtn.click();
-    await page.waitForTimeout(500);
+    // Hover over the sidebar to reveal the floating collapse button
+    const sidebar = page.locator('aside').first();
+    if (await sidebar.isVisible()) {
+      // Hover over the middle of the sidebar to trigger onmouseenter
+      await sidebar.hover({ position: { x: 100, y: 300 } });
+      await page.waitForTimeout(500);
+    }
+    // Click the floating collapse button (title="Réduire")
+    const collapseBtn = page.locator('button[title="Réduire"]');
+    if (await collapseBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await collapseBtn.click();
+      await page.waitForTimeout(600);
+    }
     await page.screenshot({ path: `${SCREENSHOT_DIR}/05-dashboard-collapsed.png`, fullPage: true });
   });
 
@@ -193,6 +202,60 @@ test.describe('Screenshot all pages', () => {
     await page.keyboard.press('Meta+k');
     await page.waitForTimeout(800);
     await page.screenshot({ path: `${SCREENSHOT_DIR}/14-command-palette.png`, fullPage: true });
+  });
+
+  test('15 - Page editor', async ({ page }) => {
+    await loginAsAdmin(page);
+    // Get a page ID from the API to navigate to the editor
+    const pagesResponse = await page.request.get('http://localhost:3001/api/projects');
+    const projectsBody = await pagesResponse.json();
+    const firstProject = projectsBody.data?.[0];
+    if (firstProject) {
+      const detailRes = await page.request.get(`http://localhost:3001/api/projects/${firstProject.id}`);
+      const detailBody = await detailRes.json();
+      const activeVersion = detailBody.data?.versions?.find((v: any) => v.status === 'active') ?? detailBody.data?.versions?.[0];
+      if (activeVersion) {
+        const pagesRes = await page.request.get(`http://localhost:3001/api/versions/${activeVersion.id}/pages`);
+        const pagesBody = await pagesRes.json();
+        const firstPage = pagesBody.data?.[0];
+        if (firstPage) {
+          await page.goto(`/admin/editor/${firstPage.id}`);
+          await page.waitForLoadState('networkidle');
+          await page.waitForTimeout(1000);
+        }
+      }
+    }
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/15-editor.png`, fullPage: true });
+  });
+
+  test('16 - Demo viewer', async ({ page }) => {
+    // Demo viewer is public — use the first project's subdomain
+    const pagesResponse = await page.request.get('http://localhost:3001/api/projects');
+    const projectsBody = await pagesResponse.json();
+    const firstProject = projectsBody.data?.[0];
+    if (firstProject?.subdomain) {
+      await page.goto(`/demo/${firstProject.subdomain}`);
+    } else {
+      await page.goto('/demo/test');
+    }
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/16-demo-viewer.png`, fullPage: true });
+  });
+
+  test('17 - Commercial viewer', async ({ page }) => {
+    // View/commercial viewer is public
+    const pagesResponse = await page.request.get('http://localhost:3001/api/projects');
+    const projectsBody = await pagesResponse.json();
+    const firstProject = projectsBody.data?.[0];
+    if (firstProject?.subdomain) {
+      await page.goto(`/view/${firstProject.subdomain}`);
+    } else {
+      await page.goto('/view/test');
+    }
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${SCREENSHOT_DIR}/17-commercial-viewer.png`, fullPage: true });
   });
 
 });

@@ -164,23 +164,25 @@
 		}
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		window.addEventListener('keydown', handleKeyDown);
 
-		try {
-			// Load page metadata
-			const pageRes = await get<{ data: PageData }>(`/pages/${pageId}`);
-			currentPage = pageRes.data;
+		(async () => {
+			try {
+				// Load page metadata
+				const pageRes = await get<{ data: PageData }>(`/pages/${pageId}`);
+				currentPage = pageRes.data;
 
-			// Load HTML content
-			const contentRes = await get<{ data: { html: string } }>(`/pages/${pageId}/content`);
-			htmlContent = contentRes.data?.html ?? '';
-			originalContent = htmlContent;
-		} catch (err) {
-			console.error('Live edit init error:', err);
-		} finally {
-			loading = false;
-		}
+				// Load HTML content
+				const contentRes = await get<{ data: { html: string } }>(`/pages/${pageId}/content`);
+				htmlContent = contentRes.data?.html ?? '';
+				originalContent = htmlContent;
+			} catch (err) {
+				console.error('Live edit init error:', err);
+			} finally {
+				loading = false;
+			}
+		})();
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);

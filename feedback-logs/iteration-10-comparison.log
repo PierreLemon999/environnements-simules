@@ -1,0 +1,27 @@
+Report written to `feedback-logs/iteration-10-issues.md`. Here's the summary:
+
+## Iteration 10 QA Results
+
+**0 CRITICAL** | **3 HIGH** | **7 MEDIUM** | **5 LOW** = **15 total issues**
+
+Down from 19 issues in iteration 9 (with 1 CRITICAL), and no more critical blockers.
+
+### HIGH issues (3):
+1. **Dashboard stat cards** — "Démos actives" and "Sessions ce mois" should be "Pages consultées" and "Temps passé" per mockup feedback R009
+2. **Tree view structure** — Still a flat list, mockup shows collapsible folder groups with page counts, colored icons, modal badges, and overflow links
+3. **Obfuscation "Portée" column** — Should be removed since scope is always "Global" per R001 feedback
+
+### MEDIUM issues (7):
+- Login narrow viewport in first screenshots (test config issue)
+- Dashboard "767min moy." unrealistic session duration
+- Dashboard bar chart sparse data (seed data)
+- Projects breadcrumb polish
+- Tree view missing "Carte du site" graph visualization
+- Command palette is a modal but mockup shows full search results page
+- Project detail health ring edge case validation
+
+### Pages OK:
+Login (admin tab), Login (error), Dashboard (collapsed), Invitations, Users, Update Requests, Sidebar, Global Header
+
+### Not tested:
+Page Editor, Demo Viewer, Commercial Viewer — no screenshots captured for these routes.

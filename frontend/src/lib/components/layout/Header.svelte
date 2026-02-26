@@ -124,8 +124,13 @@
 
 		const crumbs: Array<{ label: string; href: string; isLast: boolean }> = [];
 
-		for (let i = 0; i < segments.length; i++) {
+		// Skip the first segment ('admin') — it's already shown as the page title area
+		// Only build breadcrumbs for sub-pages (e.g. /admin/projects/:id)
+		for (let i = 1; i < segments.length; i++) {
 			const segment = segments[i];
+			// Skip direct section pages — they're already shown via pageTitle
+			// Only show sub-navigation (e.g. project detail under Projets)
+			if (i === 1 && pageTitles[segment]) continue;
 			const label = resolvedNames[segment] ?? labels[segment] ?? segment;
 			const href = '/' + segments.slice(0, i + 1).join('/');
 			const isLast = i === segments.length - 1;

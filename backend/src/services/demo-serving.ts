@@ -59,17 +59,43 @@ export async function serveDemoPage(
 
   // 3. Find the page matching the request path
   // Normalize the path: remove leading/trailing slashes
-  const normalizedPath = requestPath.replace(/^\/+|\/+$/g, '') || 'index';
+  const normalizedPath = requestPath.replace(/^\/+|\/+$/g, '');
 
-  const page = await db
-    .select()
-    .from(pages)
-    .where(and(eq(pages.versionId, version.id), eq(pages.urlPath, normalizedPath)))
-    .get();
+  let page;
+
+  if (normalizedPath) {
+    page = await db
+      .select()
+      .from(pages)
+      .where(and(eq(pages.versionId, version.id), eq(pages.urlPath, normalizedPath)))
+      .get();
+  }
+
+  // If no path specified or 'index' not found, try common start pages then fall back to first page
+  if (!page) {
+    for (const fallback of ['index', 'home', 'dashboard']) {
+      page = await db
+        .select()
+        .from(pages)
+        .where(and(eq(pages.versionId, version.id), eq(pages.urlPath, fallback)))
+        .get();
+      if (page) break;
+    }
+  }
+
+  // Last resort: serve the first available page
+  if (!page) {
+    page = await db
+      .select()
+      .from(pages)
+      .where(eq(pages.versionId, version.id))
+      .limit(1)
+      .get();
+  }
 
   if (!page) {
     throw new NotFoundError(
-      `Page "${normalizedPath}" not found in version "${version.name}"`
+      `No pages found in version "${version.name}"`
     );
   }
 
