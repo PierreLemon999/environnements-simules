@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
+import { chromeExtensionReload } from './scripts/reload-plugin';
 
-export default defineConfig({
-	plugins: [svelte()],
+export default defineConfig(({ mode }) => ({
+	plugins: [svelte(), ...(mode === 'development' ? [chromeExtensionReload()] : [])],
 	base: './',
 	build: {
 		outDir: 'dist',
@@ -44,4 +45,4 @@ export default defineConfig({
 			'$lib': resolve(__dirname, 'src/lib')
 		}
 	}
-});
+}));

@@ -42,6 +42,7 @@
 		name: string;
 		email: string;
 		role: 'admin' | 'client';
+		company: string | null;
 		avatarUrl: string | null;
 		googleId: string | null;
 		language: string;
@@ -60,6 +61,7 @@
 	let formEmail = $state('');
 	let formPassword = $state('');
 	let formRole = $state<'admin' | 'client'>('client');
+	let formCompany = $state('');
 	let formSubmitting = $state(false);
 	let formError = $state('');
 
@@ -69,7 +71,7 @@
 	let deleteSubmitting = $state(false);
 	let deleteError = $state('');
 
-	let filteredUsers = $derived(() => {
+	let filteredUsers = $derived.by(() => {
 		let result = users;
 
 		if (roleFilter !== 'all') {
@@ -80,7 +82,8 @@
 			const q = searchQuery.toLowerCase();
 			result = result.filter(u =>
 				u.name.toLowerCase().includes(q) ||
-				u.email.toLowerCase().includes(q)
+				u.email.toLowerCase().includes(q) ||
+				(u.company ?? '').toLowerCase().includes(q)
 			);
 		}
 
@@ -113,6 +116,7 @@
 		formEmail = '';
 		formPassword = '';
 		formRole = 'client';
+		formCompany = '';
 		formError = '';
 		dialogOpen = true;
 	}
@@ -123,6 +127,7 @@
 		formEmail = user.email;
 		formPassword = '';
 		formRole = user.role;
+		formCompany = user.company ?? '';
 		formError = '';
 		dialogOpen = true;
 	}
@@ -148,6 +153,9 @@
 				email: formEmail.trim(),
 				role: formRole,
 			};
+			if (formRole === 'client' && formCompany.trim()) {
+				body.company = formCompany.trim();
+			}
 			if (formPassword.trim()) {
 				body.password = formPassword.trim();
 			}
@@ -213,7 +221,7 @@
 	<!-- Header -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-lg font-semibold text-foreground">Utilisateurs</h1>
+			<h2 class="text-lg font-semibold text-foreground">Utilisateurs</h2>
 			<p class="text-sm text-muted-foreground">
 				{users.length} utilisateur{users.length !== 1 ? 's' : ''} — {adminCount} admin{adminCount !== 1 ? 's' : ''}, {clientCount} client{clientCount !== 1 ? 's' : ''}
 			</p>
@@ -257,7 +265,7 @@
 				</Card>
 			{/each}
 		</div>
-	{:else if filteredUsers().length === 0}
+	{:else if filteredUsers.length === 0}
 		<Card>
 			<CardContent class="flex flex-col items-center justify-center py-16">
 				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
@@ -273,7 +281,7 @@
 		</Card>
 	{:else}
 		<div class="space-y-2">
-			{#each filteredUsers() as user}
+			{#each filteredUsers as user}
 				{@const isCurrentUser = $currentUser?.id === user.id}
 				<Card class="group transition-shadow hover:shadow-md">
 					<CardContent class="p-4">
@@ -299,6 +307,10 @@
 										<Mail class="h-3 w-3" />
 										{user.email}
 									</span>
+									{#if user.company}
+										<span class="text-muted">·</span>
+										<span>{user.company}</span>
+									{/if}
 									{#if user.googleId}
 										<span class="inline-flex items-center gap-1 text-primary">
 											<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none">
@@ -396,6 +408,12 @@
 					<option value="client">Client</option>
 				</select>
 			</div>
+			{#if formRole === 'client'}
+				<div class="space-y-2">
+					<label for="user-company" class="text-sm font-medium text-foreground">Entreprise</label>
+					<Input id="user-company" bind:value={formCompany} placeholder="Nom de l'entreprise" />
+				</div>
+			{/if}
 
 			{#if formError}
 				<p class="text-sm text-destructive">{formError}</p>

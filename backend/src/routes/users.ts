@@ -36,7 +36,7 @@ router.get('/', authenticate, requireRole('admin'), async (_req: Request, res: R
  */
 router.post('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const { name, email, password, role, language } = req.body;
+    const { name, email, password, role, language, company } = req.body;
 
     if (!name || !email) {
       res.status(400).json({ error: 'Name and email are required', code: 400 });
@@ -61,6 +61,7 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       email,
       passwordHash,
       role: role || 'client',
+      company: company || null,
       avatarUrl: null,
       googleId: null,
       language: language || 'fr',
@@ -131,7 +132,7 @@ router.put(
         return;
       }
 
-      const { name, email, password, role, language, avatarUrl } = req.body;
+      const { name, email, password, role, language, avatarUrl, company } = req.body;
 
       // Check email uniqueness if changing
       if (email && email !== user.email) {
@@ -148,6 +149,7 @@ router.put(
       if (role !== undefined) updated.role = role;
       if (language !== undefined) updated.language = language;
       if (avatarUrl !== undefined) updated.avatarUrl = avatarUrl;
+      if (company !== undefined) updated.company = company;
       if (password) updated.passwordHash = await bcrypt.hash(password, 10);
 
       await db.update(users).set(updated).where(eq(users.id, req.params.id));

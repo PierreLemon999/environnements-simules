@@ -288,6 +288,34 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // ---------------------------------------------------------------------------
+// Dev auto-reload — polls __reload__ file written by Vite plugin
+// ---------------------------------------------------------------------------
+
+if (import.meta.env?.MODE === 'development' || !import.meta.env?.PROD) {
+	let lastReloadTs = '';
+
+	const checkForReload = async () => {
+		try {
+			const url = chrome.runtime.getURL('hot-reload.json');
+			const res = await fetch(url, { cache: 'no-store' });
+			const { ts } = await res.json();
+			if (lastReloadTs && ts !== lastReloadTs) {
+				console.log('[Dev] Rebuild detected, reloading extension…');
+				chrome.runtime.reload();
+				return;
+			}
+			lastReloadTs = ts;
+		} catch {
+			// File doesn't exist yet or extension is loading
+		}
+	};
+
+	// Check every second
+	setInterval(checkForReload, 1000);
+	checkForReload();
+}
+
+// ---------------------------------------------------------------------------
 // Badge helper
 // ---------------------------------------------------------------------------
 

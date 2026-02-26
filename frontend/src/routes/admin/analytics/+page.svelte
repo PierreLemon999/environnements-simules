@@ -42,6 +42,7 @@
 		eventCount: number;
 		user: { id: string; name: string; email: string } | null;
 		assignment?: { clientName: string | null; clientEmail: string; companyName?: string | null; metadata?: any } | null;
+		version?: { id: string; name: string; project: { id: string; name: string; toolName: string } | null } | null;
 	}
 
 	interface SessionDetail {
@@ -55,6 +56,7 @@
 		endedAt: string | null;
 		user: { id: string; name: string; email: string } | null;
 		assignment?: { clientName: string | null; clientEmail: string; companyName?: string | null; metadata?: any } | null;
+		version?: { id: string; name: string; project: { id: string; name: string; toolName: string } | null } | null;
 		events: SessionEvent[];
 	}
 
@@ -113,7 +115,7 @@
 	let detailPanelOpen = $state(false);
 
 	// Bar chart period state
-	let barChartPeriod = $state(7);
+	let barChartPeriod = $state(14);
 
 	// Unified filtered sessions based on search
 	let filteredSessions = $derived(
@@ -326,6 +328,39 @@
 			visitCounts.set(userId, (visitCounts.get(userId) ?? 0) + 1);
 		}
 		return Math.max(...visitCounts.values(), 1);
+	}
+
+	// Pagination state
+	let adminPage = $state(1);
+	let clientPage = $state(1);
+	const pageSize = 7;
+
+	let paginatedAdminSessions = $derived(filteredAdminSessions.slice((adminPage - 1) * pageSize, adminPage * pageSize));
+	let paginatedClientSessions = $derived(filteredClientSessions.slice((clientPage - 1) * pageSize, clientPage * pageSize));
+	let adminTotalPages = $derived(Math.max(1, Math.ceil(filteredAdminSessions.length / pageSize)));
+	let clientTotalPages = $derived(Math.max(1, Math.ceil(filteredClientSessions.length / pageSize)));
+
+	// Tool name helper
+	function getToolName(session: Session | SessionDetail): string {
+		return (session as any).version?.project?.toolName ?? '—';
+	}
+
+	// Known tool colors
+	const knownToolColors: Record<string, string> = {
+		'Salesforce': '#00a1e0',
+		'ServiceNow': '#81b532',
+		'SAP SuccessFactors': '#0070f2',
+		'SAP SF': '#0070f2',
+		'Workday': '#f5a623',
+		'HubSpot': '#ff7a59',
+	};
+
+	function getToolDotColor(session: Session): string {
+		const toolName = (session as any).version?.project?.toolName;
+		if (toolName && knownToolColors[toolName]) return knownToolColors[toolName];
+		// Fallback: hash-based color from palette
+		const index = projects.findIndex(p => p.toolName === toolName);
+		return toolColors[Math.max(0, index) % toolColors.length];
 	}
 
 	// Tool dot color palette
@@ -736,14 +771,15 @@
 										<tr class="border-b border-border">
 											<th class="pb-2 pl-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Utilisateur</th>
 											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rôle</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Outil</th>
 											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Durée</th>
-											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</th>
+											<th class="pb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</th>
 											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Visites</th>
 											<th class="pb-2 pr-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Date</th>
 										</tr>
 									</thead>
 									<tbody>
-										{#each filteredAdminSessions.slice(0, 10) as session}
+										{#each paginatedAdminSessions as session}
 											{@const displayName = session.user?.name ?? 'Admin'}
 											{@const visitCount = getUniqueVisitCount(session, adminSessions)}
 											{@const maxVisits = getMaxVisits(adminSessions)}
@@ -767,17 +803,23 @@
 													<span class="text-[10px] text-muted-foreground">Admin</span>
 												</td>
 												<td class="py-2.5 pr-2">
-													<span class="text-xs text-foreground">{getSessionDuration(session)}</span>
+													<div class="flex items-center gap-1.5">
+														<span class="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style="background: {getToolDotColor(session)}"></span>
+														<span class="text-[10px] text-muted-foreground">{getToolName(session)}</span>
+													</div>
 												</td>
 												<td class="py-2.5 pr-2">
-													<span class="text-xs text-foreground">{session.eventCount}</span>
+													<span class="font-mono text-[11px] text-muted-foreground">{getSessionDuration(session)}</span>
+												</td>
+												<td class="py-2.5 pr-2 text-center">
+													<span class="font-mono text-[11px] text-muted-foreground">{session.eventCount}</span>
 												</td>
 												<td class="py-2.5 pr-2">
 													<div class="flex items-center gap-1.5">
-														<div class="h-1.5 w-12 overflow-hidden rounded-full bg-border">
-															<div class="h-full rounded-full bg-primary" style="width: {visitPct}%"></div>
+														<div class="h-1 w-10 overflow-hidden rounded-full bg-border">
+															<div class="h-full rounded-full {visitPct >= 70 ? 'bg-primary' : visitPct >= 40 ? 'bg-warning' : 'bg-muted'}" style="width: {visitPct}%"></div>
 														</div>
-														<span class="text-[10px] text-muted-foreground">{visitCount}</span>
+														<span class="font-mono text-[11px] font-semibold text-foreground">{visitCount}</span>
 													</div>
 												</td>
 												<td class="py-2.5 pr-6">
@@ -788,6 +830,18 @@
 									</tbody>
 								</table>
 							</div>
+							{#if adminTotalPages > 1}
+								<div class="flex items-center justify-between border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+									<span>Affichage {(adminPage - 1) * pageSize + 1}-{Math.min(adminPage * pageSize, filteredAdminSessions.length)} sur {filteredAdminSessions.length}</span>
+									<div class="flex items-center gap-1">
+										<button class="rounded px-1.5 py-0.5 hover:bg-accent disabled:opacity-40" disabled={adminPage <= 1} onclick={() => { adminPage--; }}>←</button>
+										{#each Array(adminTotalPages) as _, i}
+											<button class="rounded px-1.5 py-0.5 {adminPage === i + 1 ? 'bg-foreground text-background' : 'hover:bg-accent'}" onclick={() => { adminPage = i + 1; }}>{i + 1}</button>
+										{/each}
+										<button class="rounded px-1.5 py-0.5 hover:bg-accent disabled:opacity-40" disabled={adminPage >= adminTotalPages} onclick={() => { adminPage++; }}>→</button>
+									</div>
+								</div>
+							{/if}
 						{/if}
 					</CardContent>
 				</Card>
@@ -824,14 +878,15 @@
 										<tr class="border-b border-border">
 											<th class="pb-2 pl-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Utilisateur</th>
 											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Entreprise</th>
+											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Outil</th>
 											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Durée</th>
-											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</th>
+											<th class="pb-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</th>
 											<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Visites</th>
 											<th class="pb-2 pr-6 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Date</th>
 										</tr>
 									</thead>
 									<tbody>
-										{#each filteredClientSessions.slice(0, 10) as session}
+										{#each paginatedClientSessions as session}
 											{@const displayName = getClientDisplayName(session)}
 											{@const displaySubtitle = getClientDisplaySubtitle(session)}
 											{@const company = getCompanyName(session)}
@@ -844,7 +899,7 @@
 											>
 												<td class="py-2.5 pl-6 pr-2">
 													<div class="flex items-center gap-2">
-														<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning/10 text-[9px] font-medium text-warning">
+														<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-100 text-[9px] font-medium text-purple-600">
 															{#if displayName !== 'Visiteur anonyme'}{getInitials(displayName)}{:else}?{/if}
 														</div>
 														<div class="min-w-0">
@@ -857,17 +912,23 @@
 													<span class="text-[10px] text-muted-foreground">{company}</span>
 												</td>
 												<td class="py-2.5 pr-2">
-													<span class="text-xs text-foreground">{getSessionDuration(session)}</span>
+													<div class="flex items-center gap-1.5">
+														<span class="inline-block h-[7px] w-[7px] shrink-0 rounded-full" style="background: {getToolDotColor(session)}"></span>
+														<span class="text-[10px] text-muted-foreground">{getToolName(session)}</span>
+													</div>
 												</td>
 												<td class="py-2.5 pr-2">
-													<span class="text-xs text-foreground">{session.eventCount}</span>
+													<span class="font-mono text-[11px] text-muted-foreground">{getSessionDuration(session)}</span>
+												</td>
+												<td class="py-2.5 pr-2 text-center">
+													<span class="font-mono text-[11px] text-muted-foreground">{session.eventCount}</span>
 												</td>
 												<td class="py-2.5 pr-2">
 													<div class="flex items-center gap-1.5">
-														<div class="h-1.5 w-12 overflow-hidden rounded-full bg-border">
-															<div class="h-full rounded-full bg-primary" style="width: {visitPct}%"></div>
+														<div class="h-1 w-10 overflow-hidden rounded-full bg-border">
+															<div class="h-full rounded-full {visitPct >= 70 ? 'bg-primary' : visitPct >= 40 ? 'bg-warning' : 'bg-muted'}" style="width: {visitPct}%"></div>
 														</div>
-														<span class="text-[10px] text-muted-foreground">{visitCount}</span>
+														<span class="font-mono text-[11px] font-semibold text-foreground">{visitCount}</span>
 													</div>
 												</td>
 												<td class="py-2.5 pr-6">
@@ -878,6 +939,18 @@
 									</tbody>
 								</table>
 							</div>
+							{#if clientTotalPages > 1}
+								<div class="flex items-center justify-between border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+									<span>Affichage {(clientPage - 1) * pageSize + 1}-{Math.min(clientPage * pageSize, filteredClientSessions.length)} sur {filteredClientSessions.length}</span>
+									<div class="flex items-center gap-1">
+										<button class="rounded px-1.5 py-0.5 hover:bg-accent disabled:opacity-40" disabled={clientPage <= 1} onclick={() => { clientPage--; }}>←</button>
+										{#each Array(clientTotalPages) as _, i}
+											<button class="rounded px-1.5 py-0.5 {clientPage === i + 1 ? 'bg-foreground text-background' : 'hover:bg-accent'}" onclick={() => { clientPage = i + 1; }}>{i + 1}</button>
+										{/each}
+										<button class="rounded px-1.5 py-0.5 hover:bg-accent disabled:opacity-40" disabled={clientPage >= clientTotalPages} onclick={() => { clientPage++; }}>→</button>
+									</div>
+								</div>
+							{/if}
 						{/if}
 					</CardContent>
 				</Card>
@@ -901,38 +974,52 @@
 								{/each}
 							</div>
 							<div class="flex items-center gap-2 text-[10px]">
-								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-primary"></span> Admin</span>
-								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-warning"></span> Client</span>
+								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-primary"></span> Clients</span>
+								<span class="inline-flex items-center gap-1"><span class="h-2 w-2 rounded-sm bg-blue-200"></span> Admins & Commerciaux</span>
 							</div>
 						</div>
 					</div>
 					{#if !loading}
 						{@const days = barChartPeriod}
+						{@const barHeight = 150}
 						{@const dayLabels = getDayLabels(days)}
 						{@const adminCounts = (() => { const c = Array(days).fill(0); const now = new Date(); for (const s of adminSessions) { const d = Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 86400000); if (d >= 0 && d < days) c[days - 1 - d]++; } return c; })()}
 						{@const clientCounts = (() => { const c = Array(days).fill(0); const now = new Date(); for (const s of clientSessions) { const d = Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 86400000); if (d >= 0 && d < days) c[days - 1 - d]++; } return c; })()}
 						{@const maxBar = Math.max(...adminCounts.map((a, i) => a + clientCounts[i]), 1)}
-						<div class="flex items-end gap-1 h-32">
+						<div class="flex items-end gap-1" style="height: {barHeight + 20}px">
 							{#each Array(days) as _, i}
-								{@const aH = (adminCounts[i] / maxBar) * 100}
-								{@const cH = (clientCounts[i] / maxBar) * 100}
+								{@const aPx = Math.round((adminCounts[i] / maxBar) * barHeight)}
+								{@const cPx = Math.round((clientCounts[i] / maxBar) * barHeight)}
+								{@const isToday = i === days - 1}
 								<div class="flex flex-1 flex-col items-center gap-1">
-									<div class="flex w-full flex-col items-center" style="height: 100px">
-										<div class="mt-auto flex w-full flex-col items-center">
+									<div class="flex w-full items-end justify-center" style="height: {barHeight}px">
+										<div class="flex w-full max-w-[24px] flex-col items-stretch">
 											{#if clientCounts[i] > 0}
-												<div class="w-full max-w-6 rounded-t-sm bg-warning" style="height: {Math.max(cH, 4)}%"></div>
+												<div class="w-full rounded-t-[3px] bg-primary" style="height: {Math.max(cPx, 4)}px"></div>
 											{/if}
 											{#if adminCounts[i] > 0}
-												<div class="w-full max-w-6 {clientCounts[i] > 0 ? '' : 'rounded-t-sm'} bg-primary" style="height: {Math.max(aH, 4)}%"></div>
+												<div class="w-full {clientCounts[i] > 0 ? '' : 'rounded-t-[3px]'} bg-blue-200" style="height: {Math.max(aPx, 4)}px"></div>
 											{/if}
 											{#if adminCounts[i] === 0 && clientCounts[i] === 0}
-												<div class="w-full max-w-6 rounded-t-sm bg-border" style="height: 2px"></div>
+												<div class="w-full rounded-t-[3px] bg-border" style="height: 2px"></div>
 											{/if}
 										</div>
 									</div>
-									<span class="text-[9px] text-muted {days > 14 ? 'hidden sm:inline' : ''}">{dayLabels[i]}</span>
+									<span class="text-[9px] {isToday ? 'font-semibold text-primary' : 'text-muted'} {days > 14 ? 'hidden sm:inline' : ''}">{dayLabels[i]}</span>
 								</div>
 							{/each}
+						</div>
+						<div class="mt-3 flex gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
+							<div class="flex items-center gap-1.5">
+								<span class="inline-block h-2 w-2 rounded-sm bg-primary"></span>
+								Clients
+								<span class="font-mono font-semibold text-foreground">{clientSessions.length}</span>
+							</div>
+							<div class="flex items-center gap-1.5">
+								<span class="inline-block h-2 w-2 rounded-sm bg-blue-200"></span>
+								Admins & Commerciaux
+								<span class="font-mono font-semibold text-foreground">{adminSessions.length}</span>
+							</div>
 						</div>
 					{:else}
 						<div class="skeleton h-32 w-full rounded"></div>

@@ -37,7 +37,7 @@
 	let statusFilter = $state('all');
 	let searchQuery = $state('');
 
-	let filteredRequests = $derived(() => {
+	let filteredRequests = $derived.by(() => {
 		let result = requests;
 		if (statusFilter !== 'all') {
 			result = result.filter(r => r.status === statusFilter);
@@ -127,10 +127,11 @@
 
 	async function updateStatus(request: UpdateRequest, newStatus: string) {
 		try {
-			const res = await put<{ data: UpdateRequest }>(`/update-requests/${request.id}`, {
+			const res = await put<{ data: Partial<UpdateRequest> }>(`/update-requests/${request.id}`, {
 				status: newStatus,
 			});
-			requests = requests.map(r => r.id === request.id ? { ...r, ...res.data } : r);
+			// Merge only scalar fields from response, preserve enriched page/requestedByUser
+			requests = requests.map(r => r.id === request.id ? { ...r, status: res.data.status ?? r.status, resolvedAt: res.data.resolvedAt ?? r.resolvedAt } : r);
 			const labels: Record<string, string> = { pending: 'En attente', in_progress: 'En cours', done: 'Terminée' };
 			toast.success(`Demande passée en « ${labels[newStatus] || newStatus} »`);
 		} catch (err) {
@@ -157,7 +158,7 @@
 <div class="space-y-6">
 	<!-- Header -->
 	<div>
-		<h1 class="text-lg font-semibold text-foreground">Demandes de mise à jour</h1>
+		<h2 class="text-lg font-semibold text-foreground">Demandes de mise à jour</h2>
 		<p class="text-sm text-muted-foreground">
 			Suivez et traitez les demandes de mise à jour des pages capturées
 		</p>
@@ -261,7 +262,7 @@
 				</Card>
 			{/each}
 		</div>
-	{:else if filteredRequests().length === 0}
+	{:else if filteredRequests.length === 0}
 		<Card>
 			<CardContent class="flex flex-col items-center justify-center py-16">
 				<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
@@ -277,7 +278,7 @@
 		</Card>
 	{:else}
 		<div class="space-y-3">
-			{#each filteredRequests() as request}
+			{#each filteredRequests as request}
 				{@const StatusIcon = getStatusIcon(request.status)}
 				{@const nextStatus = getNextStatus(request.status)}
 				<Card class="transition-shadow hover:shadow-md">

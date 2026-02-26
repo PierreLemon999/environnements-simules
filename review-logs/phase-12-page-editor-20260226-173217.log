@@ -1,0 +1,19 @@
+Phase 12 review is complete. Here's a summary:
+
+**Files modified:**
+- `frontend/src/routes/admin/editor/[id]/+page.svelte` — Major rewrite
+- `frontend/src/lib/components/layout/Header.svelte` — Added live-edit breadcrumb label
+
+**8 issues found and fixed:**
+1. **Missing HTML toolbar** (High) — Added Format/Undo/Redo/Search buttons
+2. **Missing bottom status bar** (High) — Added line/col, HTML badge, UTF-8, file size, save buttons
+3. **Links tab flat table** (High) — Replaced with grouped tree view, mini map, per-link mapping dropdowns
+4. **JS tab flat table** (Medium) — Replaced with card layout, toggle switches, warning banner
+5. **Toolbar truncation** (Medium) — Simplified top bar, moved save to bottom
+6. **Live-edit breadcrumb** (Low) — Shows "Édition en direct" instead of "live-edit"
+7. **Missing link count badge** (Low) — Added count next to "Liens" tab
+8. **Missing page name** (Low) — Added page title display in editor header
+
+**Cleanup:** Temp test file removed, database re-seeded, screenshots cleaned up.
+
+Report written to `review-logs/phase-12-report.md`.

@@ -1,0 +1,29 @@
+
+
+Based on the conversation summary, Phase 11 (Analytics Dashboard review) is fully complete. Here's a recap of what was accomplished:
+
+## Phase 11 — Analytics Dashboard Review: COMPLETE
+
+### 9 Issues Found & Fixed:
+1. **Missing "Outil" column** (Medium) — Added version→project enrichment in backend + tool column with colored dots in both tables
+2. **Bar chart bars invisible** (High) — Rewrote from CSS percentage heights to pixel-based calculations
+3. **Bar chart legend colors inverted** (Low) — Swapped to match mockup (Clients=blue, Admins=pale blue)
+4. **Default bar chart period wrong** (Low) — Changed from 7j to 14j
+5. **Missing pagination** (Low) — Added 7-per-page pagination with navigation to both tables
+6. **Client avatar color mismatch** (Low) — Changed from orange to purple
+7. **Visit bar styling** (Low) — Added conditional coloring based on percentage thresholds
+8. **Today highlight missing** (Low) — Last day label now shows in blue bold
+9. **Missing chart legend footer** (Low) — Added legend with totals below bar chart
+
+### Files Modified:
+- `backend/src/routes/analytics.ts` — Version→project enrichment in `/sessions` and `/sessions/:id`
+- `frontend/src/routes/admin/analytics/+page.svelte` — All UI fixes (tool column, pagination, bar chart, colors, legend)
+
+### Test Results:
+- All 4 Playwright functional tests pass
+- All API endpoints verified via curl
+
+### Report:
+Written to `review-logs/phase-11-report.md`
+
+The phase is complete with no pending tasks. Let me know if you'd like to proceed with anything else.

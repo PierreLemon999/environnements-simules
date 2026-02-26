@@ -28,16 +28,20 @@ const PORT = parseInt(process.env.BACKEND_PORT || '3001', 10);
 
 // ── Global Middleware ────────────────────────────────────────────────────────
 
-// CORS: allow frontend dev server
+// CORS: allow frontend dev server (any localhost port in dev)
 app.use(
   cors({
-    origin: [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://env-ll.com',
-      process.env.FRONTEND_URL || '',
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const allowed = [
+        'https://env-ll.com',
+        process.env.FRONTEND_URL || '',
+      ].filter(Boolean);
+      if (allowed.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );

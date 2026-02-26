@@ -702,11 +702,12 @@
 		color: var(--color-muted-foreground);
 	}
 
-	/* Magic door — dev only */
+	/* Magic door — dev only, centered between card right edge and screen right edge */
 	.magic-door {
 		position: fixed;
-		bottom: 20px;
-		right: 20px;
+		top: 50%;
+		right: calc((100vw - 440px) / 4);
+		transform: translate(50%, -50%);
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;

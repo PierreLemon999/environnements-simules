@@ -6,6 +6,7 @@ import {
   guides,
   guidePages,
   versions,
+  projects,
   users,
   pages,
   demoAssignments,
@@ -91,11 +92,34 @@ router.get('/sessions', authenticate, async (req: Request, res: Response) => {
           }
         }
 
+        // Fetch version → project info for tool name
+        let version = null;
+        if (session.versionId) {
+          const versionRow = await db
+            .select({ id: versions.id, name: versions.name, projectId: versions.projectId })
+            .from(versions)
+            .where(eq(versions.id, session.versionId))
+            .get();
+          if (versionRow) {
+            const project = await db
+              .select({ id: projects.id, name: projects.name, toolName: projects.toolName })
+              .from(projects)
+              .where(eq(projects.id, versionRow.projectId))
+              .get();
+            version = {
+              id: versionRow.id,
+              name: versionRow.name,
+              project: project ?? null,
+            };
+          }
+        }
+
         return {
           ...session,
           eventCount: eventCount?.count ?? 0,
           user,
           assignment,
+          version,
         };
       })
     );
@@ -178,11 +202,34 @@ router.get('/sessions/:id', authenticate, async (req: Request, res: Response) =>
       }
     }
 
+    // Fetch version → project info
+    let version = null;
+    if (session.versionId) {
+      const versionRow = await db
+        .select({ id: versions.id, name: versions.name, projectId: versions.projectId })
+        .from(versions)
+        .where(eq(versions.id, session.versionId))
+        .get();
+      if (versionRow) {
+        const project = await db
+          .select({ id: projects.id, name: projects.name, toolName: projects.toolName })
+          .from(projects)
+          .where(eq(projects.id, versionRow.projectId))
+          .get();
+        version = {
+          id: versionRow.id,
+          name: versionRow.name,
+          project: project ?? null,
+        };
+      }
+    }
+
     res.json({
       data: {
         ...session,
         user,
         assignment,
+        version,
         events: enrichedEvents,
       },
     });

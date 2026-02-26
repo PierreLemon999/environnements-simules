@@ -1,0 +1,17 @@
+Phase 10 review is complete. Here's a summary:
+
+## Phase 10: Users & Update Requests — Complete
+
+**4 issues found and fixed:**
+
+1. **`$derived(() => ...)` → `$derived.by(() => ...)`** — Both pages used the wrong Svelte 5 pattern, causing filter logic to re-execute on every template access instead of computing once
+2. **Duplicate `<h1>` elements** — Layout header already had h1; changed page-level headings to h2 for proper accessibility
+3. **Status change lost enriched data** — Updating a request's status caused page title and requester name to vanish because the API response overwrote enriched fields
+4. **Missing company field** — The DB has company data for client users but it was invisible in the UI; added display, search, and CRUD support
+
+**Files modified:**
+- `frontend/src/routes/admin/users/+page.svelte`
+- `frontend/src/routes/admin/update-requests/+page.svelte`
+- `backend/src/routes/users.ts`
+
+**All 15 Playwright tests passed** after fixes. Report written to `review-logs/phase-10-report.md`.

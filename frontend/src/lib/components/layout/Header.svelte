@@ -95,6 +95,7 @@
 		'update-requests': 'Demandes MAJ',
 		settings: 'Paramètres',
 		editor: 'Éditeur',
+		'live-edit': 'Édition en direct',
 		components: 'Composants',
 	};
 
