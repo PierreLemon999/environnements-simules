@@ -1,0 +1,29 @@
+Audit complete. Report written to `feedback-logs/iteration-4-issues.md`.
+
+**Summary of findings across 14 screenshots vs mockups:**
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 1 |
+| HIGH | 8 |
+| MEDIUM | 10 |
+| LOW | 7 |
+| **TOTAL** | **26** |
+
+**Top priority items:**
+
+1. **CRITICAL** — Backend returns English error messages ("Invalid credentials") displayed in the French UI. Affects all error states across the app.
+
+2. **HIGH** — Tree view is significantly simplified vs mockup (missing collapsible sections, page counts, colored icons, modal badges, breadcrumb path).
+
+3. **HIGH** — Analytics page missing the two-column Admins/Clients split layout from the mockup.
+
+4. **HIGH** — Dashboard missing trend indicators on stat cards ("+2 ce mois", "+47 cette semaine").
+
+5. **HIGH** — Command palette structure differs from mockup (shortcut hints should be removed, categories need review, search results need richer context).
+
+6. **HIGH** — Obfuscation "Portée" column should be removed (always global per resolved feedback).
+
+7. **HIGH** — Invitations missing "require account creation" option (unresolved mockup feedback R005).
+
+8. **HIGH** — Login Google button text says "Se connecter avec Google" but mockup shows "Continuer avec Google".

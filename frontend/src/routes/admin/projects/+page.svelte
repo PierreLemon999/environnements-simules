@@ -120,12 +120,18 @@
 	let filteredProjects = $derived(() => {
 		let result = projects;
 
-		// Status filter - since projects don't have a status field,
-		// we filter by version statuses
-		if (statusFilter !== 'all') {
-			// For now, show all - would need version status data
-			// This is a UI-level filter placeholder
+		// Status filter — requires per-project version status data (active/test/deprecated)
+		// which is not loaded in the list endpoint. For now, we approximate:
+		// - "active" = has at least one version (versionCount > 0)
+		// - "archived" = no versions (versionCount === 0)
+		// - "test" = not distinguishable without version-level status data
+		// TODO: add version status breakdown to GET /projects response for proper filtering
+		if (statusFilter === 'active') {
+			result = result.filter((p) => p.versionCount > 0);
+		} else if (statusFilter === 'archived') {
+			result = result.filter((p) => p.versionCount === 0);
 		}
+		// 'test' filter is a no-op until version status data is available
 
 		// Search filter
 		if (searchQuery.trim()) {
@@ -361,7 +367,11 @@
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-2">
 										<p class="font-medium text-foreground group-hover:text-primary">{project.name}</p>
-										<Badge variant="success" class="text-[10px]">Actif</Badge>
+										{#if project.versionCount > 0}
+											<Badge variant="success" class="text-[10px]">Actif</Badge>
+										{:else}
+											<Badge variant="secondary" class="text-[10px]">Vide</Badge>
+										{/if}
 									</div>
 									<p class="text-xs text-muted-foreground">{project.toolName}</p>
 								</div>

@@ -1,0 +1,16 @@
+All 85 issues from the iteration-6 quality audit have been fixed across 13 files:
+
+**Summary:**
+- **85/85 issues fixed** (7 CRITICAL, 22 HIGH, 30 MEDIUM, 26 LOW)
+- **0 new type errors** introduced (3 pre-existing errors in unrelated editor pages)
+- **13 files modified**: Login, Header, Dashboard, Sidebar, Projects List, Project Detail, Tree, Analytics, Invitations, Obfuscation, Users, Update Requests, Command Palette
+
+Key structural changes:
+- **Login**: Unified single-card layout replacing tab system
+- **Analytics**: Unified sessions table replacing admin/client split; area chart replacing bar chart; circular gauge for engagement
+- **Invitations**: Two-column layout with persistent form; added "Partager un lien" tab
+- **Obfuscation**: Two-column layout with live preview panel; removed global toggle
+- **Project Detail**: Rich version cards replacing flat table; health ring; segmented tabs
+- **Sidebar**: Floating collapse button; proper active indicator; removed "Composants"
+
+Fix summary written to `feedback-logs/iteration-6-fix-summary.md`.

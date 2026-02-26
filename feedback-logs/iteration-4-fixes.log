@@ -1,0 +1,19 @@
+All 26 issues have been addressed. Here's a summary of what was done:
+
+**9 files modified** across backend and frontend:
+
+**CRITICAL (1):** Translated all backend auth error messages to French — users now see "Identifiants invalides" instead of "Invalid credentials".
+
+**HIGH (8):**
+- **Dashboard:** Added trend indicators (+N ce mois/cette semaine) and third stat card (Sessions actives)
+- **Tree view:** Renamed tabs to "Arborescence | Liste | Carte du site", changed status bar to show page/modal/error counts
+- **Analytics:** Replaced single sessions table with two-column split (Admins & Commerciaux / Clients) with independent search, reduced chart bar height
+- **Invitations:** Added "Exiger la création d'un compte" checkbox in invitation dialog
+- **Obfuscation:** Removed unnecessary "Portée" column from table
+- **Command palette:** Removed keyboard shortcuts footer, updated tab labels to match mockup
+
+**MEDIUM (10):** Login email label "Email", Google button "Continuer avec Google", breadcrumb root "Accueil", analytics chart bars subtler, and more.
+
+**LOW (7):** Pill-style login tab switcher, simplified background to single gradient shape, subtler dashboard tab badges.
+
+`svelte-check` passes with only pre-existing errors (3 in editor pages, unrelated to these changes).

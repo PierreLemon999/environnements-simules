@@ -1,0 +1,14 @@
+All 14 issues have been addressed. Here's a summary:
+
+**Files modified (6):**
+- `frontend/src/routes/admin/+page.svelte` — Added 14-day activity bar chart
+- `frontend/src/lib/components/layout/Sidebar.svelte` — Added "Composants" nav item + Invitations badge count
+- `frontend/src/routes/admin/tree/+page.svelte` — Colored section icons + page counts in parentheses
+- `frontend/src/routes/admin/projects/[id]/+page.svelte` — Added Versions/Assignations/Configuration tabs
+- `frontend/src/routes/admin/analytics/+page.svelte` — Company name display + CSV export for both session lists
+- `frontend/src/routes/admin/obfuscation/+page.svelte` — Filled pill tab style
+- `frontend/src/lib/components/layout/CommandPalette.svelte` — Page result timestamps + tab count styling
+
+**Verification:** `svelte-check` passes with 0 new errors (3 pre-existing errors in unmodified files).
+
+**Fix summary written to:** `feedback-logs/iteration-5-fix-summary.md`

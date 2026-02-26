@@ -19,6 +19,7 @@
 		subtitle: string;
 		href: string;
 		icon?: typeof FileText;
+		meta?: string;
 	}
 
 	let open = $state(false);
@@ -47,19 +48,36 @@
 	});
 
 	const quickActions: SearchResult[] = [
-		{ id: 'action-new-project', type: 'action', title: 'Créer un projet', subtitle: '', href: '/admin/projects?action=create', icon: Plus },
-		{ id: 'action-new-capture', type: 'action', title: 'Nouvelle capture', subtitle: '', href: '/admin/tree', icon: Camera },
-		{ id: 'action-dashboard', type: 'action', title: 'Aller au Dashboard', subtitle: '', href: '/admin', icon: Zap },
-		{ id: 'action-analytics', type: 'action', title: 'Voir les Analytics', subtitle: '', href: '/admin/analytics', icon: Zap },
-		{ id: 'action-users', type: 'action', title: 'Gérer les utilisateurs', subtitle: '', href: '/admin/users', icon: Users },
-		{ id: 'action-obfuscation', type: 'action', title: 'Règles d\'obfuscation', subtitle: '', href: '/admin/obfuscation', icon: Zap },
-		{ id: 'action-invitations', type: 'action', title: 'Invitations clients', subtitle: '', href: '/admin/invitations', icon: Zap },
+		{ id: 'action-new-project', type: 'action', title: 'Créer un projet', subtitle: 'Initialiser un nouveau projet d\'environnement simulé', href: '/admin/projects?action=create', icon: Plus },
+		{ id: 'action-new-capture', type: 'action', title: 'Nouvelle capture', subtitle: 'Lancer une capture de page depuis l\'extension', href: '/admin/tree', icon: Camera },
+		{ id: 'action-dashboard', type: 'action', title: 'Aller au Dashboard', subtitle: 'Voir le tableau de bord principal', href: '/admin', icon: Zap },
+		{ id: 'action-analytics', type: 'action', title: 'Voir les Analytics', subtitle: 'Consulter les statistiques de visites et sessions', href: '/admin/analytics', icon: Zap },
+		{ id: 'action-users', type: 'action', title: 'Gérer les utilisateurs', subtitle: 'Ajouter, modifier ou supprimer des utilisateurs', href: '/admin/users', icon: Users },
+		{ id: 'action-obfuscation', type: 'action', title: 'Règles d\'obfuscation', subtitle: 'Configurer les règles de masquage des données', href: '/admin/obfuscation', icon: Zap },
+		{ id: 'action-invitations', type: 'action', title: 'Invitations clients', subtitle: 'Gérer les accès démo pour les prospects', href: '/admin/invitations', icon: Zap },
 	];
 
 	let filteredResults = $derived(() => {
 		if (activeTab === 'all') return results;
 		return results.filter((r) => r.type === activeTab);
 	});
+
+	function formatRelativeTime(dateStr: string): string {
+		const now = new Date();
+		const date = new Date(dateStr);
+		const diffMs = now.getTime() - date.getTime();
+		const diffMin = Math.floor(diffMs / 60000);
+		const diffHours = Math.floor(diffMin / 60);
+		const diffDays = Math.floor(diffHours / 24);
+
+		if (diffMin < 1) return "À l'instant";
+		if (diffMin < 60) return `Il y a ${diffMin}min`;
+		if (diffHours < 24) return `Il y a ${diffHours}h`;
+		if (diffDays === 1) return 'Hier';
+		if (diffDays < 7) return `Il y a ${diffDays}j`;
+		if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} sem.`;
+		return new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+	}
 
 	function getToolBadgeColor(toolName: string): string {
 		const colors: Record<string, string> = {
@@ -156,7 +174,7 @@
 					const projectDetail = await get<{ data: { versions: Array<{ id: string; status: string }> } }>(`/projects/${p.id}`);
 					const activeVersion = projectDetail.data.versions?.find(v => v.status === 'active') ?? projectDetail.data.versions?.[0];
 					if (activeVersion) {
-						const pagesRes = await get<{ data: Array<{ id: string; title: string; urlPath: string }> }>(`/versions/${activeVersion.id}/pages`);
+						const pagesRes = await get<{ data: Array<{ id: string; title: string; urlPath: string; createdAt: string }> }>(`/versions/${activeVersion.id}/pages`);
 						for (const page of pagesRes.data) {
 							if (page.title.toLowerCase().includes(ql) || page.urlPath.toLowerCase().includes(ql)) {
 								allResults.push({
@@ -165,6 +183,7 @@
 									title: page.title || page.urlPath,
 									subtitle: p.toolName,
 									href: `/admin/tree?version=${activeVersion.id}`,
+									meta: `${p.name} — /${page.urlPath} — Capturée ${formatRelativeTime(page.createdAt)}`,
 								});
 							}
 						}
@@ -294,9 +313,15 @@
 					>
 						{tab.label}
 						{#if count > 0}
-							<span class="ml-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold {activeTab === tab.id ? 'bg-white/20' : 'bg-accent text-muted-foreground'}">
-								{count}
-							</span>
+							{#if activeTab === tab.id}
+								<span class="ml-0.5 rounded-full bg-white/30 px-1.5 py-0.5 text-[9px] font-semibold">
+									{count}
+								</span>
+							{:else}
+								<span class="ml-0.5 text-[9px] text-muted">
+									{count}
+								</span>
+							{/if}
 						{/if}
 					</button>
 				{/each}
@@ -316,6 +341,7 @@
 						{#if activeTab === 'all'}
 							<p class="mb-1 mt-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted first:mt-0">
 								{getLabelForType(type)}s
+								<span class="ml-1 font-normal normal-case text-muted">{items.length} résultat{items.length !== 1 ? 's' : ''}</span>
 							</p>
 						{/if}
 						{#each items as result, ri}
@@ -326,7 +352,14 @@
 								onmouseenter={() => { selectedIndex = globalIdx; }}
 								onclick={() => handleSelect(result)}
 							>
-								<Icon class="h-4 w-4 shrink-0 text-muted" />
+								{#if result.type === 'user'}
+									<!-- Colored avatar circle with initials for users -->
+									<div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+										{result.title.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
+									</div>
+								{:else}
+									<Icon class="h-4 w-4 shrink-0 text-muted" />
+								{/if}
 								<div class="min-w-0 flex-1 text-left">
 									<div class="flex items-center gap-2">
 										<p class="truncate font-medium">{result.title}</p>
@@ -334,8 +367,11 @@
 											<span class="inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white" style="background-color: {getToolBadgeColor(result.subtitle)}">{result.subtitle}</span>
 										{/if}
 									</div>
-									{#if result.subtitle && result.type !== 'action' && result.type !== 'page'}
+									{#if result.subtitle && result.type !== 'page'}
 										<p class="truncate text-xs text-muted-foreground">{result.subtitle}</p>
+									{/if}
+									{#if result.meta}
+										<p class="truncate text-[10px] text-muted">{result.meta}</p>
 									{/if}
 								</div>
 								<ArrowRight class="h-3 w-3 shrink-0 text-muted opacity-0 {selectedIndex === globalIdx ? 'opacity-100' : ''}" />
@@ -345,13 +381,24 @@
 				{/if}
 			</div>
 
-			<!-- Footer -->
-			<div class="flex items-center gap-4 border-t border-border px-4 py-2 text-[10px] text-muted">
-				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">↑↓</kbd> Naviguer</span>
-				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">↵</kbd> Ouvrir</span>
-				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">Tab</kbd> Catégorie</span>
-				<span class="inline-flex items-center gap-1"><kbd class="rounded border border-border px-1 py-0.5 font-mono">Esc</kbd> Fermer</span>
-				<span class="ml-auto font-medium text-muted-foreground">EnvSim</span>
+			<!-- Footer with keyboard hints -->
+			<div class="flex items-center gap-4 border-t border-border px-4 py-2">
+				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">&uarr;&darr;</kbd>
+					naviguer
+				</span>
+				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">Enter</kbd>
+					ouvrir
+				</span>
+				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">Tab</kbd>
+					catégorie
+				</span>
+				<span class="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+					<kbd class="rounded border border-border bg-input px-1 py-0.5 font-mono text-[9px]">ESC</kbd>
+					fermer
+				</span>
 			</div>
 		</div>
 	</div>

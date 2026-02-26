@@ -10,6 +10,7 @@
 	import { Separator } from '$components/ui/separator';
 	import {
 		ChevronRight,
+		ChevronLeft,
 		ChevronDown,
 		FileText,
 		Folder,
@@ -20,6 +21,7 @@
 		Calendar,
 		Camera,
 		Link2,
+		LinkIcon,
 		ExternalLink,
 		Pencil,
 		EyeOff,
@@ -92,12 +94,15 @@
 
 	// Page statistics from tree
 	let pageStats = $derived(() => {
-		if (!tree) return { ok: 0, warning: 0, error: 0, total: 0 };
-		const stats = { ok: 0, warning: 0, error: 0, total: 0 };
+		if (!tree) return { ok: 0, warning: 0, error: 0, total: 0, modals: 0 };
+		const stats = { ok: 0, warning: 0, error: 0, total: 0, modals: 0 };
 		function walk(node: TreeNode) {
 			if (node.page) {
 				stats.total++;
 				stats[node.page.healthStatus]++;
+				if (node.page.captureMode === 'guided') {
+					stats.modals++;
+				}
 			}
 			node.children.forEach(walk);
 		}
@@ -129,6 +134,24 @@
 		if (!tree) return null;
 		return filterTree(tree, searchQuery);
 	});
+
+	// Category color palette for tree sections (cycles through for dynamic sections)
+	const sectionColors = [
+		'#3B82F6', // blue (Dashboard)
+		'#14B8A6', // teal (Contacts)
+		'#F59E0B', // orange (Opportunités)
+		'#8B5CF6', // purple (Rapports)
+		'#EF4444', // red (Administration)
+		'#10B981', // green (Paramètres)
+		'#EC4899', // pink
+		'#06B6D4', // cyan
+		'#F97316', // dark orange
+		'#6366F1', // indigo
+	];
+
+	function getSectionColor(index: number): string {
+		return sectionColors[index % sectionColors.length];
+	}
 
 	// Status helpers
 	function getHealthDot(status: string): string {
@@ -207,6 +230,32 @@
 			count += countPages(child);
 		}
 		return count;
+	}
+
+	function getVersionStatusVariant(status: string): 'success' | 'warning' | 'secondary' {
+		switch (status) {
+			case 'active': return 'success';
+			case 'test': return 'warning';
+			case 'deprecated': return 'secondary';
+			default: return 'secondary';
+		}
+	}
+
+	function getVersionStatusLabel(status: string): string {
+		switch (status) {
+			case 'active': return 'Active';
+			case 'test': return 'Test';
+			case 'deprecated': return 'Archivée';
+			default: return status;
+		}
+	}
+
+	function navigateVersion(direction: -1 | 1) {
+		const idx = versions.findIndex((v) => v.id === selectedVersionId);
+		const nextIdx = idx + direction;
+		if (nextIdx >= 0 && nextIdx < versions.length) {
+			selectedVersionId = versions[nextIdx].id;
+		}
 	}
 
 	// Data loading
@@ -354,43 +403,34 @@
 		<!-- Status bar -->
 		{#if tree && !treeLoading}
 			{@const stats = pageStats()}
-			<div class="border-b border-border px-3 py-2">
-				<div class="flex items-center gap-3 text-xs">
+			<div class="border-b border-border px-3 py-2 space-y-1.5">
+				<div class="flex items-center gap-3 text-xs text-muted-foreground">
 					<span class="inline-flex items-center gap-1">
-						<span class="h-1.5 w-1.5 rounded-full bg-success"></span>
+						<span class="h-2 w-2 rounded-full bg-success"></span>
 						{stats.ok} OK
 					</span>
 					<span class="inline-flex items-center gap-1">
-						<span class="h-1.5 w-1.5 rounded-full bg-warning"></span>
+						<span class="h-2 w-2 rounded-full bg-warning"></span>
 						{stats.warning} Avert.
 					</span>
 					<span class="inline-flex items-center gap-1">
-						<span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>
+						<span class="h-2 w-2 rounded-full bg-destructive"></span>
 						{stats.error} Erreur
 					</span>
+					<span class="ml-auto text-muted">{stats.total} page{stats.total !== 1 ? 's' : ''}</span>
 				</div>
+				<!-- Proportional health progress bar -->
 				{#if stats.total > 0}
-					<div class="mt-1.5 h-1 overflow-hidden rounded-full bg-accent">
-						<div class="flex h-full">
-							{#if stats.ok > 0}
-								<div
-									class="bg-success"
-									style="width: {(stats.ok / stats.total) * 100}%"
-								></div>
-							{/if}
-							{#if stats.warning > 0}
-								<div
-									class="bg-warning"
-									style="width: {(stats.warning / stats.total) * 100}%"
-								></div>
-							{/if}
-							{#if stats.error > 0}
-								<div
-									class="bg-destructive"
-									style="width: {(stats.error / stats.total) * 100}%"
-								></div>
-							{/if}
-						</div>
+					<div class="flex h-1.5 w-full overflow-hidden rounded-full bg-accent">
+						{#if stats.ok > 0}
+							<div class="bg-success" style="width: {(stats.ok / stats.total) * 100}%"></div>
+						{/if}
+						{#if stats.warning > 0}
+							<div class="bg-warning" style="width: {(stats.warning / stats.total) * 100}%"></div>
+						{/if}
+						{#if stats.error > 0}
+							<div class="bg-destructive" style="width: {(stats.error / stats.total) * 100}%"></div>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -453,7 +493,7 @@
 					</p>
 				</div>
 			{:else}
-				{#snippet treeNodeSnippet(node: TreeNode, depth: number)}
+				{#snippet treeNodeSnippet(node: TreeNode, depth: number, color: string)}
 					{#if node.children.length > 0 && !node.page}
 						<!-- Folder node -->
 						<button
@@ -463,21 +503,21 @@
 						>
 							{#if expandedPaths.has(node.path)}
 								<ChevronDown class="h-3 w-3 shrink-0 text-muted" />
-								<FolderOpen class="h-3.5 w-3.5 shrink-0 text-warning" />
+								<FolderOpen class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
 							{:else}
 								<ChevronRight class="h-3 w-3 shrink-0 text-muted" />
-								<Folder class="h-3.5 w-3.5 shrink-0 text-warning" />
+								<Folder class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
 							{/if}
 							<span class="truncate text-foreground">{node.name}</span>
 							<span class="ml-auto text-[10px] text-muted-foreground">
-								{countPages(node)}
+								({countPages(node)})
 							</span>
 						</button>
 						{#if expandedPaths.has(node.path)}
 							{@const visibleChildren = node.children.slice(0, 20)}
 							{@const hiddenCount = node.children.length - visibleChildren.length}
 							{#each visibleChildren as child}
-								{@render treeNodeSnippet(child, depth + 1)}
+								{@render treeNodeSnippet(child, depth + 1, color)}
 							{/each}
 							{#if hiddenCount > 0}
 								<button
@@ -502,13 +542,13 @@
 								{node.page.title || node.name}
 							</span>
 							{#if node.page.captureMode === 'guided'}
-								<span class="ml-auto shrink-0 rounded border border-dashed border-muted px-1 py-0.5 text-[9px] text-muted-foreground">Modale</span>
+								<span class="ml-auto shrink-0 rounded bg-warning/15 px-1 py-0.5 text-[9px] font-medium text-warning">Modale</span>
 							{/if}
 						</button>
 						<!-- Also render children if any -->
 						{#if node.children.length > 0}
 							{#each node.children as child}
-								{@render treeNodeSnippet(child, depth + 1)}
+								{@render treeNodeSnippet(child, depth + 1, color)}
 							{/each}
 						{/if}
 					{:else}
@@ -520,23 +560,23 @@
 						>
 							{#if expandedPaths.has(node.path)}
 								<ChevronDown class="h-3 w-3 shrink-0 text-muted" />
-								<FolderOpen class="h-3.5 w-3.5 shrink-0 text-warning" />
+								<FolderOpen class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
 							{:else}
 								<ChevronRight class="h-3 w-3 shrink-0 text-muted" />
-								<Folder class="h-3.5 w-3.5 shrink-0 text-warning" />
+								<Folder class="h-3.5 w-3.5 shrink-0" style="color: {color}" />
 							{/if}
 							<span class="truncate text-foreground">{node.name}</span>
 						</button>
 						{#if expandedPaths.has(node.path)}
 							{#each node.children as child}
-								{@render treeNodeSnippet(child, depth + 1)}
+								{@render treeNodeSnippet(child, depth + 1, color)}
 							{/each}
 						{/if}
 					{/if}
 				{/snippet}
 
-				{#each filteredTree()!.children as child}
-					{@render treeNodeSnippet(child, 0)}
+				{#each filteredTree()!.children as child, ci}
+					{@render treeNodeSnippet(child, 0, getSectionColor(ci))}
 				{/each}
 			{/if}
 		</div>
@@ -558,15 +598,29 @@
 		<!-- Tree footer -->
 		<div class="border-t border-border px-3 py-2">
 			<div class="flex items-center justify-between">
-				<!-- Version selector -->
-				<select
-					bind:value={selectedVersionId}
-					class="h-7 rounded border border-border bg-transparent px-2 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					{#each versions as version}
-						<option value={version.id}>{version.name}</option>
-					{/each}
-				</select>
+				<!-- Version selector with arrows -->
+				<div class="flex items-center gap-1">
+					<button
+						class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+						disabled={versions.findIndex((v) => v.id === selectedVersionId) <= 0}
+						onclick={() => navigateVersion(-1)}
+					>
+						<ChevronLeft class="h-3.5 w-3.5" />
+					</button>
+					<span class="text-xs font-medium text-foreground">{selectedVersion?.name ?? '—'}</span>
+					{#if selectedVersion}
+						<Badge variant={getVersionStatusVariant(selectedVersion.status)} class="text-[9px] px-1 py-0">
+							{getVersionStatusLabel(selectedVersion.status)}
+						</Badge>
+					{/if}
+					<button
+						class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+						disabled={versions.findIndex((v) => v.id === selectedVersionId) >= versions.length - 1}
+						onclick={() => navigateVersion(1)}
+					>
+						<ChevronRight class="h-3.5 w-3.5" />
+					</button>
+				</div>
 				<span class="text-xs text-muted-foreground">
 					{pageStats().total} page{pageStats().total !== 1 ? 's' : ''}
 				</span>
@@ -591,6 +645,11 @@
 				{/each}
 			</nav>
 
+			<!-- Page preview placeholder -->
+			<div class="mb-6 flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-accent/30">
+				<span class="text-sm text-muted-foreground">Aperçu — 1300x800</span>
+			</div>
+
 			<!-- Page title and actions -->
 			<div class="mb-6 flex items-start justify-between">
 				<div>
@@ -602,12 +661,6 @@
 						<Button variant="outline" size="sm" class="gap-1.5">
 							<Pencil class="h-3.5 w-3.5" />
 							Édition en direct
-						</Button>
-					</a>
-					<a href="/admin/editor/{selectedPage.id}">
-						<Button variant="outline" size="sm" class="gap-1.5">
-							<FileText class="h-3.5 w-3.5" />
-							Éditeur HTML
 						</Button>
 					</a>
 					<Button variant="outline" size="sm" class="gap-1.5">
@@ -672,6 +725,14 @@
 								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
 									<Link2 class="h-3.5 w-3.5" />
 									Liens sortants
+								</dt>
+								<dd class="text-sm text-foreground">—</dd>
+							</div>
+							<Separator />
+							<div class="flex items-center justify-between">
+								<dt class="flex items-center gap-2 text-sm text-muted-foreground">
+									<LinkIcon class="h-3.5 w-3.5" />
+									Liens cassés
 								</dt>
 								<dd class="text-sm text-foreground">—</dd>
 							</div>

@@ -6,7 +6,6 @@
 	import { Button } from '$components/ui/button';
 	import { Badge } from '$components/ui/badge';
 	import { Input } from '$components/ui/input';
-	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
 	import {
 		Dialog,
 		DialogContent,
@@ -20,13 +19,15 @@
 		Plus,
 		Pencil,
 		Trash2,
-		ToggleLeft,
-		ToggleRight,
 		Eye,
 		AlertCircle,
 		Check,
 		X,
-		Globe,
+		GripVertical,
+		Type,
+		Regex,
+		Pen,
+		ShieldCheck,
 	} from 'lucide-svelte';
 
 	interface Project {
@@ -74,14 +75,14 @@
 	let deletingRule: ObfuscationRule | null = $state(null);
 	let deleteSubmitting = $state(false);
 
-	// Preview
-	let previewDialogOpen = $state(false);
-	let previewInput = $state('');
+	// Preview (persistent panel)
+	let previewInput = $state('<div class="user-name">Jean Dupont</div>\n<span class="email">jean.dupont@entreprise.fr</span>\n<p>Montant: 45 000 EUR</p>');
 	let previewOutput = $state('');
 	let previewLoading = $state(false);
+	let previewMode = $state<'before' | 'after'>('after');
 
-	// Global apply toggle
-	let applyGlobally = $state(true);
+	// Drag state
+	let draggedRuleId = $state<string | null>(null);
 
 	let filteredRules = $derived(() => {
 		if (activeTab === 'auto') return rules.filter(r => !r.isRegex);
@@ -89,12 +90,17 @@
 	});
 
 	let activeCount = $derived(rules.filter(r => r.isActive).length);
+	// Preview stats (simulated)
+	let previewStats = $derived(() => {
+		const active = rules.filter(r => r.isActive).length;
+		const total = rules.length;
+		const coverage = total > 0 ? Math.round((active / total) * 100) : 0;
+		// Count how many fields would be masked (simulated based on active rules)
+		const fieldsMasked = active * 3; // rough estimate
+		return { rulesApplied: active, fieldsMasked, coverage };
+	});
 
-	// Simulated scope/occurrence counts (would come from API in production)
-	function getRuleScope(_rule: ObfuscationRule): string {
-		return 'Toutes les pages';
-	}
-
+	// Simulated occurrence counts (would come from API in production)
 	function getRuleOccurrences(_rule: ObfuscationRule): number {
 		return Math.floor(Math.random() * 50) + 1;
 	}
@@ -117,6 +123,8 @@
 		const value = (e.target as HTMLSelectElement).value;
 		selectedProjectId = value;
 		loadRules(value);
+		// Reset preview when project changes
+		previewOutput = '';
 	}
 
 	// Add rule
@@ -225,12 +233,24 @@
 				sampleHtml: previewInput,
 			});
 			previewOutput = res.data;
+			previewMode = 'after';
 		} catch (err: any) {
 			previewOutput = `Erreur: ${err.message}`;
 		} finally {
 			previewLoading = false;
 		}
 	}
+
+	// Auto-preview when rules change
+	$effect(() => {
+		if (rules.length > 0 && previewInput.trim() && selectedProjectId) {
+			// Debounced auto-preview
+			const timeout = setTimeout(() => {
+				handlePreview();
+			}, 500);
+			return () => clearTimeout(timeout);
+		}
+	});
 
 	onMount(async () => {
 		try {
@@ -253,236 +273,376 @@
 </svelte:head>
 
 <div class="space-y-6">
-	<!-- Header -->
+	<!-- Header with project selector and tabs -->
 	<div class="flex items-center justify-between">
-		<div>
+		<div class="flex items-center gap-4">
 			<h1 class="text-lg font-semibold text-foreground">Obfuscation</h1>
-			<p class="text-sm text-muted-foreground">
-				Gérez les règles de masquage des données sensibles
-			</p>
-		</div>
-		<div class="flex items-center gap-3">
-			<button
-				class="flex items-center gap-2 text-sm transition-colors"
-				onclick={() => { applyGlobally = !applyGlobally; }}
-				title={applyGlobally ? 'Désactiver l\'application globale' : 'Activer l\'application globale'}
-			>
-				{#if applyGlobally}
-					<ToggleRight class="h-5 w-5 text-success" />
-				{:else}
-					<ToggleLeft class="h-5 w-5 text-muted" />
-				{/if}
-				<span class="text-xs font-medium {applyGlobally ? 'text-foreground' : 'text-muted-foreground'}">Appliquer globalement</span>
-			</button>
-			<Button variant="outline" size="sm" class="gap-1.5" onclick={() => { previewInput = ''; previewOutput = ''; previewDialogOpen = true; }}>
-				<Eye class="h-3.5 w-3.5" />
-				Prévisualiser
-			</Button>
-		</div>
-	</div>
 
-	<!-- Project selector (pill style) -->
-	<div class="flex items-center gap-4">
-		<div class="relative inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium shadow-xs">
-			<span class="h-2 w-2 rounded-full bg-success"></span>
-			<select
-				id="project-select"
-				value={selectedProjectId}
-				onchange={handleProjectChange}
-				class="appearance-none bg-transparent pr-4 text-sm font-medium text-foreground focus:outline-none"
-			>
-				{#if loading}
-					<option>Chargement...</option>
-				{:else}
-					{#each projects as project}
-						<option value={project.id}>{project.name} — {project.toolName}</option>
-					{/each}
-				{/if}
-			</select>
-			<svg class="pointer-events-none absolute right-3 h-3 w-3 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-			</svg>
-		</div>
-	</div>
-
-	<!-- Rules card -->
-	<Card>
-		<CardHeader class="pb-3">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-3">
-					<CardTitle class="text-base">Règles d'obfuscation</CardTitle>
-					<Badge variant="secondary">{activeCount} active{activeCount !== 1 ? 's' : ''}</Badge>
-				</div>
-				<Button size="sm" class="gap-1.5" onclick={() => { showAddForm = true; addError = ''; }} disabled={!selectedProjectId}>
-					<Plus class="h-3.5 w-3.5" />
-					Ajouter une règle
-				</Button>
+			<!-- Project selector (inline in header) -->
+			<div class="relative inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium shadow-xs">
+				<span class="h-2 w-2 rounded-full bg-success"></span>
+				<select
+					id="project-select"
+					value={selectedProjectId}
+					onchange={handleProjectChange}
+					class="appearance-none bg-transparent pr-4 text-sm font-medium text-foreground focus:outline-none"
+				>
+					{#if loading}
+						<option>Chargement...</option>
+					{:else}
+						{#each projects as project}
+							<option value={project.id}>{project.name} — {project.toolName}</option>
+						{/each}
+					{/if}
+				</select>
+				<svg class="pointer-events-none absolute right-3 h-3 w-3 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+				</svg>
 			</div>
-		</CardHeader>
-		<CardContent>
-			<!-- Tab filters -->
-			<Tabs value={activeTab} onValueChange={(v) => { activeTab = v; }}>
-				<TabsList class="mb-4">
-					<TabsTrigger value="auto">
-						Règles auto
-						<Badge variant="secondary" class="ml-1.5 text-[10px]">{rules.filter(r => !r.isRegex).length}</Badge>
-					</TabsTrigger>
-					<TabsTrigger value="manual">
-						Manuel
-						<Badge variant="secondary" class="ml-1.5 text-[10px]">{rules.filter(r => r.isRegex).length}</Badge>
-					</TabsTrigger>
-				</TabsList>
-			</Tabs>
 
-			{#if rulesLoading}
-				<div class="space-y-3">
-					{#each Array(3) as _}
-						<div class="flex items-center gap-4 rounded-lg border border-border p-4">
-							<div class="skeleton h-4 w-24"></div>
-							<div class="skeleton h-4 w-24"></div>
-							<div class="skeleton h-4 w-16"></div>
+			<!-- Tab pills (inline in header) -->
+			<div class="flex items-center gap-2">
+				<button
+					class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab === 'auto' ? 'bg-primary text-white' : 'bg-accent text-muted-foreground hover:text-foreground'}"
+					onclick={() => { activeTab = 'auto'; }}
+				>
+					Règles auto
+					<span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold {activeTab === 'auto' ? 'bg-white/20' : 'bg-border text-muted-foreground'}">
+						{rules.filter(r => !r.isRegex).length}
+					</span>
+				</button>
+				<button
+					class="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors {activeTab === 'manual' ? 'bg-primary text-white' : 'bg-accent text-muted-foreground hover:text-foreground'}"
+					onclick={() => { activeTab = 'manual'; }}
+				>
+					Manuel
+					<span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold {activeTab === 'manual' ? 'bg-white/20' : 'bg-border text-muted-foreground'}">
+						{rules.filter(r => r.isRegex).length}
+					</span>
+				</button>
+			</div>
+		</div>
+
+		<p class="text-sm text-muted-foreground">
+			Gérez les règles de masquage des données sensibles
+		</p>
+	</div>
+
+	<!-- Two-column layout: rules table (left) + preview panel (right) -->
+	<div class="grid gap-6" style="grid-template-columns: 1fr 440px;">
+		<!-- LEFT COLUMN: Rules table -->
+		<div class="space-y-6">
+			<Card>
+				<CardHeader class="pb-3">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<CardTitle class="text-base">Règles d'obfuscation</CardTitle>
+							<Badge variant="secondary">{activeCount} active{activeCount !== 1 ? 's' : ''}</Badge>
 						</div>
-					{/each}
-				</div>
-			{:else}
-				<!-- Rules table -->
-				<div class="overflow-x-auto">
-					<table class="w-full">
-						<thead>
-							<tr class="border-b border-border">
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rechercher</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Remplacer par</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Portée</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Occurrences</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
-								<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each filteredRules() as rule}
-								<tr class="border-b border-border last:border-0">
-									<td class="py-3 pr-4">
-										<Badge variant="secondary" class="text-[10px]">
-											{rule.isRegex ? 'Regex' : 'Texte exact'}
-										</Badge>
-									</td>
-									<td class="py-3 pr-4">
-										<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.searchTerm}</code>
-									</td>
-									<td class="py-3 pr-4">
-										<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.replaceTerm}</code>
-									</td>
-									<td class="py-3 pr-4">
-										<span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
-											<Globe class="h-3 w-3" />
-											Global
-										</span>
-									</td>
-									<td class="py-3 pr-4">
-										<span class="text-xs font-medium text-foreground">{getRuleOccurrences(rule)}</span>
-									</td>
-									<td class="py-3 pr-4">
-										<button
-											class="flex items-center gap-1.5 text-sm transition-colors"
-											onclick={() => toggleActive(rule)}
-											title={rule.isActive ? 'Désactiver' : 'Activer'}
-										>
-											{#if rule.isActive}
-												<ToggleRight class="h-5 w-5 text-success" />
-												<span class="text-xs text-success">Actif</span>
-											{:else}
-												<ToggleLeft class="h-5 w-5 text-muted" />
-												<span class="text-xs text-muted">Inactif</span>
-											{/if}
-										</button>
-									</td>
-									<td class="py-3 text-right">
-										<div class="flex items-center justify-end gap-1">
-											<button
-												class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
-												onclick={() => openEditDialog(rule)}
-												title="Modifier"
-											>
-												<Pencil class="h-3.5 w-3.5" />
-											</button>
-											<button
-												class="rounded-md p-1.5 text-muted transition-colors hover:bg-destructive-bg hover:text-destructive"
-												onclick={() => openDeleteDialog(rule)}
-												title="Supprimer"
-											>
-												<Trash2 class="h-3.5 w-3.5" />
-											</button>
-										</div>
-									</td>
-								</tr>
-							{:else}
-								<tr>
-									<td colspan="7" class="py-8 text-center text-sm text-muted-foreground">
-										<EyeOff class="mx-auto mb-2 h-8 w-8 text-muted" />
-										Aucune règle {activeTab === 'auto' ? 'automatique' : 'manuelle'} pour ce projet.
-									</td>
-								</tr>
+						<Button size="sm" class="gap-1.5" onclick={() => { showAddForm = true; addError = ''; }} disabled={!selectedProjectId}>
+							<Plus class="h-3.5 w-3.5" />
+							Ajouter une règle
+						</Button>
+					</div>
+				</CardHeader>
+				<CardContent>
+					{#if rulesLoading}
+						<div class="space-y-3">
+							{#each Array(3) as _}
+								<div class="flex items-center gap-4 rounded-lg border border-border p-4">
+									<div class="skeleton h-4 w-24"></div>
+									<div class="skeleton h-4 w-24"></div>
+									<div class="skeleton h-4 w-16"></div>
+								</div>
 							{/each}
-						</tbody>
-					</table>
-				</div>
+						</div>
+					{:else}
+						<!-- Rules table -->
+						<div class="overflow-x-auto">
+							<table class="w-full">
+								<thead>
+									<tr class="border-b border-border">
+										<th class="w-8 pb-2"></th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Type</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Rechercher</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Remplacer par</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Occurrences</th>
+										<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
+										<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each filteredRules() as rule}
+										<tr
+											class="group border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+											style="border-left: 3px solid {rule.isActive ? '#10B981' : '#9CA3AF'};"
+											draggable="true"
+											ondragstart={() => { draggedRuleId = rule.id; }}
+											ondragend={() => { draggedRuleId = null; }}
+										>
+											<!-- Drag handle -->
+											<td class="py-3 pr-1">
+												<div class="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+													<GripVertical class="h-4 w-4 text-muted" />
+												</div>
+											</td>
+											<!-- Type with icon -->
+											<td class="py-3 pr-4">
+												{#if rule.isRegex}
+													<div class="inline-flex items-center gap-1.5 rounded-md bg-purple-50 px-2 py-1 dark:bg-purple-950/30">
+														<Regex class="h-3 w-3 text-purple-600 dark:text-purple-400" />
+														<span class="text-[11px] font-medium text-purple-700 dark:text-purple-300">Regex</span>
+													</div>
+												{:else}
+													<div class="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2 py-1 dark:bg-blue-950/30">
+														<Type class="h-3 w-3 text-blue-600 dark:text-blue-400" />
+														<span class="text-[11px] font-medium text-blue-700 dark:text-blue-300">Texte</span>
+													</div>
+												{/if}
+											</td>
+											<td class="py-3 pr-4">
+												<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.searchTerm}</code>
+											</td>
+											<td class="py-3 pr-4">
+												<code class="rounded bg-input px-1.5 py-0.5 font-mono text-xs text-foreground">{rule.replaceTerm}</code>
+											</td>
+											<td class="py-3 pr-4">
+												<span class="text-xs font-medium text-foreground">{getRuleOccurrences(rule)}</span>
+											</td>
+											<!-- Mini CSS toggle switch -->
+											<td class="py-3 pr-4">
+												<button
+													class="relative inline-flex h-[18px] w-[32px] shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 {rule.isActive ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}"
+													onclick={() => toggleActive(rule)}
+													title={rule.isActive ? 'Désactiver' : 'Activer'}
+													role="switch"
+													aria-checked={!!rule.isActive}
+												>
+													<span
+														class="pointer-events-none block h-[14px] w-[14px] rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 ease-in-out {rule.isActive ? 'translate-x-[16px]' : 'translate-x-[2px]'}"
+													></span>
+												</button>
+											</td>
+											<td class="py-3 text-right">
+												<div class="flex items-center justify-end gap-1">
+													<button
+														class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+														onclick={() => openEditDialog(rule)}
+														title="Modifier"
+													>
+														<Pencil class="h-3.5 w-3.5" />
+													</button>
+													<button
+														class="rounded-md p-1.5 text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+														onclick={() => openDeleteDialog(rule)}
+														title="Supprimer"
+													>
+														<Trash2 class="h-3.5 w-3.5" />
+													</button>
+												</div>
+											</td>
+										</tr>
+									{:else}
+										<tr>
+											<td colspan="7" class="py-8 text-center text-sm text-muted-foreground">
+												<EyeOff class="mx-auto mb-2 h-8 w-8 text-muted" />
+												Aucune règle {activeTab === 'auto' ? 'automatique' : 'manuelle'} pour ce projet.
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
 
-				<!-- Inline add form -->
-				{#if showAddForm}
-					<div class="mt-4 rounded-lg border border-primary/30 bg-accent/50 p-4">
-						<div class="flex items-end gap-3">
-							<div class="space-y-1">
-								<label class="text-xs font-medium text-foreground">Type</label>
-								<select
-									bind:value={addIsRegex}
-									class="flex h-9 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						<!-- Inline add form -->
+						{#if showAddForm}
+							<div class="mt-4 rounded-lg border border-primary/30 bg-accent/50 p-4">
+								<div class="flex items-end gap-3">
+									<div class="space-y-1">
+										<label class="text-xs font-medium text-foreground">Type</label>
+										<select
+											bind:value={addIsRegex}
+											class="flex h-9 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<option value={false}>Texte exact</option>
+											<option value={true}>Regex</option>
+										</select>
+									</div>
+									<div class="flex-1 space-y-1">
+										<label class="text-xs font-medium text-foreground">Texte à masquer</label>
+										<Input bind:value={addSearchTerm} placeholder="Texte à masquer..." class="text-sm" />
+									</div>
+									<div class="flex-1 space-y-1">
+										<label class="text-xs font-medium text-foreground">Remplacer par</label>
+										<Input bind:value={addReplaceTerm} placeholder="Auto-généré si vide" class="text-sm" />
+									</div>
+									<div class="flex gap-2">
+										<Button size="sm" onclick={handleAdd} disabled={addSubmitting}>
+											{#if addSubmitting}
+												...
+											{:else}
+												<Check class="h-3.5 w-3.5" />
+											{/if}
+											Ajouter
+										</Button>
+										<Button variant="outline" size="sm" onclick={() => { showAddForm = false; addError = ''; }}>
+											<X class="h-3.5 w-3.5" />
+											Annuler
+										</Button>
+									</div>
+								</div>
+								{#if addError}
+									<p class="mt-2 flex items-center gap-1 text-xs text-destructive">
+										<AlertCircle class="h-3 w-3" />
+										{addError}
+									</p>
+								{/if}
+							</div>
+						{/if}
+					{/if}
+				</CardContent>
+			</Card>
+
+			<!-- Masquage dans l'éditeur section (purple themed) -->
+			<Card class="border-purple-200 dark:border-purple-800/50">
+				<CardContent class="p-5">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-3">
+							<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+								<Pen class="h-5 w-5 text-purple-600 dark:text-purple-400" />
+							</div>
+							<div>
+								<h3 class="text-sm font-semibold text-foreground">Masquage dans l'éditeur</h3>
+								<p class="text-xs text-muted-foreground">
+									Masquez manuellement des éléments directement dans l'éditeur visuel de page
+								</p>
+							</div>
+						</div>
+						<Button
+							variant="outline"
+							size="sm"
+							class="gap-1.5 border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20"
+						>
+							<Pen class="h-3.5 w-3.5" />
+							Ouvrir l'éditeur
+						</Button>
+					</div>
+					<div class="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+						<span class="inline-flex items-center gap-1">
+							<ShieldCheck class="h-3 w-3 text-purple-500" />
+							Sélection visuelle des zones à masquer
+						</span>
+						<span class="inline-flex items-center gap-1">
+							<ShieldCheck class="h-3 w-3 text-purple-500" />
+							Aperçu en temps réel
+						</span>
+						<span class="inline-flex items-center gap-1">
+							<ShieldCheck class="h-3 w-3 text-purple-500" />
+							Compatible avec les règles auto
+						</span>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+
+		<!-- RIGHT COLUMN: Persistent preview panel -->
+		<div class="space-y-0">
+			<div class="sticky top-20">
+				<Card>
+					<CardHeader class="pb-3">
+						<div class="flex items-center justify-between">
+							<CardTitle class="text-sm">Aperçu en direct</CardTitle>
+							<!-- Before/After toggle -->
+							<div class="flex items-center rounded-full border border-border bg-accent p-0.5">
+								<button
+									class="rounded-full px-3 py-1 text-xs font-medium transition-colors {previewMode === 'before' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+									onclick={() => { previewMode = 'before'; }}
 								>
-									<option value={false}>Texte exact</option>
-									<option value={true}>Regex</option>
-								</select>
+									Avant
+								</button>
+								<button
+									class="rounded-full px-3 py-1 text-xs font-medium transition-colors {previewMode === 'after' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+									onclick={() => { previewMode = 'after'; }}
+								>
+									Après
+								</button>
 							</div>
-							<div class="flex-1 space-y-1">
-								<label class="text-xs font-medium text-foreground">Texte à masquer</label>
-								<Input bind:value={addSearchTerm} placeholder="Texte à masquer..." class="text-sm" />
+						</div>
+					</CardHeader>
+					<CardContent class="space-y-4">
+						<!-- Stats row -->
+						<div class="grid grid-cols-3 gap-2">
+							<div class="rounded-lg border border-border p-2.5 text-center">
+								<p class="text-lg font-bold text-foreground">{previewStats().rulesApplied}</p>
+								<p class="text-[10px] text-muted-foreground">Règles appliquées</p>
 							</div>
-							<div class="flex-1 space-y-1">
-								<label class="text-xs font-medium text-foreground">Remplacer par</label>
-								<Input bind:value={addReplaceTerm} placeholder="Auto-généré si vide" class="text-sm" />
+							<div class="rounded-lg border border-border p-2.5 text-center">
+								<p class="text-lg font-bold text-foreground">{previewStats().fieldsMasked}</p>
+								<p class="text-[10px] text-muted-foreground">Champs masqués</p>
 							</div>
-							<div class="space-y-1">
-								<label class="text-xs font-medium text-foreground">Portée</label>
-								<div class="flex h-9 items-center rounded-md border border-border bg-transparent px-3 text-sm text-muted-foreground">
-									<Globe class="mr-1.5 h-3 w-3" />
-									Global
+							<div class="rounded-lg border border-border p-2.5 text-center">
+								<p class="text-lg font-bold text-primary">{previewStats().coverage}%</p>
+								<p class="text-[10px] text-muted-foreground">Couverture</p>
+							</div>
+						</div>
+
+						<!-- Mini preview area -->
+						<div class="space-y-2">
+							<label class="text-xs font-medium text-muted-foreground">HTML source</label>
+							<textarea
+								bind:value={previewInput}
+								placeholder="Collez du HTML ici pour tester les règles..."
+								rows="5"
+								class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 font-mono text-xs shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							></textarea>
+						</div>
+
+						<Button
+							size="sm"
+							class="w-full gap-1.5"
+							onclick={handlePreview}
+							disabled={previewLoading || !previewInput.trim() || !selectedProjectId}
+						>
+							<Eye class="h-3.5 w-3.5" />
+							{previewLoading ? 'Application...' : 'Appliquer les règles'}
+						</Button>
+
+						<!-- Preview result -->
+						{#if previewOutput || previewInput}
+							<div class="space-y-2">
+								<label class="text-xs font-medium text-muted-foreground">
+									{previewMode === 'before' ? 'Original' : 'Résultat'}
+								</label>
+								<div class="max-h-48 overflow-y-auto rounded-md border border-border bg-accent/50 p-3 font-mono text-xs leading-relaxed">
+									{#if previewMode === 'before'}
+										<pre class="whitespace-pre-wrap break-all text-foreground">{previewInput}</pre>
+									{:else if previewOutput}
+										<pre class="whitespace-pre-wrap break-all text-foreground">{previewOutput}</pre>
+									{:else}
+										<p class="text-muted-foreground italic">Cliquez sur "Appliquer les règles" pour voir le résultat</p>
+									{/if}
 								</div>
 							</div>
-							<div class="flex gap-2">
-								<Button size="sm" onclick={handleAdd} disabled={addSubmitting}>
-									{#if addSubmitting}
-										...
-									{:else}
-										<Check class="h-3.5 w-3.5" />
-									{/if}
-									Ajouter
-								</Button>
-								<Button variant="outline" size="sm" onclick={() => { showAddForm = false; addError = ''; }}>
-									<X class="h-3.5 w-3.5" />
-									Annuler
-								</Button>
+						{/if}
+
+						<!-- Coverage bar -->
+						<div class="space-y-1.5">
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-muted-foreground">Couverture globale</span>
+								<span class="font-medium text-foreground">{previewStats().coverage}%</span>
+							</div>
+							<div class="h-1.5 overflow-hidden rounded-full bg-border">
+								<div
+									class="h-full rounded-full bg-primary transition-all duration-300"
+									style="width: {previewStats().coverage}%"
+								></div>
 							</div>
 						</div>
-						{#if addError}
-							<p class="mt-2 flex items-center gap-1 text-xs text-destructive">
-								<AlertCircle class="h-3 w-3" />
-								{addError}
-							</p>
-						{/if}
-					</div>
-				{/if}
-			{/if}
-		</CardContent>
-	</Card>
+					</CardContent>
+				</Card>
+			</div>
+		</div>
+	</div>
 </div>
 
 <!-- Edit Dialog -->
@@ -527,7 +687,7 @@
 		<DialogHeader>
 			<DialogTitle>Supprimer la règle</DialogTitle>
 			<DialogDescription>
-				Êtes-vous sûr de vouloir supprimer la règle « <strong>{deletingRule?.searchTerm}</strong> » ? Cette action est irréversible.
+				Êtes-vous sûr de vouloir supprimer la règle &laquo; <strong>{deletingRule?.searchTerm}</strong> &raquo; ? Cette action est irréversible.
 			</DialogDescription>
 		</DialogHeader>
 		<DialogFooter>
@@ -536,39 +696,5 @@
 				{deleteSubmitting ? 'Suppression...' : 'Supprimer'}
 			</Button>
 		</DialogFooter>
-	</DialogContent>
-</Dialog>
-
-<!-- Preview Dialog -->
-<Dialog bind:open={previewDialogOpen}>
-	<DialogContent class="max-w-2xl">
-		<DialogHeader>
-			<DialogTitle>Prévisualisation de l'obfuscation</DialogTitle>
-			<DialogDescription>
-				Testez les règles d'obfuscation sur un échantillon de texte HTML.
-			</DialogDescription>
-		</DialogHeader>
-		<div class="space-y-4">
-			<div class="space-y-2">
-				<label class="text-sm font-medium text-foreground">HTML source</label>
-				<textarea
-					bind:value={previewInput}
-					placeholder="Collez du HTML ici pour tester les règles..."
-					rows="5"
-					class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 font-mono text-sm shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				></textarea>
-			</div>
-			<Button onclick={handlePreview} disabled={previewLoading || !previewInput.trim()}>
-				{previewLoading ? 'Application...' : 'Appliquer les règles'}
-			</Button>
-			{#if previewOutput}
-				<div class="space-y-2">
-					<label class="text-sm font-medium text-foreground">Résultat</label>
-					<div class="rounded-md border border-border bg-input p-3 font-mono text-sm">
-						{previewOutput}
-					</div>
-				</div>
-			{/if}
-		</div>
 	</DialogContent>
 </Dialog>

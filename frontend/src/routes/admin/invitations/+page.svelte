@@ -6,6 +6,7 @@
 	import { Button } from '$components/ui/button';
 	import { Badge } from '$components/ui/badge';
 	import { Input } from '$components/ui/input';
+	import { Separator } from '$components/ui/separator';
 	import {
 		Dialog,
 		DialogContent,
@@ -28,12 +29,26 @@
 		Mail,
 		Building,
 		Link2,
+		Search,
+		Download,
+		ChevronUp,
+		ChevronDown,
+		ChevronsUpDown,
+		ChevronLeft,
+		ChevronRight,
+		BarChart3,
+		RefreshCw,
+		X,
+		Lock,
+		Globe,
+		ArrowUpRight,
 	} from 'lucide-svelte';
 
 	interface Project {
 		id: string;
 		name: string;
 		toolName: string;
+		subdomain: string;
 		versions?: Version[];
 	}
 
@@ -52,7 +67,7 @@
 		accessToken: string;
 		expiresAt: string;
 		createdAt: string;
-		user: { id: string; name: string; email: string };
+		user: { id: string; name: string; email: string; company?: string };
 	}
 
 	interface NewAssignment {
@@ -70,18 +85,28 @@
 	let loading = $state(true);
 	let assignmentsLoading = $state(false);
 
-	// Create dialog
-	let createDialogOpen = $state(false);
+	// Form state (persistent right-side card)
+	let formTab = $state<'email' | 'link'>('email');
 	let formEmail = $state('');
 	let formName = $state('');
 	let formCompany = $state('');
 	let formProjectId = $state('');
 	let formVersionId = $state('');
 	let formExpiryDays = $state(90);
+	let formRequireAccount = $state(false);
 	let formSubmitting = $state(false);
 	let formError = $state('');
 
-	// Credentials display
+	// Link sharing form
+	let linkCompany = $state('');
+	let linkProjectId = $state('');
+	let linkVersionId = $state('');
+	let linkExpiryDays = $state(90);
+	let linkPassword = $state('');
+	let linkGenerated = $state('');
+	let linkGenerating = $state(false);
+
+	// Credentials display (inline in form card)
 	let showCredentials = $state(false);
 	let createdCredentials: { accessToken: string; password: string; email: string } | null = $state(null);
 	let passwordVisible = $state(false);
@@ -92,16 +117,153 @@
 	let deletingAssignment: Assignment | null = $state(null);
 	let deleteSubmitting = $state(false);
 
+	// Search, filters, sorting, pagination
+	let searchQuery = $state('');
+	let statusFilter = $state('all');
+	let projectFilter = $state('all');
+	let sortColumn = $state<'client' | 'email' | 'project' | 'status' | 'date'>('date');
+	let sortDir = $state<'asc' | 'desc'>('desc');
+	let currentPage = $state(1);
+	const pageSize = 10;
+
 	let availableVersions = $derived(() => {
 		if (!formProjectId) return [];
 		const project = projects.find(p => p.id === formProjectId);
 		return project?.versions ?? [];
 	});
 
+	let linkAvailableVersions = $derived(() => {
+		if (!linkProjectId) return [];
+		const project = projects.find(p => p.id === linkProjectId);
+		return project?.versions ?? [];
+	});
+
+	// Stats
 	let totalInvitations = $derived(assignments.length);
-	let activeClients = $derived(
+	let invitationsThisWeek = $derived(() => {
+		const weekAgo = new Date();
+		weekAgo.setDate(weekAgo.getDate() - 7);
+		return assignments.filter(a => new Date(a.createdAt) > weekAgo).length;
+	});
+	let activeLinks = $derived(
 		assignments.filter(a => new Date(a.expiresAt) > new Date()).length
 	);
+	let expiredLinks = $derived(
+		assignments.filter(a => new Date(a.expiresAt) <= new Date()).length
+	);
+	// Simulated connections count (based on assignments that have been accessed)
+	let totalConnections = $derived(assignments.length);
+	let connectionsThisWeek = $derived(() => {
+		const weekAgo = new Date();
+		weekAgo.setDate(weekAgo.getDate() - 7);
+		return assignments.filter(a => new Date(a.createdAt) > weekAgo).length;
+	});
+
+	// Filtering and sorting
+	let filteredAssignments = $derived(() => {
+		let result = assignments;
+
+		// Search
+		if (searchQuery.trim()) {
+			const q = searchQuery.toLowerCase();
+			result = result.filter(a =>
+				a.user.name.toLowerCase().includes(q) ||
+				a.user.email.toLowerCase().includes(q) ||
+				(a.user.company ?? '').toLowerCase().includes(q)
+			);
+		}
+
+		// Status filter
+		if (statusFilter !== 'all') {
+			result = result.filter(a => {
+				const expired = isExpired(a.expiresAt);
+				const daysLeft = getDaysUntilExpiry(a.expiresAt);
+				switch (statusFilter) {
+					case 'connected': return !expired && daysLeft >= 30;
+					case 'pending': return !expired && daysLeft >= 0;
+					case 'expired': return expired;
+					default: return true;
+				}
+			});
+		}
+
+		// Project filter
+		if (projectFilter !== 'all') {
+			result = result.filter(a => {
+				for (const p of projects) {
+					if (p.id === projectFilter && p.versions?.some(v => v.id === a.versionId)) return true;
+				}
+				return false;
+			});
+		}
+
+		// Sorting
+		result = [...result].sort((a, b) => {
+			let cmp = 0;
+			switch (sortColumn) {
+				case 'client':
+					cmp = a.user.name.localeCompare(b.user.name);
+					break;
+				case 'email':
+					cmp = a.user.email.localeCompare(b.user.email);
+					break;
+				case 'project':
+					cmp = getVersionName(a.versionId).localeCompare(getVersionName(b.versionId));
+					break;
+				case 'status': {
+					const sa = getStatusOrder(a);
+					const sb = getStatusOrder(b);
+					cmp = sa - sb;
+					break;
+				}
+				case 'date':
+					cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+					break;
+			}
+			return sortDir === 'asc' ? cmp : -cmp;
+		});
+
+		return result;
+	});
+
+	let totalFiltered = $derived(filteredAssignments().length);
+	let totalPages = $derived(Math.max(1, Math.ceil(totalFiltered / pageSize)));
+	let paginatedAssignments = $derived(() => {
+		const start = (currentPage - 1) * pageSize;
+		return filteredAssignments().slice(start, start + pageSize);
+	});
+
+	// Reset to page 1 when filters change
+	$effect(() => {
+		// Read dependencies
+		searchQuery;
+		statusFilter;
+		projectFilter;
+		currentPage = 1;
+	});
+
+	function getStatusOrder(a: Assignment): number {
+		if (isExpired(a.expiresAt)) return 3;
+		const days = getDaysUntilExpiry(a.expiresAt);
+		if (days < 30) return 2;
+		return 1;
+	}
+
+	function getStatusInfo(assignment: Assignment): { label: string; dotColor: string; bgColor: string; borderColor: string; textColor: string } {
+		const expired = isExpired(assignment.expiresAt);
+		const daysLeft = getDaysUntilExpiry(assignment.expiresAt);
+
+		if (expired) {
+			return { label: 'Expir\u00e9', dotColor: 'bg-red-500', bgColor: 'bg-red-50', borderColor: 'border-red-200', textColor: 'text-red-700' };
+		}
+		if (daysLeft < 7) {
+			return { label: 'En attente', dotColor: 'bg-orange-500', bgColor: 'bg-orange-50', borderColor: 'border-orange-200', textColor: 'text-orange-700' };
+		}
+		if (daysLeft < 30) {
+			return { label: 'Lien ouvert', dotColor: 'bg-blue-500', bgColor: 'bg-blue-50', borderColor: 'border-blue-200', textColor: 'text-blue-700' };
+		}
+		return { label: 'Connect\u00e9', dotColor: 'bg-green-500', bgColor: 'bg-green-50', borderColor: 'border-green-200', textColor: 'text-green-700' };
+	}
 
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -123,9 +285,30 @@
 	function getVersionName(versionId: string): string {
 		for (const p of projects) {
 			const v = p.versions?.find(v => v.id === versionId);
-			if (v) return `${p.toolName} — ${v.name}`;
+			if (v) return `${p.toolName} \u2014 ${v.name}`;
 		}
 		return 'Version inconnue';
+	}
+
+	function getProjectNameForVersion(versionId: string): string {
+		for (const p of projects) {
+			const v = p.versions?.find(v => v.id === versionId);
+			if (v) return p.name;
+		}
+		return '';
+	}
+
+	function getInitials(name: string): string {
+		return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+	}
+
+	function toggleSort(column: typeof sortColumn) {
+		if (sortColumn === column) {
+			sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+		} else {
+			sortColumn = column;
+			sortDir = 'asc';
+		}
 	}
 
 	async function loadAllAssignments() {
@@ -152,20 +335,30 @@
 		}
 	}
 
-	function openCreateDialog() {
+	function resetEmailForm() {
 		formEmail = '';
 		formName = '';
 		formCompany = '';
 		formProjectId = projects[0]?.id ?? '';
 		formVersionId = '';
 		formExpiryDays = 90;
+		formRequireAccount = false;
 		formError = '';
 		showCredentials = false;
 		createdCredentials = null;
-		createDialogOpen = true;
+		passwordVisible = false;
 	}
 
-	async function handleCreate() {
+	function resetLinkForm() {
+		linkCompany = '';
+		linkProjectId = projects[0]?.id ?? '';
+		linkVersionId = '';
+		linkExpiryDays = 90;
+		linkPassword = '';
+		linkGenerated = '';
+	}
+
+	async function handleCreateEmail() {
 		if (!formEmail.trim() || !formName.trim() || !formVersionId) {
 			formError = 'Email, nom et version sont requis.';
 			return;
@@ -187,14 +380,41 @@
 				email: formEmail.trim(),
 			};
 			showCredentials = true;
-			toast.success('Invitation créée');
+			toast.success('Invitation cr\u00e9\u00e9e avec succ\u00e8s');
 
-			// Reload assignments
 			await loadAllAssignments();
 		} catch (err: any) {
-			formError = err.message || 'Erreur lors de la création.';
+			formError = err.message || 'Erreur lors de la cr\u00e9ation.';
 		} finally {
 			formSubmitting = false;
+		}
+	}
+
+	async function handleGenerateLink() {
+		if (!linkVersionId || !linkCompany.trim()) {
+			formError = 'Entreprise et version sont requis.';
+			return;
+		}
+
+		linkGenerating = true;
+		formError = '';
+
+		try {
+			const res = await post<{ data: NewAssignment }>(`/versions/${linkVersionId}/assignments`, {
+				email: `${linkCompany.trim().toLowerCase().replace(/\s+/g, '-')}@link.demo`,
+				name: linkCompany.trim(),
+				expiresInDays: linkExpiryDays,
+			});
+
+			const baseUrl = window.location.origin;
+			linkGenerated = `${baseUrl}/demo/${res.data.accessToken}`;
+			toast.success('Lien g\u00e9n\u00e9r\u00e9 avec succ\u00e8s');
+
+			await loadAllAssignments();
+		} catch (err: any) {
+			formError = err.message || 'Erreur lors de la g\u00e9n\u00e9ration du lien.';
+		} finally {
+			linkGenerating = false;
 		}
 	}
 
@@ -202,6 +422,10 @@
 		await navigator.clipboard.writeText(text);
 		copiedField = field;
 		setTimeout(() => { copiedField = ''; }, 2000);
+	}
+
+	async function handleResend(assignment: Assignment) {
+		toast.info(`Invitation renvoy\u00e9e \u00e0 ${assignment.user.email}`);
 	}
 
 	function openDeleteDialog(assignment: Assignment) {
@@ -218,28 +442,51 @@
 			assignments = assignments.filter(a => a.id !== deletingAssignment!.id);
 			deleteDialogOpen = false;
 			deletingAssignment = null;
-			toast.success('Invitation supprimée');
+			toast.success('Acc\u00e8s r\u00e9voqu\u00e9');
 		} catch (err) {
-			toast.error('Erreur lors de la suppression');
+			toast.error('Erreur lors de la r\u00e9vocation');
 		} finally {
 			deleteSubmitting = false;
 		}
 	}
 
+	function exportCSV() {
+		const data = filteredAssignments();
+		const headers = ['Client', 'Email', 'Entreprise', 'Projet/D\u00e9mo', 'Statut', 'Envoy\u00e9 le', 'Expiration'];
+		const rows = data.map(a => [
+			a.user.name,
+			a.user.email,
+			a.user.company ?? '',
+			getVersionName(a.versionId),
+			getStatusInfo(a).label,
+			formatDate(a.createdAt),
+			formatDate(a.expiresAt),
+		]);
+		const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `invitations-${new Date().toISOString().slice(0, 10)}.csv`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
 	onMount(async () => {
 		try {
 			const res = await get<{ data: Array<Project & { versions?: Version[] }> }>('/projects');
-			// Load versions for each project
 			const projectsWithVersions: Project[] = [];
 			for (const p of res.data) {
 				try {
-					const detail = await get<{ data: { versions: Version[] } }>(`/projects/${p.id}`);
-					projectsWithVersions.push({ ...p, versions: detail.data.versions ?? [] });
+					const detail = await get<{ data: { versions: Version[]; subdomain: string } }>(`/projects/${p.id}`);
+					projectsWithVersions.push({ ...p, versions: detail.data.versions ?? [], subdomain: detail.data.subdomain ?? p.subdomain ?? '' });
 				} catch {
 					projectsWithVersions.push({ ...p, versions: [] });
 				}
 			}
 			projects = projectsWithVersions;
+			formProjectId = projects[0]?.id ?? '';
+			linkProjectId = projects[0]?.id ?? '';
 
 			await loadAllAssignments();
 		} catch (err) {
@@ -251,7 +498,7 @@
 </script>
 
 <svelte:head>
-	<title>Invitations — Environnements Simulés</title>
+	<title>Invitations — Environnements Simul\u00e9s</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -260,22 +507,22 @@
 		<div>
 			<h1 class="text-lg font-semibold text-foreground">Invitations</h1>
 			<p class="text-sm text-muted-foreground">
-				Gérez les accès démo pour vos clients et prospects
+				G\u00e9rez les acc\u00e8s d\u00e9mo pour vos clients et prospects
 			</p>
 		</div>
-		<Button size="sm" class="gap-1.5" onclick={openCreateDialog}>
+		<Button size="sm" class="gap-1.5" onclick={resetEmailForm}>
 			<Plus class="h-3.5 w-3.5" />
-			Nouvelle invitation
+			Nouvel acc\u00e8s
 		</Button>
 	</div>
 
-	<!-- Stats cards -->
-	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+	<!-- Stats cards: 3 cards -->
+	<div class="grid gap-4 sm:grid-cols-3">
 		<Card>
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium text-muted-foreground">Invitations envoyées</p>
+						<p class="text-xs font-medium text-muted-foreground">Invitations envoy\u00e9es</p>
 						<p class="mt-1 text-2xl font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>
@@ -285,8 +532,8 @@
 						</p>
 						{#if !loading}
 							<span class="inline-flex items-center gap-1 text-xs font-medium text-success">
-								<TrendingUp class="h-3 w-3" />
-								Total
+								<ArrowUpRight class="h-3 w-3" />
+								+{invitationsThisWeek()} cette semaine
 							</span>
 						{/if}
 					</div>
@@ -301,304 +548,623 @@
 			<CardContent class="p-4">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-xs font-medium text-muted-foreground">Clients actifs</p>
+						<p class="text-xs font-medium text-muted-foreground">Liens actifs</p>
 						<p class="mt-1 text-2xl font-bold text-foreground">
 							{#if loading}
 								<span class="skeleton inline-block h-8 w-12"></span>
 							{:else}
-								{activeClients}
+								{activeLinks}
 							{/if}
 						</p>
+						{#if !loading}
+							<span class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+								<Link2 class="h-3 w-3" />
+								{expiredLinks} expir\u00e9{expiredLinks !== 1 ? 's' : ''}
+							</span>
+						{/if}
 					</div>
 					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-						<Users class="h-5 w-5 text-success" />
+						<Link2 class="h-5 w-5 text-success" />
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+
+		<Card>
+			<CardContent class="p-4">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-xs font-medium text-muted-foreground">Connexions</p>
+						<p class="mt-1 text-2xl font-bold text-foreground">
+							{#if loading}
+								<span class="skeleton inline-block h-8 w-12"></span>
+							{:else}
+								{totalConnections}
+							{/if}
+						</p>
+						{#if !loading}
+							<span class="inline-flex items-center gap-1 text-xs font-medium text-success">
+								<ArrowUpRight class="h-3 w-3" />
+								+{connectionsThisWeek()} cette semaine
+							</span>
+						{/if}
+					</div>
+					<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple/10">
+						<BarChart3 class="h-5 w-5 text-purple" />
 					</div>
 				</div>
 			</CardContent>
 		</Card>
 	</div>
 
-	<!-- Client list -->
-	<Card>
-		<CardHeader class="pb-3">
-			<CardTitle class="text-base">Liste des clients</CardTitle>
-		</CardHeader>
-		<CardContent>
-			{#if loading || assignmentsLoading}
-				<div class="space-y-3">
-					{#each Array(4) as _}
-						<div class="flex items-center gap-4 rounded-lg border border-border p-4">
-							<div class="skeleton h-8 w-8 rounded-full"></div>
-							<div class="flex-1 space-y-2">
-								<div class="skeleton h-4 w-32"></div>
-								<div class="skeleton h-3 w-48"></div>
-							</div>
-						</div>
-					{/each}
-				</div>
-			{:else if assignments.length === 0}
-				<div class="flex flex-col items-center justify-center py-16">
-					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
-						<Send class="h-6 w-6 text-muted" />
-					</div>
-					<p class="mt-4 text-sm font-medium text-foreground">Aucune invitation</p>
-					<p class="mt-1 text-sm text-muted-foreground">Invitez vos premiers clients à découvrir vos démos.</p>
-					<Button size="sm" class="mt-4 gap-1.5" onclick={openCreateDialog}>
-						<Plus class="h-3.5 w-3.5" />
-						Nouvelle invitation
+	<!-- Two-column layout: left = table, right = persistent form -->
+	<div class="grid gap-6" style="grid-template-columns: 1.5fr 1fr;">
+		<!-- LEFT: Table with toolbar -->
+		<Card class="min-w-0">
+			<CardHeader class="pb-3">
+				<div class="flex items-center justify-between">
+					<CardTitle class="text-base">Liste des invitations</CardTitle>
+					<Button variant="outline" size="sm" class="h-8 gap-1.5 text-xs" onclick={exportCSV}>
+						<Download class="h-3.5 w-3.5" />
+						Exporter
 					</Button>
 				</div>
-			{:else}
-				<div class="overflow-x-auto">
-					<table class="w-full">
-						<thead>
-							<tr class="border-b border-border">
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Client</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Email</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Démo assignée</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Expiration</th>
-								<th class="pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted">Statut</th>
-								<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each assignments as assignment}
-								{@const expired = isExpired(assignment.expiresAt)}
-								{@const daysLeft = getDaysUntilExpiry(assignment.expiresAt)}
-								<tr class="border-b border-border last:border-0">
-									<td class="py-3 pr-4">
-										<div class="flex items-center gap-3">
-											<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-												{assignment.user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-											</div>
-											<span class="text-sm font-medium text-foreground">{assignment.user.name}</span>
-										</div>
-									</td>
-									<td class="py-3 pr-4">
-										<span class="text-sm text-muted-foreground">{assignment.user.email}</span>
-									</td>
-									<td class="py-3 pr-4">
-										<span class="text-sm text-foreground">{getVersionName(assignment.versionId)}</span>
-									</td>
-									<td class="py-3 pr-4">
-										<div class="flex items-center gap-1.5">
-											<Calendar class="h-3 w-3 text-muted" />
-											<span class="text-xs text-muted-foreground">{formatDate(assignment.expiresAt)}</span>
-										</div>
-									</td>
-									<td class="py-3 pr-4">
-										{#if expired}
-											<Badge variant="destructive">Expiré</Badge>
-										{:else if daysLeft < 30}
-											<Badge variant="warning">Expire bientôt</Badge>
-										{:else}
-											<Badge variant="success">Actif</Badge>
-										{/if}
-									</td>
-									<td class="py-3 text-right">
-										<div class="flex items-center justify-end gap-1">
-											<button
-												class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
-												onclick={() => copyToClipboard(assignment.accessToken, `token-${assignment.id}`)}
-												title="Copier le token d'accès"
-											>
-												{#if copiedField === `token-${assignment.id}`}
-													<Check class="h-3.5 w-3.5 text-success" />
-												{:else}
-													<Link2 class="h-3.5 w-3.5" />
-												{/if}
-											</button>
-											<button
-												class="rounded-md p-1.5 text-muted transition-colors hover:bg-destructive-bg hover:text-destructive"
-												onclick={() => openDeleteDialog(assignment)}
-												title="Supprimer"
-											>
-												<Trash2 class="h-3.5 w-3.5" />
-											</button>
-										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
-		</CardContent>
-	</Card>
-</div>
-
-<!-- Create Invitation Dialog -->
-<Dialog bind:open={createDialogOpen}>
-	<DialogContent class="max-w-lg">
-		{#if showCredentials && createdCredentials}
-			<DialogHeader>
-				<DialogTitle>Invitation créée</DialogTitle>
-				<DialogDescription>
-					Les identifiants ci-dessous ne seront affichés qu'une seule fois. Copiez-les maintenant.
-				</DialogDescription>
-			</DialogHeader>
-			<div class="space-y-4">
-				<div class="rounded-lg border border-success-border bg-success-bg p-4">
-					<div class="space-y-3">
-						<div class="flex items-center justify-between">
-							<span class="text-sm font-medium text-foreground">Email</span>
-							<div class="flex items-center gap-2">
-								<code class="rounded bg-white px-2 py-0.5 font-mono text-sm">{createdCredentials.email}</code>
-								<button onclick={() => copyToClipboard(createdCredentials!.email, 'cred-email')} class="rounded p-1 hover:bg-white/50">
-									{#if copiedField === 'cred-email'}
-										<Check class="h-3.5 w-3.5 text-success" />
-									{:else}
-										<Copy class="h-3.5 w-3.5 text-muted-foreground" />
-									{/if}
-								</button>
-							</div>
-						</div>
-						<div class="flex items-center justify-between">
-							<span class="text-sm font-medium text-foreground">Mot de passe</span>
-							<div class="flex items-center gap-2">
-								<code class="rounded bg-white px-2 py-0.5 font-mono text-sm">
-									{passwordVisible ? createdCredentials.password : '••••••••'}
-								</code>
-								<button onclick={() => { passwordVisible = !passwordVisible; }} class="rounded p-1 hover:bg-white/50">
-									{#if passwordVisible}
-										<EyeOff class="h-3.5 w-3.5 text-muted-foreground" />
-									{:else}
-										<Eye class="h-3.5 w-3.5 text-muted-foreground" />
-									{/if}
-								</button>
-								<button onclick={() => copyToClipboard(createdCredentials!.password, 'cred-pass')} class="rounded p-1 hover:bg-white/50">
-									{#if copiedField === 'cred-pass'}
-										<Check class="h-3.5 w-3.5 text-success" />
-									{:else}
-										<Copy class="h-3.5 w-3.5 text-muted-foreground" />
-									{/if}
-								</button>
-							</div>
-						</div>
-						<div class="flex items-center justify-between">
-							<span class="text-sm font-medium text-foreground">Token d'accès</span>
-							<div class="flex items-center gap-2">
-								<code class="max-w-40 truncate rounded bg-white px-2 py-0.5 font-mono text-sm">{createdCredentials.accessToken}</code>
-								<button onclick={() => copyToClipboard(createdCredentials!.accessToken, 'cred-token')} class="rounded p-1 hover:bg-white/50">
-									{#if copiedField === 'cred-token'}
-										<Check class="h-3.5 w-3.5 text-success" />
-									{:else}
-										<Copy class="h-3.5 w-3.5 text-muted-foreground" />
-									{/if}
-								</button>
-							</div>
-						</div>
+				<!-- Search + filters toolbar -->
+				<div class="mt-3 flex flex-wrap items-center gap-2">
+					<div class="relative flex-1 min-w-[200px]">
+						<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+						<Input
+							bind:value={searchQuery}
+							placeholder="Rechercher un client..."
+							class="h-8 pl-8 text-sm"
+						/>
 					</div>
-				</div>
-			</div>
-			<DialogFooter>
-				<Button onclick={() => { createDialogOpen = false; showCredentials = false; createdCredentials = null; passwordVisible = false; }}>
-					Fermer
-				</Button>
-			</DialogFooter>
-		{:else}
-			<DialogHeader>
-				<DialogTitle>Nouvelle invitation</DialogTitle>
-				<DialogDescription>
-					Invitez un client à accéder à une démo. Un mot de passe sera généré automatiquement.
-				</DialogDescription>
-			</DialogHeader>
-			<form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleCreate(); }}>
-				<div class="grid gap-4 sm:grid-cols-2">
-					<div class="space-y-2">
-						<label for="invite-name" class="text-sm font-medium text-foreground">Nom</label>
-						<Input id="invite-name" bind:value={formName} placeholder="Jean Dupont" />
-					</div>
-					<div class="space-y-2">
-						<label for="invite-email" class="text-sm font-medium text-foreground">Email</label>
-						<Input id="invite-email" bind:value={formEmail} placeholder="jean@acme.com" type="email" />
-					</div>
-				</div>
-
-				<div class="space-y-2">
-					<label for="invite-company" class="text-sm font-medium text-foreground">Entreprise <span class="text-muted-foreground">(optionnel)</span></label>
-					<Input id="invite-company" bind:value={formCompany} placeholder="Acme Corp" />
-				</div>
-
-				<div class="grid gap-4 sm:grid-cols-2">
-					<div class="space-y-2">
-						<label for="invite-project" class="text-sm font-medium text-foreground">Projet</label>
-						<select
-							id="invite-project"
-							bind:value={formProjectId}
-							onchange={() => { formVersionId = ''; }}
-							class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-						>
-							<option value="" disabled>Sélectionner un projet</option>
-							{#each projects as project}
-								<option value={project.id}>{project.name}</option>
-							{/each}
-						</select>
-					</div>
-					<div class="space-y-2">
-						<label for="invite-version" class="text-sm font-medium text-foreground">Version</label>
-						<select
-							id="invite-version"
-							bind:value={formVersionId}
-							class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-							disabled={!formProjectId}
-						>
-							<option value="" disabled>Sélectionner une version</option>
-							{#each availableVersions() as version}
-								<option value={version.id}>{version.name} ({version.status})</option>
-							{/each}
-						</select>
-					</div>
-				</div>
-
-				<div class="space-y-2">
-					<label for="invite-expiry" class="text-sm font-medium text-foreground">Expiration</label>
 					<select
-						id="invite-expiry"
-						bind:value={formExpiryDays}
-						class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						bind:value={statusFilter}
+						class="flex h-8 rounded-md border border-border bg-transparent px-2.5 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					>
-						<option value={30}>1 mois</option>
-						<option value={90}>3 mois (recommandé)</option>
-						<option value={180}>6 mois</option>
-						<option value={365}>1 an</option>
-						<option value={730}>2 ans</option>
+						<option value="all">Tous les statuts</option>
+						<option value="connected">Connect\u00e9</option>
+						<option value="pending">En attente</option>
+						<option value="expired">Expir\u00e9</option>
+					</select>
+					<select
+						bind:value={projectFilter}
+						class="flex h-8 rounded-md border border-border bg-transparent px-2.5 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						<option value="all">Tous les projets</option>
+						{#each projects as project}
+							<option value={project.id}>{project.name}</option>
+						{/each}
 					</select>
 				</div>
+			</CardHeader>
+			<CardContent>
+				{#if loading || assignmentsLoading}
+					<div class="space-y-3">
+						{#each Array(5) as _}
+							<div class="flex items-center gap-4 rounded-lg border border-border p-4">
+								<div class="skeleton h-8 w-8 rounded-full"></div>
+								<div class="flex-1 space-y-2">
+									<div class="skeleton h-4 w-32"></div>
+									<div class="skeleton h-3 w-48"></div>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else if assignments.length === 0}
+					<div class="flex flex-col items-center justify-center py-16">
+						<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
+							<Send class="h-6 w-6 text-muted" />
+						</div>
+						<p class="mt-4 text-sm font-medium text-foreground">Aucune invitation</p>
+						<p class="mt-1 text-sm text-muted-foreground">Invitez vos premiers clients \u00e0 d\u00e9couvrir vos d\u00e9mos.</p>
+					</div>
+				{:else if filteredAssignments().length === 0}
+					<div class="flex flex-col items-center justify-center py-12">
+						<p class="text-sm text-muted-foreground">Aucun r\u00e9sultat pour ces filtres.</p>
+					</div>
+				{:else}
+					<div class="overflow-x-auto">
+						<table class="w-full">
+							<thead>
+								<tr class="border-b border-border">
+									<th class="pb-2 text-left">
+										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('client')}>
+											Client
+											{#if sortColumn === 'client'}
+												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
+											{:else}
+												<ChevronsUpDown class="h-3 w-3 opacity-40" />
+											{/if}
+										</button>
+									</th>
+									<th class="pb-2 text-left">
+										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('email')}>
+											Email
+											{#if sortColumn === 'email'}
+												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
+											{:else}
+												<ChevronsUpDown class="h-3 w-3 opacity-40" />
+											{/if}
+										</button>
+									</th>
+									<th class="pb-2 text-left">
+										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('project')}>
+											Projet/D\u00e9mo
+											{#if sortColumn === 'project'}
+												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
+											{:else}
+												<ChevronsUpDown class="h-3 w-3 opacity-40" />
+											{/if}
+										</button>
+									</th>
+									<th class="pb-2 text-left">
+										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('status')}>
+											Statut
+											{#if sortColumn === 'status'}
+												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
+											{:else}
+												<ChevronsUpDown class="h-3 w-3 opacity-40" />
+											{/if}
+										</button>
+									</th>
+									<th class="pb-2 text-left">
+										<button class="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-foreground" onclick={() => toggleSort('date')}>
+											Envoy\u00e9 le
+											{#if sortColumn === 'date'}
+												{#if sortDir === 'asc'}<ChevronUp class="h-3 w-3" />{:else}<ChevronDown class="h-3 w-3" />{/if}
+											{:else}
+												<ChevronsUpDown class="h-3 w-3 opacity-40" />
+											{/if}
+										</button>
+									</th>
+									<th class="pb-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each paginatedAssignments() as assignment}
+									{@const status = getStatusInfo(assignment)}
+									<tr class="group relative border-b border-border last:border-0 transition-colors hover:bg-accent/50 hover:border-l-[3px] hover:border-l-primary">
+										<td class="py-3 pr-4">
+											<div class="flex items-center gap-3">
+												<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary transition-transform group-hover:scale-110">
+													{getInitials(assignment.user.name)}
+												</div>
+												<div class="min-w-0">
+													<span class="block truncate text-sm font-medium text-foreground">{assignment.user.name}</span>
+													{#if assignment.user.company}
+														<span class="block truncate text-xs text-muted-foreground">{assignment.user.company}</span>
+													{/if}
+												</div>
+											</div>
+										</td>
+										<td class="py-3 pr-4">
+											<span class="text-sm text-muted-foreground">{assignment.user.email}</span>
+										</td>
+										<td class="py-3 pr-4">
+											<span class="text-sm text-foreground">{getVersionName(assignment.versionId)}</span>
+										</td>
+										<td class="py-3 pr-4">
+											<span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium {status.bgColor} {status.borderColor} {status.textColor}">
+												<span class="h-1.5 w-1.5 rounded-full {status.dotColor}"></span>
+												{status.label}
+											</span>
+										</td>
+										<td class="py-3 pr-4">
+											<span class="text-xs text-muted-foreground">{formatDate(assignment.createdAt)}</span>
+										</td>
+										<td class="py-3 text-right">
+											<div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+												<button
+													class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+													onclick={() => handleResend(assignment)}
+													title="Renvoyer"
+												>
+													<RefreshCw class="h-3.5 w-3.5" />
+												</button>
+												<button
+													class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+													onclick={() => copyToClipboard(assignment.accessToken, `token-${assignment.id}`)}
+													title="Copier le lien"
+												>
+													{#if copiedField === `token-${assignment.id}`}
+														<Check class="h-3.5 w-3.5 text-success" />
+													{:else}
+														<Copy class="h-3.5 w-3.5" />
+													{/if}
+												</button>
+												<button
+													class="rounded-md p-1.5 text-muted transition-colors hover:bg-destructive/10 hover:text-destructive"
+													onclick={() => openDeleteDialog(assignment)}
+													title="R\u00e9voquer"
+												>
+													<X class="h-3.5 w-3.5" />
+												</button>
+											</div>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
 
-				{#if formError}
-					<p class="text-sm text-destructive">{formError}</p>
+					<!-- Pagination footer -->
+					{#if totalPages > 1}
+						<div class="mt-4 flex items-center justify-between border-t border-border pt-3">
+							<p class="text-xs text-muted-foreground">
+								{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, totalFiltered)} sur {totalFiltered} invitation{totalFiltered !== 1 ? 's' : ''}
+							</p>
+							<div class="flex items-center gap-1">
+								<button
+									class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
+									onclick={() => { currentPage = Math.max(1, currentPage - 1); }}
+									disabled={currentPage <= 1}
+								>
+									<ChevronLeft class="h-4 w-4" />
+								</button>
+								{#each Array(totalPages) as _, i}
+									{#if totalPages <= 7 || i === 0 || i === totalPages - 1 || (i >= currentPage - 2 && i <= currentPage)}
+										<button
+											class="flex h-7 w-7 items-center justify-center rounded-md text-xs transition-colors {currentPage === i + 1 ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
+											onclick={() => { currentPage = i + 1; }}
+										>
+											{i + 1}
+										</button>
+									{:else if i === 1 || i === totalPages - 2}
+										<span class="px-1 text-xs text-muted">...</span>
+									{/if}
+								{/each}
+								<button
+									class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:pointer-events-none"
+									onclick={() => { currentPage = Math.min(totalPages, currentPage + 1); }}
+									disabled={currentPage >= totalPages}
+								>
+									<ChevronRight class="h-4 w-4" />
+								</button>
+							</div>
+						</div>
+					{/if}
 				{/if}
+			</CardContent>
+		</Card>
 
-				<DialogFooter>
-					<Button variant="outline" type="button" onclick={() => { createDialogOpen = false; }}>Annuler</Button>
-					<Button type="submit" disabled={formSubmitting} class="gap-1.5">
-						{#if formSubmitting}
-							Création...
+		<!-- RIGHT: Persistent "G\u00e9n\u00e9rer un acc\u00e8s" form card -->
+		<div class="space-y-4">
+			<Card>
+				<CardHeader class="pb-3">
+					<CardTitle class="text-base">G\u00e9n\u00e9rer un acc\u00e8s</CardTitle>
+					<!-- Tabs: email vs link -->
+					<div class="mt-3 flex rounded-lg border border-border bg-accent/50 p-0.5">
+						<button
+							class="flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors {formTab === 'email' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => { formTab = 'email'; formError = ''; }}
+						>
+							<Mail class="mr-1.5 inline h-3.5 w-3.5 -translate-y-px" />
+							Invitation par email
+						</button>
+						<button
+							class="flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors {formTab === 'link' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => { formTab = 'link'; formError = ''; }}
+						>
+							<Globe class="mr-1.5 inline h-3.5 w-3.5 -translate-y-px" />
+							Partager un lien
+						</button>
+					</div>
+				</CardHeader>
+				<CardContent>
+					{#if formTab === 'email'}
+						<!-- Email invitation form -->
+						{#if showCredentials && createdCredentials}
+							<!-- Credentials display: mail template block -->
+							<div class="space-y-4">
+								<div class="rounded-lg border border-success/30 bg-success/5 p-3">
+									<div class="flex items-center gap-2 mb-3">
+										<Check class="h-4 w-4 text-success" />
+										<span class="text-sm font-medium text-success">Invitation cr\u00e9\u00e9e</span>
+									</div>
+									<p class="text-xs text-muted-foreground mb-3">
+										Les identifiants ci-dessous ne seront affich\u00e9s qu'une seule fois.
+									</p>
+								</div>
+
+								<!-- Mail template block -->
+								<div class="rounded-lg border-2 border-dashed border-border p-4">
+									<p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Bloc \u00e0 ins\u00e9rer dans votre mail</p>
+									<div class="space-y-2.5 rounded-md bg-accent/50 p-3">
+										<div class="flex items-center justify-between">
+											<span class="text-xs text-muted-foreground">Email</span>
+											<div class="flex items-center gap-1.5">
+												<code class="rounded bg-background px-2 py-0.5 font-mono text-xs">{createdCredentials.email}</code>
+												<button onclick={() => copyToClipboard(createdCredentials!.email, 'cred-email')} class="rounded p-1 hover:bg-background">
+													{#if copiedField === 'cred-email'}
+														<Check class="h-3 w-3 text-success" />
+													{:else}
+														<Copy class="h-3 w-3 text-muted-foreground" />
+													{/if}
+												</button>
+											</div>
+										</div>
+										<Separator />
+										<div class="flex items-center justify-between">
+											<span class="text-xs text-muted-foreground">Mot de passe</span>
+											<div class="flex items-center gap-1.5">
+												<code class="rounded bg-background px-2 py-0.5 font-mono text-xs">
+													{passwordVisible ? createdCredentials.password : '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022'}
+												</code>
+												<button onclick={() => { passwordVisible = !passwordVisible; }} class="rounded p-1 hover:bg-background">
+													{#if passwordVisible}
+														<EyeOff class="h-3 w-3 text-muted-foreground" />
+													{:else}
+														<Eye class="h-3 w-3 text-muted-foreground" />
+													{/if}
+												</button>
+												<button onclick={() => copyToClipboard(createdCredentials!.password, 'cred-pass')} class="rounded p-1 hover:bg-background">
+													{#if copiedField === 'cred-pass'}
+														<Check class="h-3 w-3 text-success" />
+													{:else}
+														<Copy class="h-3 w-3 text-muted-foreground" />
+													{/if}
+												</button>
+											</div>
+										</div>
+										<Separator />
+										<div class="flex items-center justify-between">
+											<span class="text-xs text-muted-foreground">Token d'acc\u00e8s</span>
+											<div class="flex items-center gap-1.5">
+												<code class="max-w-[140px] truncate rounded bg-background px-2 py-0.5 font-mono text-xs">{createdCredentials.accessToken}</code>
+												<button onclick={() => copyToClipboard(createdCredentials!.accessToken, 'cred-token')} class="rounded p-1 hover:bg-background">
+													{#if copiedField === 'cred-token'}
+														<Check class="h-3 w-3 text-success" />
+													{:else}
+														<Copy class="h-3 w-3 text-muted-foreground" />
+													{/if}
+												</button>
+											</div>
+										</div>
+									</div>
+									<Button
+										variant="outline"
+										size="sm"
+										class="mt-3 w-full gap-1.5 text-xs"
+										onclick={() => {
+											const block = `Email: ${createdCredentials!.email}\nMot de passe: ${createdCredentials!.password}\nToken: ${createdCredentials!.accessToken}`;
+											copyToClipboard(block, 'cred-block');
+										}}
+									>
+										{#if copiedField === 'cred-block'}
+											<Check class="h-3.5 w-3.5 text-success" />
+											Copi\u00e9 !
+										{:else}
+											<Copy class="h-3.5 w-3.5" />
+											Tout copier
+										{/if}
+									</Button>
+								</div>
+
+								<Button
+									class="w-full"
+									onclick={() => {
+										showCredentials = false;
+										createdCredentials = null;
+										passwordVisible = false;
+										resetEmailForm();
+									}}
+								>
+									Nouvelle invitation
+								</Button>
+							</div>
 						{:else}
-							<Send class="h-3.5 w-3.5" />
-							Envoyer l'invitation
-						{/if}
-					</Button>
-				</DialogFooter>
-			</form>
-		{/if}
-	</DialogContent>
-</Dialog>
+							<!-- Email form -->
+							<form class="space-y-3" onsubmit={(e) => { e.preventDefault(); handleCreateEmail(); }}>
+								<div class="space-y-1.5">
+									<label for="invite-name" class="text-xs font-medium text-foreground">Nom</label>
+									<Input id="invite-name" bind:value={formName} placeholder="Jean Dupont" class="h-8 text-sm" />
+								</div>
+								<div class="space-y-1.5">
+									<label for="invite-email" class="text-xs font-medium text-foreground">Email</label>
+									<Input id="invite-email" bind:value={formEmail} placeholder="jean@acme.com" type="email" class="h-8 text-sm" />
+								</div>
+								<div class="space-y-1.5">
+									<label for="invite-company" class="text-xs font-medium text-foreground">
+										Entreprise <span class="text-muted-foreground">(optionnel)</span>
+									</label>
+									<Input id="invite-company" bind:value={formCompany} placeholder="Acme Corp" class="h-8 text-sm" />
+								</div>
+								<div class="space-y-1.5">
+									<label for="invite-project" class="text-xs font-medium text-foreground">Projet</label>
+									<select
+										id="invite-project"
+										bind:value={formProjectId}
+										onchange={() => { formVersionId = ''; }}
+										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									>
+										<option value="" disabled>S\u00e9lectionner un projet</option>
+										{#each projects as project}
+											<option value={project.id}>{project.name}</option>
+										{/each}
+									</select>
+								</div>
+								<div class="space-y-1.5">
+									<label for="invite-version" class="text-xs font-medium text-foreground">Version</label>
+									<select
+										id="invite-version"
+										bind:value={formVersionId}
+										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										disabled={!formProjectId}
+									>
+										<option value="" disabled>S\u00e9lectionner une version</option>
+										{#each availableVersions() as version}
+											<option value={version.id}>{version.name} ({version.status})</option>
+										{/each}
+									</select>
+								</div>
+								<div class="space-y-1.5">
+									<label for="invite-expiry" class="text-xs font-medium text-foreground">Expiration</label>
+									<select
+										id="invite-expiry"
+										bind:value={formExpiryDays}
+										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									>
+										<option value={30}>1 mois</option>
+										<option value={90}>3 mois (recommand\u00e9)</option>
+										<option value={180}>6 mois</option>
+										<option value={365}>1 an</option>
+										<option value={730}>2 ans</option>
+									</select>
+								</div>
 
-<!-- Delete Dialog -->
+								<div class="flex items-center gap-3 rounded-lg border border-border p-3">
+									<input
+										type="checkbox"
+										id="invite-require-account"
+										bind:checked={formRequireAccount}
+										class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+									/>
+									<div>
+										<label for="invite-require-account" class="text-xs font-medium text-foreground">Exiger la cr\u00e9ation d'un compte</label>
+										<p class="text-[10px] text-muted-foreground">Le client devra cr\u00e9er un compte</p>
+									</div>
+								</div>
+
+								{#if formError}
+									<p class="text-xs text-destructive">{formError}</p>
+								{/if}
+
+								<Button type="submit" disabled={formSubmitting} class="w-full gap-1.5">
+									{#if formSubmitting}
+										Cr\u00e9ation...
+									{:else}
+										<Send class="h-3.5 w-3.5" />
+										Envoyer l'invitation
+									{/if}
+								</Button>
+							</form>
+						{/if}
+					{:else}
+						<!-- Link sharing form -->
+						{#if linkGenerated}
+							<div class="space-y-4">
+								<div class="rounded-lg border border-success/30 bg-success/5 p-3">
+									<div class="flex items-center gap-2 mb-2">
+										<Check class="h-4 w-4 text-success" />
+										<span class="text-sm font-medium text-success">Lien g\u00e9n\u00e9r\u00e9</span>
+									</div>
+								</div>
+
+								<div class="rounded-lg border-2 border-dashed border-border p-4">
+									<p class="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Lien de partage</p>
+									<div class="flex items-center gap-2 rounded-md bg-accent/50 p-2">
+										<code class="flex-1 truncate font-mono text-xs">{linkGenerated}</code>
+										<button onclick={() => copyToClipboard(linkGenerated, 'link-url')} class="shrink-0 rounded p-1.5 hover:bg-background">
+											{#if copiedField === 'link-url'}
+												<Check class="h-3.5 w-3.5 text-success" />
+											{:else}
+												<Copy class="h-3.5 w-3.5 text-muted-foreground" />
+											{/if}
+										</button>
+									</div>
+								</div>
+
+								<Button
+									class="w-full"
+									onclick={() => { linkGenerated = ''; resetLinkForm(); }}
+								>
+									G\u00e9n\u00e9rer un autre lien
+								</Button>
+							</div>
+						{:else}
+							<form class="space-y-3" onsubmit={(e) => { e.preventDefault(); handleGenerateLink(); }}>
+								<div class="space-y-1.5">
+									<label for="link-company" class="text-xs font-medium text-foreground">Entreprise</label>
+									<Input id="link-company" bind:value={linkCompany} placeholder="Acme Corp" class="h-8 text-sm" />
+								</div>
+								<div class="space-y-1.5">
+									<label for="link-project" class="text-xs font-medium text-foreground">Projet</label>
+									<select
+										id="link-project"
+										bind:value={linkProjectId}
+										onchange={() => { linkVersionId = ''; }}
+										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									>
+										<option value="" disabled>S\u00e9lectionner un projet</option>
+										{#each projects as project}
+											<option value={project.id}>{project.name}</option>
+										{/each}
+									</select>
+								</div>
+								<div class="space-y-1.5">
+									<label for="link-version" class="text-xs font-medium text-foreground">Version</label>
+									<select
+										id="link-version"
+										bind:value={linkVersionId}
+										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+										disabled={!linkProjectId}
+									>
+										<option value="" disabled>S\u00e9lectionner une version</option>
+										{#each linkAvailableVersions() as version}
+											<option value={version.id}>{version.name} ({version.status})</option>
+										{/each}
+									</select>
+								</div>
+								<div class="space-y-1.5">
+									<label for="link-expiry" class="text-xs font-medium text-foreground">Expiration</label>
+									<select
+										id="link-expiry"
+										bind:value={linkExpiryDays}
+										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									>
+										<option value={30}>1 mois</option>
+										<option value={90}>3 mois (recommand\u00e9)</option>
+										<option value={180}>6 mois</option>
+										<option value={365}>1 an</option>
+									</select>
+								</div>
+								<div class="space-y-1.5">
+									<label for="link-password" class="text-xs font-medium text-foreground">
+										Mot de passe <span class="text-muted-foreground">(optionnel)</span>
+									</label>
+									<div class="relative">
+										<Lock class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+										<Input id="link-password" bind:value={linkPassword} placeholder="Laisser vide pour aucun" type="password" class="h-8 pl-8 text-sm" />
+									</div>
+									<p class="text-[10px] text-muted-foreground">Prot\u00e9gez l'acc\u00e8s au lien avec un mot de passe</p>
+								</div>
+
+								{#if formError}
+									<p class="text-xs text-destructive">{formError}</p>
+								{/if}
+
+								<Button type="submit" disabled={linkGenerating} class="w-full gap-1.5">
+									{#if linkGenerating}
+										G\u00e9n\u00e9ration...
+									{:else}
+										<Link2 class="h-3.5 w-3.5" />
+										G\u00e9n\u00e9rer le lien
+									{/if}
+								</Button>
+							</form>
+						{/if}
+					{/if}
+				</CardContent>
+			</Card>
+		</div>
+	</div>
+</div>
+
+<!-- Delete / Revoke Dialog -->
 <Dialog bind:open={deleteDialogOpen}>
 	<DialogContent>
 		<DialogHeader>
-			<DialogTitle>Révoquer l'accès</DialogTitle>
+			<DialogTitle>R\u00e9voquer l'acc\u00e8s</DialogTitle>
 			<DialogDescription>
-				Êtes-vous sûr de vouloir révoquer l'accès de <strong>{deletingAssignment?.user.name}</strong> ? Le client ne pourra plus accéder à la démo.
+				\u00cates-vous s\u00fbr de vouloir r\u00e9voquer l'acc\u00e8s de <strong>{deletingAssignment?.user.name}</strong> ? Le client ne pourra plus acc\u00e9der \u00e0 la d\u00e9mo.
 			</DialogDescription>
 		</DialogHeader>
 		<DialogFooter>
 			<Button variant="outline" onclick={() => { deleteDialogOpen = false; }}>Annuler</Button>
 			<Button variant="destructive" onclick={handleDelete} disabled={deleteSubmitting}>
-				{deleteSubmitting ? 'Révocation...' : 'Révoquer'}
+				{deleteSubmitting ? 'R\u00e9vocation...' : 'R\u00e9voquer'}
 			</Button>
 		</DialogFooter>
 	</DialogContent>

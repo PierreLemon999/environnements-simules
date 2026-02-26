@@ -3,7 +3,6 @@
 	import { get } from '$lib/api';
 	import { Button } from '$components/ui/button';
 	import {
-		Search,
 		Bell,
 		Plus,
 		Download,
@@ -83,25 +82,35 @@
 		$page.url.pathname === '/admin/projects'
 	);
 
-	// Subtitle descriptions for each page
-	const pageSubtitles: Record<string, string> = {
-		admin: 'Vue d\'ensemble',
-		projects: 'Gestion des projets',
-		tree: 'Exploration des pages',
-		analytics: 'Suivi de l\'activité',
-		invitations: 'Gestion des invitations',
-		users: 'Gestion des utilisateurs',
-		obfuscation: 'Règles de masquage',
-		'update-requests': 'Suivi des demandes',
-		settings: 'Configuration',
+	// Page title map
+	const pageTitles: Record<string, string> = {
+		admin: 'Dashboard',
+		projects: 'Projets',
+		tree: 'Arborescence',
+		analytics: 'Analytics',
+		invitations: 'Invitations',
+		users: 'Utilisateurs',
+		obfuscation: 'Obfuscation',
+		'update-requests': 'Demandes MAJ',
+		settings: 'Paramètres',
 	};
 
 	// Build breadcrumb from current path
+	let pageTitle = $derived(() => {
+		const pathname = $page.url.pathname;
+		const segments = pathname.split('/').filter(Boolean);
+		// Get the last meaningful segment
+		for (let i = segments.length - 1; i >= 0; i--) {
+			if (pageTitles[segments[i]]) return pageTitles[segments[i]];
+		}
+		return 'Dashboard';
+	});
+
 	let breadcrumbs = $derived(() => {
 		const pathname = $page.url.pathname;
 		const segments = pathname.split('/').filter(Boolean);
 		const labels: Record<string, string> = {
-			admin: 'Dashboard',
+			admin: 'Accueil',
 			projects: 'Projets',
 			tree: 'Arborescence',
 			analytics: 'Analytics',
@@ -120,14 +129,7 @@
 			const href = '/' + segments.slice(0, i + 1).join('/');
 			const isLast = i === segments.length - 1;
 
-			crumbs.push({ label, href, isLast: false });
-
-			// For the last named page segment, add a descriptive subtitle as final breadcrumb
-			if (isLast && pageSubtitles[segment]) {
-				crumbs.push({ label: pageSubtitles[segment], href, isLast: true });
-			} else if (isLast) {
-				crumbs[crumbs.length - 1].isLast = true;
-			}
+			crumbs.push({ label, href, isLast });
 		}
 
 		return crumbs;
@@ -138,31 +140,20 @@
 	class="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-card/80 px-4 backdrop-blur-sm transition-all duration-300"
 	style="margin-left: {collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'}"
 >
-	<!-- Breadcrumb -->
-	<nav class="flex items-center gap-1 text-sm">
-		{#each breadcrumbs() as crumb}
-			{#if !crumb.isLast}
-				<a href={crumb.href} class="text-muted-foreground transition-colors hover:text-foreground">{crumb.label}</a>
-				<ChevronRight class="h-3.5 w-3.5 text-muted" />
-			{:else}
-				<span class="font-medium text-foreground">{crumb.label}</span>
-			{/if}
-		{/each}
-	</nav>
+	<!-- Page title + Breadcrumb -->
+	<div class="flex items-center gap-2">
+		<h1 class="text-lg font-bold text-foreground">{pageTitle()}</h1>
+		<nav class="flex items-center gap-1 text-sm">
+			{#each breadcrumbs() as crumb}
+				{#if !crumb.isLast}
+					<ChevronRight class="h-3.5 w-3.5 text-muted" />
+					<a href={crumb.href} class="text-muted-foreground transition-colors hover:text-foreground">{crumb.label}</a>
+				{/if}
+			{/each}
+		</nav>
+	</div>
 
 	<div class="flex-1"></div>
-
-	<!-- Search trigger -->
-	<button
-		class="flex h-8 w-64 items-center gap-2 rounded-md border border-border bg-input px-3 text-sm text-muted transition-colors hover:bg-accent"
-		onclick={() => onOpenCommandPalette?.()}
-	>
-		<Search class="h-3.5 w-3.5" />
-		<span>Rechercher pages, projets, utilisateurs...</span>
-		<kbd class="ml-auto rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted">
-			⌘K
-		</kbd>
-	</button>
 
 	<!-- Action buttons -->
 	<button
@@ -170,6 +161,11 @@
 		title="Notifications"
 	>
 		<Bell class="h-4 w-4" />
+		<!-- Notification dot -->
+		<span class="absolute right-1.5 top-1.5 flex h-1.5 w-1.5">
+			<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
+			<span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-destructive"></span>
+		</span>
 	</button>
 
 	<button

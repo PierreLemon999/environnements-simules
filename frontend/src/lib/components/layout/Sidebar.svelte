@@ -16,9 +16,8 @@
 		EyeOff,
 		RefreshCw,
 		Settings,
-		LogOut,
+		ChevronDown,
 		ChevronsLeft,
-		ChevronsRight,
 	} from 'lucide-svelte';
 
 	let { collapsed = $bindable(false) }: { collapsed?: boolean } = $props();
@@ -26,8 +25,9 @@
 	let projects: Array<{ id: string; name: string; toolName: string; pageCount: number }> = $state([]);
 	let sessionCount = $state(0);
 	let updateRequestCount = $state(0);
+	let invitationCount = $state(0);
+	let hovered = $state(false);
 
-	// Navigation items with optional badges
 	const principalItems = [
 		{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard, badgeKey: null },
 		{ href: '/admin/projects', label: 'Projets', icon: FolderKanban, badgeKey: 'projects' },
@@ -43,15 +43,13 @@
 		{ href: '/admin/settings', label: 'Paramètres', icon: Settings, badgeKey: null },
 	];
 
-	// Badge values
 	let badges = $derived<Record<string, { value: number; variant: 'default' | 'destructive' }>>({
 		projects: { value: projects.length, variant: 'default' },
 		sessions: { value: sessionCount, variant: 'default' },
-		invitations: { value: 0, variant: 'default' },
+		invitations: { value: invitationCount, variant: 'default' },
 		updateRequests: { value: updateRequestCount, variant: updateRequestCount > 0 ? 'destructive' : 'default' },
 	});
 
-	// Tool name to color mapping
 	function getToolColor(toolName: string): string {
 		const colors: Record<string, string> = {
 			'Salesforce': '#00A1E0',
@@ -67,19 +65,12 @@
 
 	function isActive(href: string): boolean {
 		const currentPath = $page.url.pathname;
-		if (href === '/admin') {
-			return currentPath === '/admin';
-		}
+		if (href === '/admin') return currentPath === '/admin';
 		return currentPath.startsWith(href);
 	}
 
 	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
+		return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 	}
 
 	onMount(async () => {
@@ -92,15 +83,33 @@
 			projects = projectsRes.data;
 			sessionCount = overviewRes.data.last7Days.sessions;
 			updateRequestCount = updateRequestsRes.data.filter(r => r.status === 'pending').length;
+
+			let totalInvitations = 0;
+			for (const p of projectsRes.data) {
+				try {
+					const detail = await get<{ data: { versions: Array<{ id: string; status: string }> } }>(`/projects/${p.id}`);
+					const activeVersion = detail.data.versions?.find(v => v.status === 'active');
+					if (activeVersion) {
+						const assignments = await get<{ data: Array<{ id: string }> }>(`/versions/${activeVersion.id}/assignments`);
+						totalInvitations += assignments.data.length;
+					}
+				} catch {
+					// Skip
+				}
+			}
+			invitationCount = totalInvitations;
 		} catch {
-			// Silently fail — sidebar still works without data
+			// Silently fail
 		}
 	});
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <aside
 	class="fixed left-0 top-0 z-40 flex h-full flex-col border-r border-border bg-sidebar transition-all duration-300"
 	style="width: {collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'}"
+	onmouseenter={() => { hovered = true; }}
+	onmouseleave={() => { hovered = false; }}
 >
 	<!-- Branding -->
 	<div class="flex h-14 items-center gap-3 border-b border-border px-3">
@@ -116,19 +125,22 @@
 	</div>
 
 	<!-- Navigation -->
-	<nav class="flex-1 overflow-y-auto px-2 py-3">
+	<nav class="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
 		<!-- PRINCIPAL section -->
 		{#if !collapsed}
-			<p class="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Principal</p>
+			<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Principal</p>
 		{/if}
 		<ul class="space-y-0.5">
 			{#each principalItems as item}
 				<li>
 					<a
 						href={item.href}
-						class="group flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors {isActive(item.href) ? 'border-l-[3px] border-l-primary bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+						class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {isActive(item.href) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
 						title={collapsed ? item.label : undefined}
 					>
+						{#if isActive(item.href)}
+							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary"></span>
+						{/if}
 						<item.icon class="h-4 w-4 shrink-0 {isActive(item.href) ? 'text-primary' : 'text-muted'}" />
 						{#if !collapsed}
 							<span class="truncate flex-1">{item.label}</span>
@@ -150,16 +162,19 @@
 
 		<!-- GESTION section -->
 		{#if !collapsed}
-			<p class="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Gestion</p>
+			<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Gestion</p>
 		{/if}
 		<ul class="space-y-0.5">
 			{#each gestionItems as item}
 				<li>
 					<a
 						href={item.href}
-						class="group flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors {isActive(item.href) ? 'border-l-[3px] border-l-primary bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+						class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {isActive(item.href) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
 						title={collapsed ? item.label : undefined}
 					>
+						{#if isActive(item.href)}
+							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary"></span>
+						{/if}
 						<item.icon class="h-4 w-4 shrink-0 {isActive(item.href) ? 'text-primary' : 'text-muted'}" />
 						{#if !collapsed}
 							<span class="truncate flex-1">{item.label}</span>
@@ -177,18 +192,18 @@
 			{/each}
 		</ul>
 
-		<!-- OUTILS SIMULÉS section (dynamic from API) -->
+		<!-- OUTILS SIMULÉS section -->
 		{#if projects.length > 0}
 			<Separator class="my-3" />
 			{#if !collapsed}
-				<p class="mb-1 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Outils simulés</p>
+				<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Outils simulés</p>
 			{/if}
 			<ul class="space-y-0.5">
 				{#each projects.slice(0, 8) as project}
 					<li>
 						<a
 							href="/admin/projects/{project.id}"
-							class="group flex items-center gap-3 rounded-md px-2 py-1.5 text-sm text-secondary transition-colors hover:bg-accent hover:text-foreground"
+							class="group flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] text-secondary transition-colors hover:bg-accent hover:text-foreground"
 							title={collapsed ? project.toolName : undefined}
 						>
 							<span
@@ -197,7 +212,9 @@
 							></span>
 							{#if !collapsed}
 								<span class="truncate flex-1">{project.toolName}</span>
-								<span class="ml-auto text-[10px] text-muted-foreground">{project.pageCount}</span>
+								{#if project.pageCount > 0}
+									<span class="ml-auto text-[10px] text-muted-foreground">{project.pageCount}</span>
+								{/if}
 							{/if}
 						</a>
 					</li>
@@ -206,20 +223,16 @@
 		{/if}
 	</nav>
 
-	<!-- Collapse toggle -->
-	<div class="border-t border-border px-2 py-2">
+	<!-- Collapse toggle — floating circular button -->
+	{#if (hovered && !collapsed) || collapsed}
 		<button
-			class="flex w-full items-center justify-center rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+			class="absolute -right-3 top-1/2 z-50 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-opacity hover:bg-accent"
 			onclick={() => (collapsed = !collapsed)}
 			title={collapsed ? 'Développer' : 'Réduire'}
 		>
-			{#if collapsed}
-				<ChevronsRight class="h-4 w-4" />
-			{:else}
-				<ChevronsLeft class="h-4 w-4" />
-			{/if}
+			<ChevronsLeft class="h-3 w-3 text-muted-foreground {collapsed ? 'rotate-180' : ''}" />
 		</button>
-	</div>
+	{/if}
 
 	<!-- User section -->
 	<div class="border-t border-border px-3 py-3">
@@ -230,9 +243,7 @@
 						<AvatarImage src={$user.avatarUrl} alt={$user.name} />
 						<AvatarFallback>{getInitials($user.name)}</AvatarFallback>
 					</Avatar>
-					<!-- Online status dot -->
-					<span class="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full border-2 border-sidebar bg-success">
-					</span>
+					<span class="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full border-2 border-sidebar bg-success"></span>
 				</div>
 				{#if !collapsed}
 					<div class="min-w-0 flex-1">
@@ -242,9 +253,9 @@
 					<button
 						class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
 						onclick={() => logout()}
-						title="Se déconnecter"
+						title="Options"
 					>
-						<LogOut class="h-4 w-4" />
+						<ChevronDown class="h-4 w-4" />
 					</button>
 				{/if}
 			</div>

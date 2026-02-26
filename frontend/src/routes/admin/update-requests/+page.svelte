@@ -5,6 +5,7 @@
 	import { Card, CardContent, CardHeader, CardTitle } from '$components/ui/card';
 	import { Button } from '$components/ui/button';
 	import { Badge } from '$components/ui/badge';
+	import { Input } from '$components/ui/input';
 	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
 	import {
 		RefreshCw,
@@ -16,6 +17,7 @@
 		Calendar,
 		MessageSquare,
 		ArrowRight,
+		Search,
 	} from 'lucide-svelte';
 
 	interface UpdateRequest {
@@ -33,10 +35,23 @@
 	let requests: UpdateRequest[] = $state([]);
 	let loading = $state(true);
 	let statusFilter = $state('all');
+	let searchQuery = $state('');
 
 	let filteredRequests = $derived(() => {
-		if (statusFilter === 'all') return requests;
-		return requests.filter(r => r.status === statusFilter);
+		let result = requests;
+		if (statusFilter !== 'all') {
+			result = result.filter(r => r.status === statusFilter);
+		}
+		if (searchQuery.trim()) {
+			const q = searchQuery.toLowerCase();
+			result = result.filter(r =>
+				r.comment.toLowerCase().includes(q) ||
+				(r.page?.title ?? '').toLowerCase().includes(q) ||
+				(r.page?.urlPath ?? '').toLowerCase().includes(q) ||
+				(r.requestedByUser?.name ?? '').toLowerCase().includes(q)
+			);
+		}
+		return result;
 	});
 
 	let pendingCount = $derived(requests.filter(r => r.status === 'pending').length);
@@ -212,14 +227,21 @@
 	</div>
 
 	<!-- Filters -->
-	<Tabs value={statusFilter} onValueChange={(v) => { statusFilter = v; }}>
-		<TabsList>
-			<TabsTrigger value="all">Toutes ({requests.length})</TabsTrigger>
-			<TabsTrigger value="pending">En attente ({pendingCount})</TabsTrigger>
-			<TabsTrigger value="in_progress">En cours ({inProgressCount})</TabsTrigger>
-			<TabsTrigger value="done">Terminées ({doneCount})</TabsTrigger>
-		</TabsList>
-	</Tabs>
+	<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+		<Tabs value={statusFilter} onValueChange={(v) => { statusFilter = v; }}>
+			<TabsList>
+				<TabsTrigger value="all">Toutes ({requests.length})</TabsTrigger>
+				<TabsTrigger value="pending">En attente ({pendingCount})</TabsTrigger>
+				<TabsTrigger value="in_progress">En cours ({inProgressCount})</TabsTrigger>
+				<TabsTrigger value="done">Terminées ({doneCount})</TabsTrigger>
+			</TabsList>
+		</Tabs>
+
+		<div class="relative w-full sm:w-64">
+			<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+			<Input bind:value={searchQuery} placeholder="Rechercher une demande..." class="pl-9" />
+		</div>
+	</div>
 
 	<!-- Requests list -->
 	{#if loading}
@@ -263,7 +285,7 @@
 						<div class="flex items-start gap-4">
 							<!-- Status icon -->
 							<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {request.status === 'pending' ? 'bg-warning/10' : request.status === 'in_progress' ? 'bg-primary/10' : 'bg-success/10'}">
-								<StatusIcon class="h-5 w-5 {request.status === 'pending' ? 'text-warning' : request.status === 'in_progress' ? 'text-primary animate-spin' : 'text-success'}" />
+								<StatusIcon class="h-5 w-5 {request.status === 'pending' ? 'text-warning' : request.status === 'in_progress' ? 'text-primary' : 'text-success'}" />
 							</div>
 
 							<!-- Content -->
@@ -296,6 +318,9 @@
 									<span class="inline-flex items-center gap-1">
 										<FileText class="h-3 w-3" />
 										{request.page?.title ?? 'Page inconnue'}
+										{#if request.page?.urlPath}
+											<span class="text-muted">— /{request.page.urlPath}</span>
+										{/if}
 									</span>
 									<span class="inline-flex items-center gap-1">
 										<User class="h-3 w-3" />

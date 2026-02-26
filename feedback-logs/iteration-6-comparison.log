@@ -1,0 +1,30 @@
+The audit is complete. Here's the summary:
+
+## Iteration 6 Audit Results — 85 issues found
+
+| Severity | Count |
+|----------|-------|
+| **CRITICAL** | 7 |
+| **HIGH** | 22 |
+| **MEDIUM** | 30 |
+| **LOW** | 26 |
+
+### Critical issues (blocking):
+1. **Login** — Tab-based layout instead of single unified card
+2. **Dashboard** — 3-column stats grid instead of 4
+3. **Project Detail** — Versions as flat table instead of rich cards
+4. **Analytics** — Sessions split into 2 cards instead of unified table
+5. **Invitations** — Single column + modal instead of 2-column persistent form
+6. **Invitations** — Missing "Partager un lien" tab
+7. **Obfuscation** — Missing live preview panel (2-column layout)
+
+### Top high-priority patterns:
+- **Header** needs bold page title, search bar removal
+- **Dashboard** has wrong stat card content, unwanted bar chart, wrong table columns
+- **Project Detail** missing logo, health ring, stats row, rich assignments
+- **Tree** missing health bar, page preview, breadcrumb positioning
+- **Analytics** needs area chart (not bar chart), consolidated stats
+- **Invitations** missing toolbar, pagination, correct columns
+- **Command Palette** missing subtitles and group counts
+
+Full report written to `feedback-logs/iteration-6-issues.md`.

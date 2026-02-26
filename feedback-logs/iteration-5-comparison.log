@@ -1,0 +1,22 @@
+The iteration 5 quality audit is complete. Here's the summary:
+
+**Iteration 5 Results: 14 issues (down from 26 in iteration 4)**
+
+| Severity | Count |
+|----------|-------|
+| CRITICAL | 0 |
+| HIGH | 3 |
+| MEDIUM | 6 |
+| LOW | 5 |
+
+**Key findings:**
+
+- **All 26 iteration-4 issues were addressed** (error messages in French, pill tabs, background shape, breadcrumbs, analytics split, etc.)
+- **3 HIGH issues remain:**
+  1. Dashboard missing compact bar chart between stats and activity log (per mockup)
+  2. Tree view visual richness gap — all dots same color, no category-colored icons
+  3. Tree view detail panel needs verification when page selected
+- **Notable MEDIUM issues:** anonymous session company name display (unresolved mockup feedback), obfuscation tab pill styling mismatch, project detail missing tab navigation for assignations/configuration
+- **4 unresolved mockup-forge feedback items** tracked — 3 appear already resolved in code, 1 (analytics company name) still needs work
+
+Report written to `feedback-logs/iteration-5-issues.md`.

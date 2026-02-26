@@ -17,31 +17,31 @@ router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required', code: 400 });
+      res.status(400).json({ error: 'Adresse e-mail et mot de passe requis', code: 400 });
       return;
     }
 
     const user = await db.select().from(users).where(eq(users.email, email)).get();
 
     if (!user) {
-      res.status(401).json({ error: 'Invalid credentials', code: 401 });
+      res.status(401).json({ error: 'Identifiants invalides', code: 401 });
       return;
     }
 
     // Admins cannot log in with email/password (Google SSO only)
     if (user.role === 'admin') {
-      res.status(401).json({ error: 'Admin accounts must use Google SSO', code: 401 });
+      res.status(401).json({ error: 'Les comptes administrateurs doivent utiliser Google SSO', code: 401 });
       return;
     }
 
     if (!user.passwordHash) {
-      res.status(401).json({ error: 'Invalid credentials', code: 401 });
+      res.status(401).json({ error: 'Identifiants invalides', code: 401 });
       return;
     }
 
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) {
-      res.status(401).json({ error: 'Invalid credentials', code: 401 });
+      res.status(401).json({ error: 'Identifiants invalides', code: 401 });
       return;
     }
 
@@ -67,7 +67,7 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error', code: 500 });
+    res.status(500).json({ error: 'Erreur interne du serveur', code: 500 });
   }
 });
 
@@ -80,7 +80,7 @@ router.post('/google', async (req: Request, res: Response) => {
     const { googleToken, email, name, googleId, avatarUrl } = req.body;
 
     if (!email || !googleId) {
-      res.status(400).json({ error: 'Google authentication data is required', code: 400 });
+      res.status(400).json({ error: 'Données d\'authentification Google requises', code: 400 });
       return;
     }
 
@@ -93,7 +93,7 @@ router.post('/google', async (req: Request, res: Response) => {
 
       if (!isLemonLearning) {
         res.status(403).json({
-          error: 'Only @lemonlearning.com accounts can sign in with Google',
+          error: 'Seuls les comptes @lemonlearning.com peuvent se connecter avec Google',
           code: 403,
         });
         return;
@@ -138,7 +138,7 @@ router.post('/google', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Google auth error:', error);
-    res.status(500).json({ error: 'Internal server error', code: 500 });
+    res.status(500).json({ error: 'Erreur interne du serveur', code: 500 });
   }
 });
 
@@ -151,7 +151,7 @@ router.post('/demo-access', async (req: Request, res: Response) => {
     const { accessToken, password } = req.body;
 
     if (!accessToken || !password) {
-      res.status(400).json({ error: 'Access token and password are required', code: 400 });
+      res.status(400).json({ error: 'Token d\'accès et mot de passe requis', code: 400 });
       return;
     }
 
@@ -162,27 +162,27 @@ router.post('/demo-access', async (req: Request, res: Response) => {
       .get();
 
     if (!assignment) {
-      res.status(401).json({ error: 'Invalid access token', code: 401 });
+      res.status(401).json({ error: 'Token d\'accès invalide', code: 401 });
       return;
     }
 
     // Check expiration
     if (new Date(assignment.expiresAt) < new Date()) {
-      res.status(401).json({ error: 'Access token has expired', code: 401 });
+      res.status(401).json({ error: 'Le token d\'accès a expiré', code: 401 });
       return;
     }
 
     // Verify password
     const validPassword = await bcrypt.compare(password, assignment.passwordHash);
     if (!validPassword) {
-      res.status(401).json({ error: 'Invalid password', code: 401 });
+      res.status(401).json({ error: 'Mot de passe invalide', code: 401 });
       return;
     }
 
     // Get the user
     const user = await db.select().from(users).where(eq(users.id, assignment.userId)).get();
     if (!user) {
-      res.status(404).json({ error: 'User not found', code: 404 });
+      res.status(404).json({ error: 'Utilisateur introuvable', code: 404 });
       return;
     }
 
@@ -208,7 +208,7 @@ router.post('/demo-access', async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Demo access error:', error);
-    res.status(500).json({ error: 'Internal server error', code: 500 });
+    res.status(500).json({ error: 'Erreur interne du serveur', code: 500 });
   }
 });
 
@@ -221,7 +221,7 @@ router.post('/verify', async (req: Request, res: Response) => {
     const { token } = req.body;
 
     if (!token) {
-      res.status(400).json({ error: 'Token is required', code: 400 });
+      res.status(400).json({ error: 'Token requis', code: 400 });
       return;
     }
 
