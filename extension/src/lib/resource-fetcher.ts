@@ -466,9 +466,13 @@ export async function buildSelfContainedPage(
 	resources: ResourceManifest,
 	baseUrl: string
 ): Promise<string> {
+	const LOG = '[ES Resources]';
 	// Reset per-capture state
 	dataUriCache = new Map();
 	fetchCount = 0;
+
+	console.log(`${LOG} Building self-contained page from ${baseUrl}`);
+	console.log(`${LOG} Input: ${(html.length / 1024).toFixed(0)}KB HTML, ${resources.stylesheetUrls.length} CSS, ${resources.imageUrls.length} images, ${resources.faviconUrls.length} favicons`);
 
 	// Normalize HTML entities in URL attributes — innerHTML serializes & as &amp;
 	// which breaks URLs with query params (e.g. Next.js _next/image?w=96&q=75)
@@ -484,13 +488,18 @@ export async function buildSelfContainedPage(
 
 	// 1. Fetch and inline all CSS stylesheets
 	const styleBlocks: string[] = [];
+	let cssOk = 0, cssFail = 0;
 	for (const sheetUrl of resources.stylesheetUrls) {
 		const resolvedUrl = resolveUrl(sheetUrl, baseUrl);
 		const css = await fetchAndResolveStylesheet(resolvedUrl);
 		if (css.trim()) {
 			styleBlocks.push(`<style data-source="${escapeHtml(resolvedUrl)}">\n${css}\n</style>`);
+			cssOk++;
+		} else {
+			cssFail++;
 		}
 	}
+	console.log(`${LOG} CSS: ${cssOk} inlined, ${cssFail} failed`);
 
 	// Insert all fetched CSS into <head>
 	if (styleBlocks.length > 0) {
@@ -514,6 +523,7 @@ export async function buildSelfContainedPage(
 	// 4. Resolve any remaining url() references in inline styles and <style> tags
 	result = await resolveInlineUrls(result, baseUrl);
 
+	console.log(`${LOG} Done — Output: ${(result.length / 1024).toFixed(0)}KB, total fetches: ${fetchCount}, cache hits: ${dataUriCache.size}`);
 	return result;
 }
 

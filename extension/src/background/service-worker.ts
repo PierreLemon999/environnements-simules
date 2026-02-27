@@ -176,14 +176,19 @@ async function handleMessage(
 // ---------------------------------------------------------------------------
 
 async function handleCapturePage(tabId: number): Promise<CapturedPage> {
+	const LOG = '[ES Capture]';
+	console.log(`${LOG} === Starting capture for tab ${tabId} ===`);
+
 	const state = await getCaptureState();
 
 	// Get active version
 	const versionResult = await chrome.storage.local.get(STORAGE_KEYS.ACTIVE_VERSION);
 	const version = versionResult[STORAGE_KEYS.ACTIVE_VERSION];
 	if (!version?.id) {
+		console.error(`${LOG} No active version selected`);
 		throw new Error('Aucune version sélectionnée');
 	}
+	console.log(`${LOG} Version: ${version.id} (${version.name || 'unnamed'})`);
 
 	const localId = uuidv4();
 
@@ -202,15 +207,24 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 
 	try {
 		// Step 0: Scroll page to trigger lazy loading, then wait for DOM stabilization
+		console.log(`${LOG} Step 0: Scrolling page + DOM stabilization`);
 		try {
 			await chrome.tabs.sendMessage(tabId, { type: 'SCROLL_PAGE' });
-		} catch { /* content script might not be ready */ }
+			console.log(`${LOG} Scroll complete`);
+		} catch (e) {
+			console.warn(`${LOG} Scroll skipped (content script not ready):`, e instanceof Error ? e.message : e);
+		}
 		try {
-			await chrome.tabs.sendMessage(tabId, { type: 'WAIT_FOR_STABLE_DOM', timeout: 8000 });
-		} catch { /* fallback: content script not available */ }
+			const stabilityResult = await chrome.tabs.sendMessage(tabId, { type: 'WAIT_FOR_STABLE_DOM', timeout: 8000 });
+			console.log(`${LOG} DOM stabilization:`, stabilityResult);
+		} catch (e) {
+			console.warn(`${LOG} DOM stabilization skipped:`, e instanceof Error ? e.message : e);
+		}
 
 		// Step 1: Collect DOM + resource manifest
+		console.log(`${LOG} Step 1: Collecting DOM + resources`);
 		const collected = await captureCurrentPage(tabId);
+		console.log(`${LOG} Collected: "${collected.title}" (${collected.url}), ${collected.resources.stylesheetUrls.length} CSS, ${collected.resources.imageUrls.length} images, ${collected.resources.faviconUrls.length} favicons`);
 		await updatePageStatus(localId, PAGE_STATUS.UPLOADING, {
 			title: collected.title,
 			url: collected.url
@@ -220,14 +234,23 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 		// Optionally capture MHTML in parallel (debug mode)
 		const mhtmlPref = await chrome.storage.local.get(STORAGE_KEYS.MHTML_DEBUG);
 		const shouldCaptureMhtml = !!mhtmlPref[STORAGE_KEYS.MHTML_DEBUG];
+		console.log(`${LOG} Step 2: Building self-contained HTML (MHTML: ${shouldCaptureMhtml})`);
 
+		const buildStart = Date.now();
 		const [selfContainedHtml, mhtmlBlob, screenshotDataUrl] = await Promise.all([
 			buildSelfContainedPage(collected.html, collected.resources, collected.url),
 			shouldCaptureMhtml
-				? chrome.pageCapture.saveAsMHTML({ tabId }).catch(() => null)
+				? chrome.pageCapture.saveAsMHTML({ tabId }).catch((e) => {
+					console.warn(`${LOG} MHTML capture failed:`, e instanceof Error ? e.message : e);
+					return null;
+				})
 				: Promise.resolve(null),
-			chrome.tabs.captureVisibleTab(undefined as unknown as number, { format: 'png' }).catch(() => null)
+			chrome.tabs.captureVisibleTab({ format: 'png' }).catch((e) => {
+				console.warn(`${LOG} Screenshot capture failed:`, e instanceof Error ? e.message : e);
+				return null;
+			})
 		]);
+		console.log(`${LOG} Build complete in ${Date.now() - buildStart}ms — HTML: ${(selfContainedHtml.length / 1024).toFixed(0)}KB, MHTML: ${mhtmlBlob ? 'yes' : 'no'}, Screenshot: ${screenshotDataUrl ? 'yes' : 'no'}`);
 
 		// Convert screenshot data URL to Blob
 		let screenshotBlob: Blob | null = null;
@@ -235,10 +258,15 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			try {
 				const resp = await fetch(screenshotDataUrl);
 				screenshotBlob = await resp.blob();
-			} catch { /* ignore */ }
+				console.log(`${LOG} Screenshot blob: ${(screenshotBlob.size / 1024).toFixed(0)}KB`);
+			} catch (e) {
+				console.warn(`${LOG} Screenshot data URL conversion failed:`, e instanceof Error ? e.message : e);
+			}
 		}
 
 		// Step 3: Upload to backend
+		console.log(`${LOG} Step 3: Uploading to backend`);
+		const uploadStart = Date.now();
 		const result = await uploadCapturedPage(
 			version.id,
 			{ html: selfContainedHtml, title: collected.title, url: collected.url },
@@ -246,6 +274,7 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			mhtmlBlob,
 			screenshotBlob
 		);
+		console.log(`${LOG} Upload complete in ${Date.now() - uploadStart}ms — page ID: ${result.id}, size: ${result.fileSize}`);
 
 		// Step 4: Mark as done (derive urlPath from captured URL)
 		let urlPath: string | undefined;
@@ -283,14 +312,16 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			await api.put(`/capture-jobs/${state.jobId}`, {
 				pagesCaptured: doneCount,
 				status: doneCount >= currentState.targetPageCount ? 'done' : 'running'
-			}).catch(() => {
-				// Non-critical
+			}).catch((e) => {
+				console.warn(`${LOG} Capture job update failed:`, e instanceof Error ? e.message : e);
 			});
 		}
 
+		console.log(`${LOG} === Capture complete for "${collected.title}" ===`);
 		return (await getCaptureState()).pages.find((p) => p.localId === localId)!;
 	} catch (err) {
 		const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue';
+		console.error(`${LOG} === Capture FAILED ===`, errorMsg, err);
 		await updatePageStatus(localId, PAGE_STATUS.ERROR, { error: errorMsg });
 		throw err;
 	}

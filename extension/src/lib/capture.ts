@@ -24,6 +24,7 @@ export interface CollectedPageData {
  * Resource URLs are collected for the service worker to fetch separately.
  */
 export async function captureCurrentPage(tabId: number): Promise<CollectedPageData> {
+	const LOG = '[ES Capture]';
 	let results;
 	try {
 		results = await chrome.scripting.executeScript({
@@ -31,23 +32,30 @@ export async function captureCurrentPage(tabId: number): Promise<CollectedPageDa
 			func: collectPageData
 		});
 	} catch (err) {
-		throw new Error(`chrome.scripting.executeScript failed: ${err instanceof Error ? err.message : String(err)}`);
+		const msg = `chrome.scripting.executeScript failed: ${err instanceof Error ? err.message : String(err)}`;
+		console.error(`${LOG} ${msg}`);
+		throw new Error(msg);
 	}
 
 	if (!results || results.length === 0) {
+		console.error(`${LOG} executeScript returned no results`);
 		throw new Error('executeScript returned no results');
 	}
 
 	const frame = results[0];
 	if ('error' in frame && frame.error) {
+		console.error(`${LOG} Capture script error:`, frame.error);
 		throw new Error(`Capture script error: ${JSON.stringify(frame.error)}`);
 	}
 
 	if (!frame.result) {
+		console.error(`${LOG} Capture returned empty result (function may have thrown)`);
 		throw new Error('Capture returned empty result (function may have thrown)');
 	}
 
-	return frame.result as CollectedPageData;
+	const data = frame.result as CollectedPageData;
+	console.log(`${LOG} collectPageData OK — HTML: ${(data.html.length / 1024).toFixed(0)}KB`);
+	return data;
 }
 
 /**
@@ -526,20 +534,30 @@ export async function uploadCapturedPage(
 	mhtmlBlob?: Blob | null,
 	screenshotBlob?: Blob | null
 ): Promise<{ id: string; fileSize: number }> {
+	const LOG = '[ES Capture]';
 	const blob = new Blob([page.html], { type: 'text/html' });
 
 	// Derive URL path from the full URL (strip leading/trailing slashes, no query string)
 	const urlObj = new URL(page.url);
 	const urlPath = urlObj.pathname.replace(/^\/+|\/+$/g, '') || 'index';
 
-	const response = await uploadPage(versionId, blob, {
-		urlSource: page.url,
-		urlPath,
-		title: page.title,
-		captureMode
-	}, mhtmlBlob, screenshotBlob);
+	const parts = ['HTML'];
+	if (mhtmlBlob) parts.push(`MHTML(${(mhtmlBlob.size / 1024).toFixed(0)}KB)`);
+	if (screenshotBlob) parts.push(`Screenshot(${(screenshotBlob.size / 1024).toFixed(0)}KB)`);
+	console.log(`${LOG} Uploading: ${parts.join(' + ')} → /versions/${versionId}/pages`);
 
-	return response.data;
+	try {
+		const response = await uploadPage(versionId, blob, {
+			urlSource: page.url,
+			urlPath,
+			title: page.title,
+			captureMode
+		}, mhtmlBlob, screenshotBlob);
+		return response.data;
+	} catch (err) {
+		console.error(`${LOG} Upload failed:`, err instanceof Error ? err.message : err);
+		throw err;
+	}
 }
 
 // ---------------------------------------------------------------------------

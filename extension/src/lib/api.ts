@@ -128,9 +128,16 @@ export async function uploadPage(
 		body: formData
 	});
 
-	const data = await response.json();
+	let data;
+	try {
+		data = await response.json();
+	} catch (parseErr) {
+		console.error('[ES API] Failed to parse upload response:', response.status, response.statusText);
+		throw new ApiError(response.status, 'PARSE_ERROR', `Server returned ${response.status}: ${response.statusText}`);
+	}
 
 	if (!response.ok) {
+		console.error('[ES API] Upload error:', response.status, data?.error || data);
 		throw new ApiError(
 			response.status,
 			data?.code ?? 'UNKNOWN_ERROR',
