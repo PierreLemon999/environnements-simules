@@ -14,8 +14,7 @@ export default defineConfig(({ mode }) => ({
 				popup: resolve(__dirname, 'src/popup/index.html'),
 				sidepanel: resolve(__dirname, 'src/sidepanel/index.html'),
 				background: resolve(__dirname, 'src/background/service-worker.ts'),
-				content: resolve(__dirname, 'src/content/content-script.ts'),
-				'capture-hooks': resolve(__dirname, 'src/content/capture-hooks.ts')
+				content: resolve(__dirname, 'src/content/content-script.ts')
 			},
 			output: {
 				// Inline all chunks into entry files — Chrome MV3 service workers
@@ -25,7 +24,6 @@ export default defineConfig(({ mode }) => ({
 				entryFileNames: (chunkInfo) => {
 					if (chunkInfo.name === 'background') return 'background/service-worker.js';
 					if (chunkInfo.name === 'content') return 'content/content-script.js';
-					if (chunkInfo.name === 'capture-hooks') return 'content/capture-hooks.js';
 					if (chunkInfo.name === 'sidepanel') return 'sidepanel/[name].js';
 					return 'popup/[name].js';
 				},

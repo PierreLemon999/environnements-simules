@@ -56,7 +56,7 @@ router.get('/', authenticate, async (_req: Request, res: Response) => {
  */
 router.post('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const { name, toolName, subdomain, description, logoUrl } = req.body;
+    const { name, toolName, subdomain, description } = req.body;
 
     if (!name || !toolName || !subdomain) {
       res.status(400).json({ error: 'Name, toolName, and subdomain are required', code: 400 });
@@ -81,7 +81,6 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       toolName,
       subdomain,
       description: description || null,
-      logoUrl: logoUrl || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -163,7 +162,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       return;
     }
 
-    const { name, toolName, subdomain, description, logoUrl } = req.body;
+    const { name, toolName, subdomain, description } = req.body;
 
     // Check subdomain uniqueness if changing
     if (subdomain && subdomain !== project.subdomain) {
@@ -183,7 +182,6 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       toolName: toolName ?? project.toolName,
       subdomain: subdomain ?? project.subdomain,
       description: description !== undefined ? description : project.description,
-      logoUrl: logoUrl !== undefined ? (logoUrl || null) : project.logoUrl,
       updatedAt: new Date().toISOString(),
     };
 

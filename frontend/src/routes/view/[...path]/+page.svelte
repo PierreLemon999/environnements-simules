@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { post } from '$lib/api';
 	import {
 		Loader2,
@@ -41,17 +41,7 @@
 		loading = false;
 	}
 
-	// Listen for navigation messages from the demo iframe
-	function handleDemoMessage(e: MessageEvent) {
-		if (e.data?.type === 'DEMO_NAVIGATE' && e.data.href) {
-			// /demo/subdomain/path → /view/subdomain/path
-			const viewHref = e.data.href.replace(/^\/demo\//, '/view/');
-			window.location.href = viewHref;
-		}
-	}
-
 	onMount(async () => {
-		window.addEventListener('message', handleDemoMessage);
 		try {
 			// If there's a token, verify demo access
 			if (accessToken) {
@@ -86,10 +76,6 @@
 			iframeError = true;
 			loading = false;
 		}
-	});
-
-	onDestroy(() => {
-		window.removeEventListener('message', handleDemoMessage);
 	});
 </script>
 

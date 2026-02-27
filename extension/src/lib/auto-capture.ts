@@ -7,7 +7,6 @@ import {
 	getCaptureState,
 	updateCaptureState
 } from './capture';
-import { buildSelfContainedPage } from './resource-fetcher';
 import api from './api';
 import { v4 as uuidv4 } from './uuid';
 
@@ -37,7 +36,7 @@ interface CrawlQueueItem {
 const DEFAULT_CONFIG: AutoCaptureConfig = {
 	targetPageCount: 20,
 	maxDepth: 3,
-	delayBetweenPages: 500,
+	delayBetweenPages: 800,
 	interestZones: [],
 	blacklist: [
 		'Supprimer',
@@ -238,8 +237,8 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 				await navigateAndWait(currentTabId, item.url);
 			}
 
-			// Wait for initial DOM load
-			await sleep(500);
+			// Wait for DOM stabilization
+			await sleep(1500);
 
 			// Scroll to trigger lazy loading
 			if (currentTabId !== null) {
@@ -249,16 +248,7 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 					// Content script might not be injected yet
 				}
 			}
-
-			// Wait for DOM stabilization (MutationObserver + image tracking)
-			if (currentTabId !== null) {
-				try {
-					await chrome.tabs.sendMessage(currentTabId, { type: 'WAIT_FOR_STABLE_DOM', timeout: 6000 });
-				} catch {
-					// Fallback: simple delay if content script not available
-					await sleep(1500);
-				}
-			}
+			await sleep(500);
 
 			// Capture the page
 			if (currentTabId !== null) {
@@ -329,36 +319,26 @@ async function captureAndUploadPage(
 	await addCapturedPageToState(page);
 
 	try {
-		// Phase 1: Collect DOM + resource manifest
-		const collected = await captureCurrentPage(tabId);
+		const captured = await captureCurrentPage(tabId);
 
-		await updatePageStatus(localId, PAGE_STATUS.UPLOADING, {
-			title: collected.title,
-			url: collected.url
-		});
-
-		// Phase 2: Fetch resources and build self-contained HTML
-		let selfContainedHtml = await buildSelfContainedPage(
-			collected.html,
-			collected.resources,
-			collected.url
-		);
-
-		// Check file size > 10 MB — simplify if needed
-		const sizeBytes = new Blob([selfContainedHtml]).size;
+		// Check file size > 10 MB
+		const sizeBytes = new Blob([captured.html]).size;
 		if (sizeBytes > 10 * 1024 * 1024) {
-			selfContainedHtml = simplifyHtml(selfContainedHtml);
+			// Auto-simplify: remove inline images to reduce size
+			const simplified = simplifyHtml(captured.html);
+			captured.html = simplified;
 		}
 
-		const result = await uploadCapturedPage(
-			versionId,
-			{ html: selfContainedHtml, title: collected.title, url: collected.url },
-			'auto'
-		);
+		await updatePageStatus(localId, PAGE_STATUS.UPLOADING, {
+			title: captured.title,
+			url: captured.url
+		});
+
+		const result = await uploadCapturedPage(versionId, captured, 'auto');
 
 		let urlPath: string | undefined;
 		try {
-			const parsedUrl = new URL(collected.url);
+			const parsedUrl = new URL(captured.url);
 			urlPath = parsedUrl.pathname + parsedUrl.search;
 		} catch {
 			// Keep undefined

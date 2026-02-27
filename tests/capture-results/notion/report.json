@@ -1,0 +1,60 @@
+{
+  "site": {
+    "name": "notion",
+    "url": "https://www.notion.com/"
+  },
+  "stats": {
+    "scriptCount": 55,
+    "styleLinkCount": 21,
+    "inlineStyleCount": 4,
+    "imgCount": 70,
+    "iframeCount": 1
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://www.notion.com/_next/static/css/2be96141a99e066b.css",
+      "https://www.notion.com/_next/static/css/6df353b5ea2c484a.css",
+      "https://www.notion.com/_next/static/css/bd8ac3409b9bae90.css",
+      "https://www.notion.com/_next/static/css/27e68abb1fbfb0df.css",
+      "https://www.notion.com/_next/static/css/c79ba1c2f1e9b01d.css",
+      "https://www.notion.com/_next/static/css/82208278ad21527d.css",
+      "https://www.notion.com/_next/static/css/d7d5059c545d2c1b.css",
+      "https://www.notion.com/_next/static/css/44029b9547d0f710.css",
+      "https://www.notion.com/_next/static/css/53a42cb771a45fdd.css",
+      "https://www.notion.com/_next/static/css/0490da6b2775d1f6.css",
+      "https://www.notion.com/_next/static/css/1f385e746a2f5839.css",
+      "https://www.notion.com/_next/static/css/e907e3ff90ef2f85.css",
+      "https://www.notion.com/_next/static/css/7d7d7745a30405d4.css",
+      "https://www.notion.com/_next/static/css/a1e7b95a8897b971.css",
+      "https://www.notion.com/_next/static/css/73cb0dd065d5797b.css",
+      "https://www.notion.com/_next/static/css/0056af68a8e11655.css",
+      "https://www.notion.com/_next/static/css/50f7185c74012b3d.css",
+      "https://www.notion.com/_next/static/css/8aed09517721b10d.css",
+      "https://www.notion.com/_next/static/css/73871b4db5dfe37f.css",
+      "https://www.notion.com/_next/static/css/4b02a4d1f3702c2a.css",
+      "https://accounts.google.com/gsi/style"
+    ],
+    "imageCount": 111,
+    "faviconCount": 2
+  },
+  "fetchReport": {
+    "totalFetches": 186,
+    "cacheHits": 165,
+    "stats": {
+      "cssOk": 20,
+      "cssFail": 1,
+      "imgOk": 114,
+      "imgFail": 0,
+      "fontOk": 51,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": [
+      "CSS 403 https://accounts.google.com/gsi/style"
+    ]
+  },
+  "sizes": {
+    "rawHtml": 306353,
+    "selfContainedHtml": 5628564
+  }
+}

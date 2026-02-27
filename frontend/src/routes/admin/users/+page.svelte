@@ -17,7 +17,6 @@
 		DialogDescription,
 		DialogFooter,
 	} from '$components/ui/dialog';
-	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
 		Users,
 		Plus,
@@ -400,14 +399,14 @@
 			</div>
 			<div class="space-y-2">
 				<label for="user-role" class="text-sm font-medium text-foreground">Rôle</label>
-				<SearchableSelect
+				<select
+					id="user-role"
 					bind:value={formRole}
-					options={[
-						{ value: 'admin', label: 'Administrateur' },
-						{ value: 'client', label: 'Client' },
-					]}
-					placeholder="Sélectionner un rôle"
-				/>
+					class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					<option value="admin">Administrateur</option>
+					<option value="client">Client</option>
+				</select>
 			</div>
 			{#if formRole === 'client'}
 				<div class="space-y-2">

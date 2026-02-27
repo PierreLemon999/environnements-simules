@@ -11,7 +11,7 @@
 
 	function openPreview() {
 		if (!subdomain || !page.urlPath) return;
-		const previewUrl = `http://localhost:5173/demo/${subdomain}${page.urlPath}`;
+		const previewUrl = `${window.location.protocol}//localhost:5173/view/${subdomain}${page.urlPath}`;
 		chrome.tabs.create({ url: previewUrl });
 	}
 

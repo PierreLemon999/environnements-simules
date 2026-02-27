@@ -8,7 +8,6 @@
 	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
 	import { Separator } from '$components/ui/separator';
 	import { Avatar, AvatarFallback } from '$components/ui/avatar';
-	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
 		Activity,
 		Users,
@@ -556,7 +555,7 @@
 </script>
 
 <svelte:head>
-	<title>Statistiques — Environnements Simulés</title>
+	<title>Analytics — Environnements Simulés</title>
 </svelte:head>
 
 <div class="flex gap-0">
@@ -565,7 +564,7 @@
 		<!-- Page header with inline tabs -->
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-4">
-				<h1 class="text-lg font-semibold text-foreground">Statistiques</h1>
+				<h1 class="text-lg font-semibold text-foreground">Analytics</h1>
 				<Tabs value={activeTab} onValueChange={(v) => { activeTab = v; }}>
 					<TabsList>
 						<TabsTrigger value="overview">
@@ -591,17 +590,18 @@
 				</div>
 
 				<!-- Project filter (second, with funnel icon) -->
-				<SearchableSelect
-					bind:value={selectedProjectId}
-					options={[
-						{ value: '', label: 'Tous les projets' },
-						...projects.map(p => ({ value: p.id, label: p.toolName }))
-					]}
-					placeholder="Tous les projets"
-					searchable={true}
-					searchPlaceholder="Rechercher un projet..."
-					class="w-48"
-				/>
+				<div class="relative flex items-center">
+					<Filter class="pointer-events-none absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+					<select
+						bind:value={selectedProjectId}
+						class="flex h-9 rounded-md border border-border bg-transparent py-1 pl-8 pr-3 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					>
+						<option value="">Tous les projets</option>
+						{#each projects as project}
+							<option value={project.id}>{project.toolName}</option>
+						{/each}
+					</select>
+				</div>
 
 				<!-- Date range picker (third) -->
 				<button class="flex h-9 items-center gap-2 rounded-md border border-border bg-transparent px-3 text-sm text-muted-foreground transition-colors hover:bg-accent">

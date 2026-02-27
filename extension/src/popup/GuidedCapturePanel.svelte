@@ -14,7 +14,6 @@
 	let guides = $state<LLGuide[]>([]);
 	let executionMode = $state<'manual' | 'auto'>('auto');
 	let errorMessage = $state('');
-	let debugInfo = $state<Record<string, unknown> | null>(null);
 
 	let selectedCount = $derived(guides.filter((g) => g.selected).length);
 	let estimatedPages = $derived(
@@ -24,7 +23,6 @@
 	async function detectAndScan() {
 		state = 'scanning';
 		errorMessage = '';
-		debugInfo = null;
 
 		try {
 			const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -38,12 +36,10 @@
 				tabId: tab.id
 			});
 
-			debugInfo = { detection };
-
 			if (!detection?.detected) {
 				playerDetected = false;
 				state = 'error';
-				errorMessage = `Player Lemon Learning non détecté sur cette page.${detection?.error ? ` (${detection.error})` : ''} Naviguez vers une page avec le Player LL installé.`;
+				errorMessage = 'Player Lemon Learning non détecté sur cette page. Naviguez vers une page contenant le Player LL.';
 				return;
 			}
 
@@ -55,20 +51,15 @@
 				tabId: tab.id
 			});
 
-			debugInfo = { detection, scan: scanResult };
-
 			if (scanResult?.guides?.length > 0) {
-				guides = scanResult.guides.map((g: { id: string; name: string; stepCount: number; sectionName?: string }) => ({
+				guides = scanResult.guides.map((g: { id: string; name: string; stepCount: number }) => ({
 					...g,
 					selected: true
 				}));
 				state = 'selection';
 			} else {
 				state = 'error';
-				errorMessage = 'Player détecté mais aucun guide trouvé. Ouvrez le Player LL sur la page (cliquez sur son icône) puis réessayez — les guides sont chargés après ouverture.';
-				if (scanResult?.debug) {
-					debugInfo = { ...debugInfo, playerDebug: scanResult.debug };
-				}
+				errorMessage = 'Player détecté mais aucun guide trouvé. Les sélecteurs de scan seront affinés lors du test en live.';
 			}
 		} catch (err) {
 			state = 'error';
@@ -133,12 +124,6 @@
 				</svg>
 				<p class="text-[11px] text-red-600">{errorMessage}</p>
 			</div>
-			{#if debugInfo}
-				<details class="text-[10px] text-gray-400">
-					<summary class="cursor-pointer hover:text-gray-600">Debug info</summary>
-					<pre class="mt-1 p-2 bg-gray-50 rounded text-[9px] overflow-x-auto max-h-32 overflow-y-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
-				</details>
-			{/if}
 			<button
 				onclick={detectAndScan}
 				class="w-full py-2 text-xs font-medium text-primary border border-primary/20 rounded-lg hover:bg-blue-50 transition"

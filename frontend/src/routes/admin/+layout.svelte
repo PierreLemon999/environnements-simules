@@ -28,16 +28,11 @@
 		}
 	});
 
-	// Auto-collapse on tree page (only once, not preventing manual expand)
-	let treePageAutoCollapsed = $state(false);
+	// Force collapse on tree page
 	$effect(() => {
 		if (!browser) return;
-		if (isTreePage && !treePageAutoCollapsed) {
+		if (isTreePage && !collapsed) {
 			collapsed = true;
-			treePageAutoCollapsed = true;
-		}
-		if (!isTreePage) {
-			treePageAutoCollapsed = false;
 		}
 	});
 

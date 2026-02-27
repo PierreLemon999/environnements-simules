@@ -33,7 +33,7 @@
 		{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard, badgeKey: null },
 		{ href: '/admin/projects', label: 'Projets', icon: FolderKanban, badgeKey: 'projects' },
 		{ href: '/admin/tree', label: 'Arborescence', icon: GitBranch, badgeKey: null },
-		{ href: '/admin/analytics', label: 'Statistiques', icon: BarChart3, badgeKey: 'sessions' },
+		{ href: '/admin/analytics', label: 'Analytics', icon: BarChart3, badgeKey: 'sessions' },
 		{ href: '/admin/invitations', label: 'Invitations', icon: Send, badgeKey: 'invitations' },
 	];
 
@@ -205,12 +205,9 @@
 					<li>
 						<a
 							href="/admin/projects/{project.id}"
-							class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {isActive(`/admin/projects/${project.id}`) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+							class="group flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] text-secondary transition-colors hover:bg-accent hover:text-foreground"
 							title={collapsed ? project.toolName : undefined}
 						>
-						{#if isActive(`/admin/projects/${project.id}`)}
-							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary"></span>
-						{/if}
 							<span
 								class="h-2.5 w-2.5 shrink-0 rounded-full"
 								style="background-color: {getToolColor(project.toolName)}"
@@ -227,13 +224,15 @@
 	</nav>
 
 	<!-- Collapse toggle — floating circular button -->
-	<button
-		class="absolute -right-3 top-1/2 z-50 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-all hover:bg-accent hover:scale-110 {collapsed ? 'opacity-100' : hovered ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
-		onclick={(e) => { e.stopPropagation(); collapsed = !collapsed; onToggle?.(); }}
-		title={collapsed ? 'Développer le menu' : 'Réduire le menu'}
-	>
-		<ChevronsLeft class="h-3 w-3 text-muted-foreground transition-transform {collapsed ? 'rotate-180' : ''}" />
-	</button>
+	{#if (hovered && !collapsed) || collapsed}
+		<button
+			class="absolute -right-3 top-1/2 z-50 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card shadow-sm transition-opacity hover:bg-accent"
+			onclick={() => { collapsed = !collapsed; onToggle?.(); }}
+			title={collapsed ? 'Développer' : 'Réduire'}
+		>
+			<ChevronsLeft class="h-3 w-3 text-muted-foreground {collapsed ? 'rotate-180' : ''}" />
+		</button>
+	{/if}
 
 	<!-- User section -->
 	<div class="border-t border-border px-3 py-3">

@@ -1,0 +1,40 @@
+{
+  "site": {
+    "name": "airtable",
+    "url": "https://airtable.com/"
+  },
+  "stats": {
+    "scriptCount": 57,
+    "styleLinkCount": 1,
+    "inlineStyleCount": 26,
+    "imgCount": 25,
+    "iframeCount": 1
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://www.airtable.com/_next/static/css/cd90efe3b3c2db95.css"
+    ],
+    "imageCount": 199,
+    "faviconCount": 1
+  },
+  "fetchReport": {
+    "totalFetches": 221,
+    "cacheHits": 219,
+    "stats": {
+      "cssOk": 1,
+      "cssFail": 0,
+      "imgOk": 199,
+      "imgFail": 0,
+      "fontOk": 20,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": [
+      "400 https://images.ctfassets.net/wl95ljfippl8/16gglsabb0YL8UYL4Z1uXw/a4d73217bd392d6d884d8d2e6b871f37/Omni.gif?w=3840&q=75&fit=fill"
+    ]
+  },
+  "sizes": {
+    "rawHtml": 2330066,
+    "selfContainedHtml": 8966519
+  }
+}

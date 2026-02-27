@@ -6,7 +6,6 @@
 	let email = $state('');
 	let error = $state('');
 	let loading = $state(false);
-	let devLoading = $state(false);
 
 	async function handleGoogleLogin() {
 		error = '';
@@ -55,42 +54,6 @@
 			error = err instanceof Error ? err.message : 'Erreur de connexion';
 		} finally {
 			loading = false;
-		}
-	}
-
-	async function handleDevLogin() {
-		error = '';
-		devLoading = true;
-
-		try {
-			const response = await fetch(`${API_BASE_URL}/auth/google`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					devBypass: true,
-					email: 'marie.laurent@lemonlearning.com',
-					name: 'Marie Laurent',
-					googleId: 'google-marie-001'
-				})
-			});
-
-			const data = await response.json();
-			if (!response.ok) {
-				error = data.error || 'Échec de la connexion';
-				devLoading = false;
-				return;
-			}
-
-			const { token, user } = data.data;
-			await chrome.storage.local.set({
-				[STORAGE_KEYS.AUTH_TOKEN]: token,
-				[STORAGE_KEYS.USER]: user
-			});
-			onLogin({ user });
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur de connexion';
-		} finally {
-			devLoading = false;
 		}
 	}
 </script>
@@ -156,23 +119,7 @@
 			</div>
 		</div>
 
-		<!-- Dev quick login -->
-		<button
-			onclick={handleDevLogin}
-			disabled={loading || devLoading}
-			class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-gray-200 bg-white/90 text-xs font-medium text-gray-500 hover:text-primary hover:border-primary transition disabled:opacity-40 disabled:cursor-not-allowed"
-		>
-			{#if devLoading}
-				<div class="w-3 h-3 border-2 border-gray-300 border-t-primary rounded-full animate-spin"></div>
-			{:else}
-				<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
-				</svg>
-			{/if}
-			Connexion locale
-		</button>
-
-		<p class="text-center text-xs text-gray-400 mt-3">
+		<p class="text-center text-xs text-gray-400 mt-4">
 			Extension Lemon Learning v0.1.0
 		</p>
 	</div>

@@ -1,0 +1,40 @@
+{
+  "site": {
+    "name": "app-hubspot-com-login",
+    "url": "https://app.hubspot.com/login"
+  },
+  "stats": {
+    "scriptCount": 18,
+    "styleLinkCount": 3,
+    "inlineStyleCount": 7,
+    "imgCount": 1,
+    "iframeCount": 0
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://static.hsappstatic.net/foundations-theming-base/static-1.3100/stylesheets/hubspot-theme.stable.css",
+      "https://static.hsappstatic.net/LoginUI/static-1.14497/sass/project.css",
+      "https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400&display=swap"
+    ],
+    "imageCount": 1,
+    "faviconCount": 4
+  },
+  "fetchReport": {
+    "totalFetches": 23,
+    "cacheHits": 20,
+    "stats": {
+      "cssOk": 3,
+      "cssFail": 0,
+      "imgOk": 5,
+      "imgFail": 0,
+      "fontOk": 15,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": []
+  },
+  "sizes": {
+    "rawHtml": 148522,
+    "selfContainedHtml": 1283851
+  }
+}

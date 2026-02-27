@@ -26,9 +26,6 @@
 		MoreVertical,
 		Pencil,
 		Trash2,
-		ImagePlus,
-		X,
-		ChevronDown,
 	} from 'lucide-svelte';
 	import {
 		DropdownMenu,
@@ -44,7 +41,6 @@
 		toolName: string;
 		subdomain: string;
 		description: string | null;
-		logoUrl: string | null;
 		createdAt: string;
 		updatedAt: string;
 		versionCount: number;
@@ -63,17 +59,8 @@
 	let formToolName = $state('');
 	let formSubdomain = $state('');
 	let formDescription = $state('');
-	let formLogoUrl = $state('');
 	let formSubmitting = $state(false);
 	let formError = $state('');
-
-	// Tool selector state
-	let toolSearchQuery = $state('');
-	let toolDropdownOpen = $state(false);
-	let customTools: string[] = $state([]);
-	let creatingNewTool = $state(false);
-	let newToolName = $state('');
-	let logoFileInput: HTMLInputElement | undefined = $state();
 
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
@@ -94,56 +81,6 @@
 		'Confluence',
 		'Autre',
 	];
-
-	// Filtered tools for searchable dropdown
-	let filteredTools = $derived(() => {
-		const all = [...toolOptions.filter(t => t !== 'Autre'), ...customTools];
-		if (!toolSearchQuery.trim()) return all;
-		const q = toolSearchQuery.toLowerCase();
-		return all.filter(t => t.toLowerCase().includes(q));
-	});
-
-	function selectTool(tool: string) {
-		formToolName = tool;
-		toolSearchQuery = '';
-		toolDropdownOpen = false;
-	}
-
-	function startCreateTool() {
-		creatingNewTool = true;
-		newToolName = toolSearchQuery;
-	}
-
-	function confirmCreateTool() {
-		if (newToolName.trim()) {
-			customTools = [...customTools, newToolName.trim()];
-			formToolName = newToolName.trim();
-			newToolName = '';
-			creatingNewTool = false;
-			toolDropdownOpen = false;
-			toolSearchQuery = '';
-		}
-	}
-
-	async function handleLogoChange(e: Event) {
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		if (!file) return;
-		try {
-			const { optimizeLogoImage } = await import('$lib/utils');
-			formLogoUrl = await optimizeLogoImage(file);
-		} catch {
-			// Fallback to raw data URL
-			const reader = new FileReader();
-			reader.onload = () => { formLogoUrl = reader.result as string; };
-			reader.readAsDataURL(file);
-		}
-	}
-
-	function removeLogo() {
-		formLogoUrl = '';
-		if (logoFileInput) logoFileInput.value = '';
-	}
 
 	// Tool name to color mapping
 	function getToolColor(toolName: string): string {
@@ -216,11 +153,7 @@
 		formToolName = '';
 		formSubdomain = '';
 		formDescription = '';
-		formLogoUrl = '';
 		formError = '';
-		toolSearchQuery = '';
-		toolDropdownOpen = false;
-		creatingNewTool = false;
 		dialogOpen = true;
 	}
 
@@ -230,11 +163,7 @@
 		formToolName = project.toolName;
 		formSubdomain = project.subdomain;
 		formDescription = project.description ?? '';
-		formLogoUrl = project.logoUrl ?? '';
 		formError = '';
-		toolSearchQuery = '';
-		toolDropdownOpen = false;
-		creatingNewTool = false;
 		dialogOpen = true;
 	}
 
@@ -258,7 +187,6 @@
 				toolName: formToolName.trim(),
 				subdomain: formSubdomain.trim() || generateSubdomain(formName),
 				description: formDescription.trim() || null,
-				logoUrl: formLogoUrl || null,
 			};
 
 			if (editingProject) {
@@ -323,16 +251,6 @@
 	});
 </script>
 
-<svelte:window onclick={(e) => {
-	if (toolDropdownOpen) {
-		const target = e.target as HTMLElement;
-		if (!target.closest('.tool-dropdown-container')) {
-			toolDropdownOpen = false;
-			creatingNewTool = false;
-		}
-	}
-}} />
-
 <svelte:head>
 	<title>Projets — Environnements Simulés</title>
 </svelte:head>
@@ -359,19 +277,13 @@
 			</TabsList>
 		</Tabs>
 
-		<div class="flex items-center gap-2">
-			<div class="relative w-full sm:w-64">
-				<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-				<Input
-					bind:value={searchQuery}
-					placeholder="Rechercher un projet..."
-					class="pl-9"
-				/>
-			</div>
-			<Button size="sm" class="gap-1.5 shrink-0" onclick={openCreateDialog}>
-				<Plus class="h-3.5 w-3.5" />
-				Nouveau projet
-			</Button>
+		<div class="relative w-full sm:w-64">
+			<Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+			<Input
+				bind:value={searchQuery}
+				placeholder="Rechercher un projet..."
+				class="pl-9"
+			/>
 		</div>
 	</div>
 
@@ -446,20 +358,12 @@
 						<!-- Card content (clickable) -->
 						<a href="/admin/projects/{project.id}" class="block">
 							<div class="flex items-start gap-3">
-								{#if project.logoUrl}
-									<img
-										src={project.logoUrl}
-										alt={project.toolName}
-										class="h-10 w-10 shrink-0 rounded-lg object-cover"
-									/>
-								{:else}
-									<div
-										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
-										style="background-color: {getToolColor(project.toolName)}"
-									>
-										{project.toolName.slice(0, 2).toUpperCase()}
-									</div>
-								{/if}
+								<div
+									class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
+									style="background-color: {getToolColor(project.toolName)}"
+								>
+									{project.toolName.slice(0, 2).toUpperCase()}
+								</div>
 								<div class="min-w-0 flex-1">
 									<div class="flex items-center gap-2">
 										<p class="font-medium text-foreground group-hover:text-primary">{project.name}</p>
@@ -513,151 +417,36 @@
 			class="space-y-4"
 			onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}
 		>
-			<!-- Logo + Name row -->
-			<div class="flex items-start gap-4">
-				<!-- Logo upload -->
-				<div class="shrink-0">
-					<input
-						type="file"
-						accept="image/*"
-						class="hidden"
-						bind:this={logoFileInput}
-						onchange={handleLogoChange}
-					/>
-					{#if formLogoUrl}
-						<div class="group relative">
-							<button
-								type="button"
-								class="h-16 w-16 overflow-hidden rounded-lg border border-border"
-								onclick={() => logoFileInput?.click()}
-							>
-								<img src={formLogoUrl} alt="Logo" class="h-full w-full object-cover" />
-							</button>
-							<button
-								type="button"
-								class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100"
-								onclick={removeLogo}
-								title="Supprimer le logo"
-							>
-								<X class="h-3 w-3" />
-							</button>
-						</div>
-					{:else}
-						<button
-							type="button"
-							class="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary"
-							onclick={() => logoFileInput?.click()}
-						>
-							<ImagePlus class="h-5 w-5" />
-							<span class="text-[9px] font-medium">Logo</span>
-						</button>
-					{/if}
-				</div>
-
-				<!-- Name + Tool -->
-				<div class="flex-1 space-y-3">
-					<div class="space-y-1.5">
-						<label for="project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
-						<Input
-							id="project-name"
-							bind:value={formName}
-							placeholder="ex: Salesforce CRM — Démo commerciale"
-							oninput={() => {
-								if (!editingProject && !formSubdomain) {
-									formSubdomain = generateSubdomain(formName);
-								}
-							}}
-						/>
-					</div>
-
-					<!-- Searchable tool selector -->
-					<div class="space-y-1.5">
-						<label class="text-sm font-medium text-foreground">Outil simulé</label>
-						<div class="relative tool-dropdown-container">
-							<button
-								type="button"
-								class="flex h-9 w-full items-center justify-between rounded-md border border-border bg-transparent px-3 text-sm shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								onclick={() => { toolDropdownOpen = !toolDropdownOpen; creatingNewTool = false; }}
-							>
-								<span class={formToolName ? 'text-foreground' : 'text-muted'}>
-									{formToolName || 'Sélectionner un outil'}
-								</span>
-								<ChevronDown class="h-3.5 w-3.5 text-muted-foreground" />
-							</button>
-
-							{#if toolDropdownOpen}
-								<div class="absolute left-0 top-[calc(100%+4px)] z-50 w-full rounded-md border border-border bg-card shadow-lg">
-									<!-- Search input -->
-									<div class="border-b border-border p-2">
-										<div class="relative">
-											<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-											<input
-												type="text"
-												class="h-8 w-full rounded-md border border-border bg-transparent pl-8 pr-3 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring"
-												placeholder="Rechercher un outil..."
-												bind:value={toolSearchQuery}
-											/>
-										</div>
-									</div>
-
-									{#if creatingNewTool}
-										<!-- Create new tool inline -->
-										<div class="p-2 space-y-2">
-											<p class="text-xs font-medium text-muted-foreground px-1">Nouvel outil</p>
-											<div class="flex gap-2">
-												<input
-													type="text"
-													class="h-8 flex-1 rounded-md border border-border bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-													placeholder="Nom de l'outil..."
-													bind:value={newToolName}
-													onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmCreateTool(); } }}
-												/>
-												<Button size="sm" type="button" class="h-8 px-3" onclick={confirmCreateTool}>
-													Créer
-												</Button>
-											</div>
-										</div>
-									{:else}
-										<!-- Tool list -->
-										<div class="max-h-48 overflow-y-auto p-1">
-											{#each filteredTools() as tool}
-												<button
-													type="button"
-													class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent {tool === formToolName ? 'bg-accent font-medium text-primary' : 'text-foreground'}"
-													onclick={() => selectTool(tool)}
-												>
-													<span
-														class="h-2.5 w-2.5 shrink-0 rounded-full"
-														style="background-color: {getToolColor(tool)}"
-													></span>
-													{tool}
-												</button>
-											{:else}
-												<p class="px-3 py-2 text-sm text-muted-foreground">Aucun outil trouvé</p>
-											{/each}
-										</div>
-
-										<!-- Create new tool button -->
-										<div class="border-t border-border p-1">
-											<button
-												type="button"
-												class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-accent"
-												onclick={startCreateTool}
-											>
-												<Plus class="h-3.5 w-3.5" />
-												Créer un nouvel outil
-											</button>
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
-					</div>
-				</div>
+			<div class="space-y-2">
+				<label for="project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
+				<Input
+					id="project-name"
+					bind:value={formName}
+					placeholder="ex: Salesforce CRM — Démo commerciale"
+					oninput={() => {
+						if (!editingProject && !formSubdomain) {
+							formSubdomain = generateSubdomain(formName);
+						}
+					}}
+				/>
 			</div>
 
-			<div class="space-y-1.5">
-				<label for="project-subdomain" class="text-sm font-medium text-foreground">Sous-domaine des démos</label>
+			<div class="space-y-2">
+				<label for="project-tool" class="text-sm font-medium text-foreground">Outil simulé</label>
+				<select
+					id="project-tool"
+					bind:value={formToolName}
+					class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					<option value="" disabled>Sélectionner un outil</option>
+					{#each toolOptions as tool}
+						<option value={tool}>{tool}</option>
+					{/each}
+				</select>
+			</div>
+
+			<div class="space-y-2">
+				<label for="project-subdomain" class="text-sm font-medium text-foreground">Sous-domaine</label>
 				<div class="flex items-center gap-2">
 					<Input
 						id="project-subdomain"
@@ -665,17 +454,17 @@
 						placeholder="salesforce-crm"
 						class="flex-1"
 					/>
-					<span class="text-xs text-muted-foreground shrink-0">.en-ll.com</span>
+					<span class="text-xs text-muted-foreground">.demo.lemonlearning.com</span>
 				</div>
 			</div>
 
-			<div class="space-y-1.5">
+			<div class="space-y-2">
 				<label for="project-description" class="text-sm font-medium text-foreground">Description <span class="text-muted-foreground">(optionnel)</span></label>
 				<textarea
 					id="project-description"
 					bind:value={formDescription}
 					placeholder="Description du projet..."
-					rows="2"
+					rows="3"
 					class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				></textarea>
 			</div>

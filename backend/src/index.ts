@@ -37,7 +37,7 @@ app.use(
         'https://env-ll.com',
         process.env.FRONTEND_URL || '',
       ].filter(Boolean);
-      if (allowed.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin) || /^chrome-extension:\/\//.test(origin)) {
+      if (allowed.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
         return callback(null, true);
       }
       callback(new Error('Not allowed by CORS'));

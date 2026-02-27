@@ -1,0 +1,55 @@
+{
+  "site": {
+    "name": "tailwindcss-com-docs-installation",
+    "url": "https://tailwindcss.com/docs/installation"
+  },
+  "stats": {
+    "scriptCount": 101,
+    "styleLinkCount": 2,
+    "inlineStyleCount": 0,
+    "imgCount": 0,
+    "iframeCount": 0
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://tailwindcss.com/_next/static/chunks/0aa6f91bf69bba4f.css",
+      "https://tailwindcss.com/_next/static/chunks/22067bb27c370d37.css"
+    ],
+    "imageCount": 0,
+    "faviconCount": 6
+  },
+  "fetchReport": {
+    "totalFetches": 39,
+    "cacheHits": 22,
+    "stats": {
+      "cssOk": 2,
+      "cssFail": 0,
+      "imgOk": 12,
+      "imgFail": 0,
+      "fontOk": 10,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": [
+      "404 https://tailwindcss.com/carrot.png",
+      "404 https://tailwindcss.com/img/checkmark.png",
+      "404 https://tailwindcss.com/what_a_rush.png",
+      "404 https://tailwindcss.com/img/clouds.svg",
+      "404 https://tailwindcss.com/img/mountains.jpg",
+      "404 https://tailwindcss.com/img/circle.png",
+      "404 https://tailwindcss.com/img/circle.png",
+      "404 https://tailwindcss.com/img/circle.png",
+      "404 https://tailwindcss.com/img/circle.png",
+      "404 https://tailwindcss.com/img/circle.png",
+      "404 https://tailwindcss.com/img/circle.png",
+      "404 https://tailwindcss.com/img/scribble.png",
+      "404 https://tailwindcss.com/img/scribble.png",
+      "404 https://tailwindcss.com/img/down-arrow.svg",
+      "404 https://tailwindcss.com/img/up-arrow.svg"
+    ]
+  },
+  "sizes": {
+    "rawHtml": 179329,
+    "selfContainedHtml": 3309706
+  }
+}

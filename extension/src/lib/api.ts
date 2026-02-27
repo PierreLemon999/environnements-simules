@@ -102,19 +102,11 @@ export async function uploadPage(
 		urlPath?: string;
 		title: string;
 		captureMode: string;
-	},
-	mhtmlBlob?: Blob | null,
-	screenshotBlob?: Blob | null
+	}
 ): Promise<{ data: { id: string; fileSize: number } }> {
 	const token = await getToken();
 	const formData = new FormData();
 	formData.append('file', file, 'page.html');
-	if (mhtmlBlob) {
-		formData.append('mhtml', mhtmlBlob, 'page.mhtml');
-	}
-	if (screenshotBlob) {
-		formData.append('screenshot', screenshotBlob, 'screenshot.png');
-	}
 	formData.append('metadata', JSON.stringify(metadata));
 
 	const headers: Record<string, string> = {};
@@ -128,16 +120,9 @@ export async function uploadPage(
 		body: formData
 	});
 
-	let data;
-	try {
-		data = await response.json();
-	} catch (parseErr) {
-		console.error('[ES API] Failed to parse upload response:', response.status, response.statusText);
-		throw new ApiError(response.status, 'PARSE_ERROR', `Server returned ${response.status}: ${response.statusText}`);
-	}
+	const data = await response.json();
 
 	if (!response.ok) {
-		console.error('[ES API] Upload error:', response.status, data?.error || data);
 		throw new ApiError(
 			response.status,
 			data?.code ?? 'UNKNOWN_ERROR',

@@ -1,0 +1,46 @@
+{
+  "site": {
+    "name": "gitlab",
+    "url": "https://gitlab.com/explore"
+  },
+  "stats": {
+    "scriptCount": 24,
+    "styleLinkCount": 9,
+    "inlineStyleCount": 12,
+    "imgCount": 4,
+    "iframeCount": 0
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://gitlab.com/assets/application-97550c2915fa3046e12e0e8f105c2fec95679426f8afa89df98fd6ab55549bd7.css",
+      "https://gitlab.com/assets/application_dark-01e1c2b710e4afa6713a5b4f4a7e15d9e823cb7681e8683f142341f7c147fdcd.css",
+      "https://gitlab.com/assets/page_bundles/commit_description-9e7efe20f0cef17d0606edabfad0418e9eb224aaeaa2dae32c817060fa60abcc.css",
+      "https://gitlab.com/assets/page_bundles/work_items-af321897c3b1ae7c1f6f0cb993681211b837df7ec8e5ff59e3795fd08ab83a13.css",
+      "https://gitlab.com/assets/page_bundles/notes_shared-8f7a9513332533cc4a53b3be3d16e69570e82bc87b3f8913578eaeb0dce57e21.css",
+      "https://gitlab.com/assets/tailwind_cqs-3c426ff64dc3219ee732ed71c5f2e36ac82a397ba7a8ca98ac17701e7ff8e2e0.css",
+      "https://gitlab.com/assets/fonts-deb7ad1d55ca77c0172d8538d53442af63604ff490c74acc2859db295c125bdb.css",
+      "https://gitlab.com/assets/highlight/themes/white-9c3096bebbc271536c91d4e96afdef34cf54f198accca96d32008405a3a398da.css",
+      "https://gitlab.com/assets/highlight/themes/dark-bab508e186c8119f0cfb965d3a8a74c6ee2b10c5d2cf129a41c0bc522b98655d.css"
+    ],
+    "imageCount": 4,
+    "faviconCount": 2
+  },
+  "fetchReport": {
+    "totalFetches": 32,
+    "cacheHits": 23,
+    "stats": {
+      "cssOk": 9,
+      "cssFail": 0,
+      "imgOk": 19,
+      "imgFail": 0,
+      "fontOk": 4,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": []
+  },
+  "sizes": {
+    "rawHtml": 161580,
+    "selfContainedHtml": 9653394
+  }
+}

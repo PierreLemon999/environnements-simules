@@ -26,25 +26,16 @@ export function rewriteLinks(
   // Build a map of original URLs to their rewritten paths
   const urlMap = new Map<string, string>();
   for (const page of pages) {
-    // Ensure urlPath has no leading slash to avoid double slashes
-    const cleanPath = page.urlPath.replace(/^\/+/, '');
-    const demoUrl = `/demo/${subdomain}/${cleanPath}`;
-
     // Map the full source URL to the demo path
-    urlMap.set(page.urlSource, demoUrl);
+    urlMap.set(page.urlSource, `/demo/${subdomain}/${page.urlPath}`);
 
     // Also try to match just the pathname portion
     try {
       const parsed = new URL(page.urlSource);
-      urlMap.set(parsed.pathname, demoUrl);
-      // Without trailing slash
-      const withoutSlash = parsed.pathname.replace(/\/$/, '');
-      if (withoutSlash !== parsed.pathname) {
-        urlMap.set(withoutSlash, demoUrl);
-      }
+      urlMap.set(parsed.pathname, `/demo/${subdomain}/${page.urlPath}`);
       // Include with query string as well
       if (parsed.search) {
-        urlMap.set(parsed.pathname + parsed.search, demoUrl);
+        urlMap.set(parsed.pathname + parsed.search, `/demo/${subdomain}/${page.urlPath}`);
       }
     } catch {
       // If URL parsing fails, skip pathname matching

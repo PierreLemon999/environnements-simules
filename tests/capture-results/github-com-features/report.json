@@ -1,0 +1,59 @@
+{
+  "site": {
+    "name": "github-com-features",
+    "url": "https://github.com/features"
+  },
+  "stats": {
+    "scriptCount": 61,
+    "styleLinkCount": 18,
+    "inlineStyleCount": 10,
+    "imgCount": 8,
+    "iframeCount": 0
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://github.githubassets.com/assets/light-8f714f203754d3e3.css",
+      "https://github.githubassets.com/assets/light_high_contrast-852c22d357937740.css",
+      "https://github.githubassets.com/assets/dark-b5a0f9dbeed37e9c.css",
+      "https://github.githubassets.com/assets/dark_high_contrast-b1b5000c4cba6bc9.css",
+      "https://github.githubassets.com/assets/primer-primitives-26e89bb5a0c37ae9.css",
+      "https://github.githubassets.com/assets/primer-bcf0a93b19072a86.css",
+      "https://github.githubassets.com/assets/global-95af332f763e4560.css",
+      "https://github.githubassets.com/assets/github-8ecc5798f0584cac.css",
+      "https://github.githubassets.com/assets/site-f0f3cf01d3270d68.css",
+      "https://github.githubassets.com/assets/landing-pages-e029423ecee57c0c.css",
+      "https://github.githubassets.com/assets/react-core.f83897d176d1739d.module.css",
+      "https://github.githubassets.com/assets/primer-react-css.472b5991857bf128.module.css",
+      "https://github.githubassets.com/assets/landing-pages.3b89bd0e0b0f67b2.module.css",
+      "https://github.githubassets.com/assets/70168.e22cbb4c48f049f8.module.css",
+      "https://github.githubassets.com/assets/88235.93f7ec340fb2b13f.module.css",
+      "https://github.githubassets.com/assets/primer-react-css.472b5991857bf128.module.css",
+      "https://github.githubassets.com/assets/primer-react-css.472b5991857bf128.module.css",
+      "https://github.githubassets.com/assets/marketing-navigation.14cc8c51c839d6ba.module.css"
+    ],
+    "imageCount": 57,
+    "faviconCount": 4
+  },
+  "fetchReport": {
+    "totalFetches": 115,
+    "cacheHits": 94,
+    "stats": {
+      "cssOk": 18,
+      "cssFail": 0,
+      "imgOk": 90,
+      "imgFail": 0,
+      "fontOk": 4,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": [
+      "404 https://github.githubassets.com/assets/images/modules/signup/icons/alert-fill-12.svg",
+      "404 https://github.githubassets.com/assets/images/modules/signup/icons/alert-fill-12.svg",
+      "400 https://images.ctfassets.net/8aevphvgewt8/7Bv5uQ6zplvyklwA8v2ETv/4c37d0fea45df8c5b951525a19b54e93/Hero-background.webp?w=2400&amp;fm=jpg&amp;fl=progressive"
+    ]
+  },
+  "sizes": {
+    "rawHtml": 483442,
+    "selfContainedHtml": 11602131
+  }
+}

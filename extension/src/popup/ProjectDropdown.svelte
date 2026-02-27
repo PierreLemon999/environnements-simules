@@ -16,34 +16,20 @@
 	} = $props();
 
 	let isOpen = $state(false);
-	let search = $state('');
-	let searchInput = $state<HTMLInputElement | null>(null);
-
-	let filteredProjects = $derived(
-		search.trim()
-			? projects.filter((p) => {
-					const q = search.toLowerCase();
-					return p.name.toLowerCase().includes(q) || p.toolName?.toLowerCase().includes(q) || p.subdomain?.toLowerCase().includes(q);
-				})
-			: projects
-	);
 
 	function toggle() {
 		isOpen = !isOpen;
-		if (!isOpen) search = '';
 	}
 
 	function select(project: Project) {
 		onSelect(project);
 		isOpen = false;
-		search = '';
 	}
 
 	function handleClickOutside(e: MouseEvent) {
 		const target = e.target as HTMLElement;
 		if (!target.closest('.project-dropdown')) {
 			isOpen = false;
-			search = '';
 		}
 	}
 
@@ -54,7 +40,6 @@
 	$effect(() => {
 		if (isOpen) {
 			document.addEventListener('click', handleClickOutside);
-			setTimeout(() => searchInput?.focus(), 50);
 			return () => document.removeEventListener('click', handleClickOutside);
 		}
 	});
@@ -89,20 +74,8 @@
 
 	<!-- Dropdown panel -->
 	{#if isOpen}
-		<div class="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col">
-			{#if projects.length > 3}
-				<div class="px-2.5 py-2 border-b border-gray-100">
-					<input
-						bind:this={searchInput}
-						bind:value={search}
-						type="text"
-						placeholder="Rechercher un projet..."
-						class="w-full text-xs border border-gray-200 rounded-md px-2.5 py-1.5 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary"
-					/>
-				</div>
-			{/if}
-			<div class="overflow-y-auto">
-			{#each filteredProjects as project}
+		<div class="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+			{#each projects as project}
 				<button
 					onclick={() => select(project)}
 					class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition text-left {activeProject?.id === project.id ? 'bg-blue-50/50' : ''}"
@@ -123,17 +96,10 @@
 				</button>
 			{/each}
 
-			{#if filteredProjects.length === 0 && search.trim()}
-				<div class="px-3 py-3 text-center">
-					<p class="text-xs text-gray-400">Aucun projet trouvé</p>
-				</div>
-			{/if}
-			</div>
-
 			<!-- Separator + create new -->
-			<div class="border-t border-gray-100 shrink-0">
+			<div class="border-t border-gray-100">
 				<button
-					onclick={() => { isOpen = false; search = ''; onCreateNew(); }}
+					onclick={() => { isOpen = false; onCreateNew(); }}
 					class="w-full flex items-center gap-2 px-3 py-2.5 text-primary hover:bg-blue-50/50 transition"
 				>
 					<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

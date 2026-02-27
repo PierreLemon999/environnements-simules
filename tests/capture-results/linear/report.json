@@ -1,0 +1,46 @@
+{
+  "site": {
+    "name": "linear",
+    "url": "https://linear.app/features"
+  },
+  "stats": {
+    "scriptCount": 47,
+    "styleLinkCount": 9,
+    "inlineStyleCount": 4,
+    "imgCount": 133,
+    "iframeCount": 0
+  },
+  "resources": {
+    "stylesheetUrls": [
+      "https://linear.app/_next/static/css/bba449548fba0b32.css",
+      "https://linear.app/_next/static/css/3c1dd3f004df7b69.css",
+      "https://linear.app/_next/static/css/cb268b0c62499f87.css",
+      "https://linear.app/_next/static/css/27bee165d97a7d1d.css",
+      "https://linear.app/_next/static/css/4ee4c6530c5efdf8.css",
+      "https://linear.app/_next/static/css/06446203d420743e.css",
+      "https://linear.app/_next/static/css/9340ffc87bcb3629.css",
+      "https://linear.app/_next/static/css/1666edbb64f0e6c4.css",
+      "https://linear.app/_next/static/css/287d8a70d2e12e7d.css"
+    ],
+    "imageCount": 27,
+    "faviconCount": 3
+  },
+  "fetchReport": {
+    "totalFetches": 43,
+    "cacheHits": 34,
+    "stats": {
+      "cssOk": 9,
+      "cssFail": 0,
+      "imgOk": 31,
+      "imgFail": 0,
+      "fontOk": 3,
+      "fontFail": 0,
+      "other": 0
+    },
+    "failures": []
+  },
+  "sizes": {
+    "rawHtml": 358719,
+    "selfContainedHtml": 5263893
+  }
+}
