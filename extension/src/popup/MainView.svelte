@@ -75,6 +75,10 @@
 		try {
 			// Load projects
 			const projectsRes = await chrome.runtime.sendMessage({ type: 'GET_PROJECTS' });
+			if (projectsRes?.error) {
+				error = projectsRes.error;
+				return;
+			}
 			if (projectsRes?.data) {
 				projects = projectsRes.data;
 			}
@@ -144,6 +148,11 @@
 				type: 'GET_VERSIONS',
 				projectId
 			});
+			if (res?.error) {
+				error = res.error;
+				versions = [];
+				return;
+			}
 			if (res?.data) {
 				versions = res.data;
 			}
@@ -278,6 +287,10 @@
 				name: data.name,
 				toolName: data.toolName
 			});
+			if (res?.error) {
+				error = res.error;
+				return;
+			}
 			if (res?.data) {
 				// Reload projects and select the new one
 				const projectsRes = await chrome.runtime.sendMessage({ type: 'GET_PROJECTS' });
@@ -304,6 +317,10 @@
 				projectId: activeProject.id,
 				name: newVersionName.trim()
 			});
+			if (res?.error) {
+				error = res.error;
+				return;
+			}
 			if (res?.data) {
 				await loadVersions(activeProject.id);
 				const created = versions.find((v) => v.id === res.data.id);
