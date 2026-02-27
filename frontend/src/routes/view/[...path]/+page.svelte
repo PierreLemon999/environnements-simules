@@ -94,7 +94,7 @@
 </script>
 
 <svelte:head>
-	<title>Démo — Environnements Simulés</title>
+	<title>Démo — Lemon Lab</title>
 	<style>
 		body {
 			margin: 0;
@@ -102,8 +102,8 @@
 			overflow: hidden;
 		}
 		@keyframes pulseGlow {
-			0%, 100% { box-shadow: 0 4px 16px rgba(251,191,36,.35), 0 1px 3px rgba(0,0,0,.12); }
-			50% { box-shadow: 0 4px 24px rgba(251,191,36,.5), 0 1px 3px rgba(0,0,0,.12); }
+			0%, 100% { box-shadow: 0 4px 16px rgba(250,225,0,.35), 0 1px 3px rgba(0,0,0,.12); }
+			50% { box-shadow: 0 4px 24px rgba(250,225,0,.5), 0 1px 3px rgba(0,0,0,.12); }
 		}
 	</style>
 </svelte:head>
@@ -166,12 +166,12 @@
 		z-index: 9990;
 		width: 48px;
 		height: 48px;
-		background: #fbbf24;
+		background: #FAE100;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #171717;
+		color: #1E2737;
 		font-weight: 800;
 		font-size: 16px;
 		letter-spacing: -0.02em;

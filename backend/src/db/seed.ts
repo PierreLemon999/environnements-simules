@@ -28,6 +28,7 @@ import { sql } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 import { dataDir } from './index.js';
+import { getToolLogo } from './tool-logos.js';
 
 // ── Helper Functions ─────────────────────────────────────────────────────────
 
@@ -74,6 +75,7 @@ async function main() {
       subdomain TEXT NOT NULL UNIQUE,
       description TEXT,
       logo_url TEXT,
+      icon_color TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -329,6 +331,8 @@ async function main() {
       toolName: 'Salesforce',
       subdomain: 'salesforce',
       description: 'Environnement de demo Salesforce CRM - gestion des opportunites et contacts',
+      logoUrl: getToolLogo('Salesforce'),
+      iconColor: '#00A1E0',
       createdAt: isoDaysAgo(100),
       updatedAt: isoDaysAgo(5),
     },
@@ -338,6 +342,8 @@ async function main() {
       toolName: 'SAP SuccessFactors',
       subdomain: 'sap-sf',
       description: 'Environnement de demo SAP SuccessFactors - gestion des talents et RH',
+      logoUrl: getToolLogo('SAP SuccessFactors'),
+      iconColor: '#0070F2',
       createdAt: isoDaysAgo(95),
       updatedAt: isoDaysAgo(10),
     },
@@ -347,6 +353,8 @@ async function main() {
       toolName: 'Workday',
       subdomain: 'workday',
       description: 'Environnement de demo Workday - gestion du capital humain',
+      logoUrl: getToolLogo('Workday'),
+      iconColor: '#F5A623',
       createdAt: isoDaysAgo(80),
       updatedAt: isoDaysAgo(3),
     },
@@ -356,6 +364,8 @@ async function main() {
       toolName: 'ServiceNow',
       subdomain: 'servicenow',
       description: 'Environnement de demo ServiceNow - gestion des incidents et services IT',
+      logoUrl: getToolLogo('ServiceNow'),
+      iconColor: '#81B5A1',
       createdAt: isoDaysAgo(70),
       updatedAt: isoDaysAgo(7),
     },
@@ -365,6 +375,8 @@ async function main() {
       toolName: 'HubSpot',
       subdomain: 'hubspot',
       description: 'Environnement de demo HubSpot - automatisation marketing et CRM',
+      logoUrl: getToolLogo('HubSpot'),
+      iconColor: '#FF7A59',
       createdAt: isoDaysAgo(50),
       updatedAt: isoDaysAgo(2),
     },
@@ -374,6 +386,8 @@ async function main() {
       toolName: 'Zendesk',
       subdomain: 'zendesk',
       description: 'Environnement de demo Zendesk - support client et ticketing',
+      logoUrl: getToolLogo('Zendesk'),
+      iconColor: '#03363D',
       createdAt: isoDaysAgo(40),
       updatedAt: isoDaysAgo(1),
     },
@@ -383,6 +397,8 @@ async function main() {
       toolName: 'Oracle',
       subdomain: 'oracle-erp',
       description: 'Environnement de demo Oracle Cloud ERP - gestion financiere et achats',
+      logoUrl: getToolLogo('Oracle'),
+      iconColor: '#C74634',
       createdAt: isoDaysAgo(30),
       updatedAt: isoDaysAgo(4),
     },

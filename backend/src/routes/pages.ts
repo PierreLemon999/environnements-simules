@@ -134,6 +134,24 @@ router.post(
         urlPath = urlPath.replace(/^\/+|\/+$/g, '') || 'index';
       }
 
+      // Detect HTTP error pages by checking title and HTML content
+      let healthStatus: 'ok' | 'warning' | 'error' = 'ok';
+      const titleErrorMatch = metadata.title?.match(/^(?:Error\s+)?(\d{3})\b/i);
+      if (titleErrorMatch) {
+        const code = parseInt(titleErrorMatch[1], 10);
+        if (code >= 400 && code < 600) {
+          healthStatus = 'error';
+          console.warn(`[Pages] HTTP error page detected at upload: ${code} — ${metadata.title} (${metadata.urlSource})`);
+        }
+      }
+      if (healthStatus === 'ok') {
+        const htmlHead = htmlFile.buffer.toString('utf-8', 0, Math.min(htmlFile.buffer.length, 2048));
+        if (/HTTP\s+ERROR\s+\d{3}/i.test(htmlHead)) {
+          healthStatus = 'error';
+          console.warn(`[Pages] HTTP error page detected in HTML body: ${metadata.urlSource}`);
+        }
+      }
+
       const pageId = uuidv4();
       const relativeFilePath = `uploads/${req.params.versionId}/${pageId}.html`;
       const fullPath = path.join(dataDir, relativeFilePath);
@@ -164,7 +182,7 @@ router.post(
         fileSize: htmlFile.size,
         captureMode: (metadata.captureMode as 'free' | 'guided' | 'auto') || 'free',
         thumbnailPath: screenshotRelativePath,
-        healthStatus: 'ok' as const,
+        healthStatus,
         pageType,
         parentPageId: metadata.parentPageId || null,
         domFingerprint: metadata.domFingerprint || null,

@@ -76,6 +76,21 @@
 	let toastHiding = $state(false);
 	let toastTimeout: ReturnType<typeof setTimeout> | null = $state(null);
 
+	// Link highlighting
+	let showCapturedLinks = $state(false);
+	let showMissingLinks = $state(false);
+	let iframeRef: HTMLIFrameElement | undefined = $state();
+
+	function sendHighlightMessage() {
+		if (iframeRef?.contentWindow) {
+			iframeRef.contentWindow.postMessage({
+				type: 'DEMO_HIGHLIGHT_LINKS',
+				captured: showCapturedLinks,
+				missing: showMissingLinks
+			}, '*');
+		}
+	}
+
 	// Stats from project
 	let totalPages = $derived(currentPages.length);
 
@@ -184,6 +199,9 @@
 	function handleIframeLoad() {
 		iframeLoaded = true;
 		iframeError = false;
+		loading = false;
+		// Apply any active link highlighting
+		setTimeout(sendHighlightMessage, 100);
 	}
 
 	function handleIframeError() {
@@ -263,7 +281,7 @@
 </script>
 
 <svelte:head>
-	<title>Démo {currentProject?.toolName ?? ''} — Environnements Simulés</title>
+	<title>Démo {currentProject?.toolName ?? ''} — Lemon Lab</title>
 	<style>
 		body { margin: 0; padding: 0; overflow: hidden; }
 
@@ -284,8 +302,8 @@
 			100% { opacity: 0; transform: translate(-50%, -8px); }
 		}
 		@keyframes pulseGlow {
-			0%, 100% { box-shadow: 0 4px 16px rgba(251,191,36,.35), 0 1px 3px rgba(0,0,0,.12); }
-			50% { box-shadow: 0 4px 24px rgba(251,191,36,.5), 0 1px 3px rgba(0,0,0,.12); }
+			0%, 100% { box-shadow: 0 4px 16px rgba(250,225,0,.35), 0 1px 3px rgba(0,0,0,.12); }
+			50% { box-shadow: 0 4px 24px rgba(250,225,0,.5), 0 1px 3px rgba(0,0,0,.12); }
 		}
 		@keyframes pulseDot {
 			0%, 100% { opacity: 1; }
@@ -321,15 +339,6 @@
 			</div>
 		</div>
 	{:else if iframeUrl}
-		{#if loading || !iframeLoaded}
-			<div class="absolute inset-0 z-10 flex items-center justify-center bg-white">
-				<div class="text-center">
-					<Loader2 class="mx-auto h-8 w-8 animate-spin text-blue-500" />
-					<p class="mt-3 text-sm text-gray-400">Chargement de la démo...</p>
-				</div>
-			</div>
-		{/if}
-
 		{#if iframeError}
 			<div class="absolute inset-0 z-10 flex items-center justify-center bg-gray-50">
 				<div class="text-center">
@@ -349,6 +358,7 @@
 		{/if}
 
 		<iframe
+			bind:this={iframeRef}
 			src={iframeUrl}
 			class="h-full w-full border-0"
 			title="Aperçu de la démo"
@@ -356,13 +366,6 @@
 			onload={handleIframeLoad}
 			onerror={handleIframeError}
 		></iframe>
-	{:else}
-		<div class="flex h-full items-center justify-center bg-gray-50">
-			<div class="text-center">
-				<Loader2 class="mx-auto h-8 w-8 animate-spin text-blue-500" />
-				<p class="mt-3 text-sm text-gray-400">Chargement de la démo...</p>
-			</div>
-		</div>
 	{/if}
 
 	<!-- ================================================ -->
@@ -497,6 +500,20 @@
 							</p>
 						{/each}
 					</div>
+				</div>
+
+				<!-- Link toggles -->
+				<div class="card-links-toggles">
+					<label class="link-toggle">
+						<input type="checkbox" bind:checked={showCapturedLinks} onchange={sendHighlightMessage} />
+						<span class="link-toggle-dot captured"></span>
+						<span>Liens capturés</span>
+					</label>
+					<label class="link-toggle">
+						<input type="checkbox" bind:checked={showMissingLinks} onchange={sendHighlightMessage} />
+						<span class="link-toggle-dot missing"></span>
+						<span>Liens non capturés</span>
+					</label>
 				</div>
 
 				<!-- Action bar -->
@@ -640,8 +657,8 @@
 		z-index: 10001;
 		width: 60px;
 		height: 14px;
-		background: rgba(12, 10, 9, 0.7);
-		border-bottom: 2px solid #fbbf24;
+		background: rgba(36, 47, 66, 0.7);
+		border-bottom: 2px solid #FAE100;
 		border-radius: 0 0 8px 8px;
 		display: flex;
 		align-items: center;
@@ -655,19 +672,19 @@
 	.tongue-tab:hover {
 		width: 72px;
 		height: 16px;
-		background: rgba(12, 10, 9, 0.85);
+		background: rgba(36, 47, 66, 0.85);
 	}
 	.tongue-label {
 		font-size: 9px;
 		font-weight: 700;
-		color: #fbbf24;
+		color: #FAE100;
 		opacity: 0.5;
 		letter-spacing: -0.02em;
 		line-height: 1;
 	}
 	.tongue-tab:hover .tongue-label { opacity: 0.8; }
 	.tongue-chevron {
-		color: #fbbf24;
+		color: #FAE100;
 		opacity: 0.4;
 		display: flex;
 		align-items: center;
@@ -686,7 +703,7 @@
 		width: 600px;
 		max-width: 90vw;
 		max-height: 480px;
-		background: rgba(12, 10, 9, 0.95);
+		background: rgba(36, 47, 66, 0.95);
 		backdrop-filter: blur(24px);
 		-webkit-backdrop-filter: blur(24px);
 		border: 1px solid rgba(255,255,255,.08);
@@ -717,7 +734,7 @@
 		transform: translateX(-50%);
 		width: 52px;
 		height: 18px;
-		background: rgba(12, 10, 9, 0.95);
+		background: rgba(36, 47, 66, 0.95);
 		border: 1px solid rgba(255,255,255,.08);
 		border-top: none;
 		border-radius: 0 0 8px 8px;
@@ -752,19 +769,19 @@
 		gap: 6px;
 		font-weight: 700;
 		font-size: 12px;
-		color: #fbbf24;
+		color: #FAE100;
 		letter-spacing: -0.01em;
 		flex-shrink: 0;
 	}
 	.card-logo-icon {
 		width: 22px;
 		height: 22px;
-		background: rgba(251,191,36,.15);
+		background: rgba(250,225,0,.15);
 		border-radius: 5px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #fbbf24;
+		color: #FAE100;
 	}
 	:global(.card-logo-icon svg) { width: 12px; height: 12px; }
 
@@ -801,19 +818,19 @@
 		align-items: center;
 		gap: 4px;
 		padding: 3px 8px;
-		background: rgba(251,191,36,.1);
-		border: 1px solid rgba(251,191,36,.18);
+		background: rgba(250,225,0,.1);
+		border: 1px solid rgba(250,225,0,.18);
 		border-radius: 5px;
 		font-size: 10.5px;
 		font-weight: 600;
-		color: #fbbf24;
+		color: #FAE100;
 		white-space: nowrap;
 	}
 	.dot {
 		width: 5px;
 		height: 5px;
 		border-radius: 50%;
-		background: #22c55e;
+		background: #10B981;
 		display: inline-block;
 	}
 
@@ -876,11 +893,11 @@
 		background-position: right 8px center;
 	}
 	.selector-select:focus {
-		border-color: rgba(251,191,36,.35);
+		border-color: rgba(250,225,0,.35);
 		background-color: rgba(255,255,255,.1);
 	}
 	.selector-select option {
-		background: #1a1a1a;
+		background: #1E2737;
 		color: #fff;
 	}
 
@@ -934,8 +951,8 @@
 		color: #fff;
 	}
 	.card-page-item.active {
-		background: rgba(251,191,36,.1);
-		color: #fbbf24;
+		background: rgba(250,225,0,.1);
+		color: #FAE100;
 	}
 	.page-item-title {
 		font-size: 12px;
@@ -954,7 +971,7 @@
 		font-family: ui-monospace, monospace;
 	}
 	.card-page-item.active .page-item-path {
-		color: rgba(251,191,36,.5);
+		color: rgba(250,225,0,.5);
 	}
 	.card-page-empty {
 		padding: 16px 0;
@@ -995,14 +1012,14 @@
 		color: #fff;
 	}
 	.action-bar-btn.primary {
-		background: rgba(251,191,36,.1);
-		border-color: rgba(251,191,36,.18);
-		color: #fbbf24;
+		background: rgba(250,225,0,.1);
+		border-color: rgba(250,225,0,.18);
+		color: #FAE100;
 		font-weight: 600;
 	}
 	.action-bar-btn.primary:hover {
-		background: rgba(251,191,36,.18);
-		border-color: rgba(251,191,36,.3);
+		background: rgba(250,225,0,.18);
+		border-color: rgba(250,225,0,.3);
 	}
 
 	/* ============================== */
@@ -1036,7 +1053,7 @@
 	}
 	.card-search-input:focus {
 		background: rgba(255,255,255,.1);
-		border-color: rgba(251,191,36,.35);
+		border-color: rgba(250,225,0,.35);
 	}
 	.card-search-input::placeholder {
 		color: rgba(255,255,255,.35);
@@ -1151,7 +1168,7 @@
 		background-position: right 10px center;
 	}
 	.share-select option {
-		background: #1a1a1a;
+		background: #1E2737;
 		color: #fff;
 	}
 
@@ -1171,7 +1188,7 @@
 		flex-shrink: 0;
 	}
 	.share-password-toggle.on {
-		background: #fbbf24;
+		background: #FAE100;
 	}
 	.share-password-toggle::after {
 		content: '';
@@ -1213,8 +1230,8 @@
 		height: 38px;
 		border: none;
 		border-radius: 8px;
-		background: #fbbf24;
-		color: #171717;
+		background: #FAE100;
+		color: #1E2737;
 		font-size: 13px;
 		font-weight: 700;
 		font-family: inherit;
@@ -1223,7 +1240,7 @@
 		margin-top: 2px;
 	}
 	.share-generate-btn:hover {
-		background: #f59e0b;
+		background: #F18E2A;
 	}
 
 	/* ============================== */
@@ -1236,12 +1253,12 @@
 		z-index: 9990;
 		width: 48px;
 		height: 48px;
-		background: #fbbf24;
+		background: #FAE100;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: #171717;
+		color: #1E2737;
 		font-weight: 800;
 		font-size: 16px;
 		letter-spacing: -0.02em;
@@ -1284,4 +1301,35 @@
 	.toast.hiding {
 		animation: toastOut .2s ease-in forwards;
 	}
+
+	/* ============================== */
+	/*  LINK HIGHLIGHT TOGGLES        */
+	/* ============================== */
+	.card-links-toggles {
+		display: flex;
+		gap: 16px;
+		padding: 6px 16px 2px;
+	}
+	.link-toggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+		font-size: 11px;
+		color: rgba(255,255,255,.55);
+		user-select: none;
+	}
+	.link-toggle:hover { color: rgba(255,255,255,.8); }
+	.link-toggle input { display: none; }
+	.link-toggle-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		border: 1.5px solid rgba(255,255,255,.25);
+		flex-shrink: 0;
+	}
+	.link-toggle-dot.captured { border-color: #10B981; }
+	.link-toggle-dot.missing { border-color: #3B82F6; }
+	.link-toggle input:checked ~ .link-toggle-dot.captured { background: #10B981; }
+	.link-toggle input:checked ~ .link-toggle-dot.missing { background: #3B82F6; }
 </style>

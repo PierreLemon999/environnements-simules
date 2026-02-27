@@ -325,7 +325,7 @@
 </script>
 
 <svelte:head>
-	<title>{currentPage?.title ?? 'Éditeur'} — Environnements Simulés</title>
+	<title>{currentPage?.title ?? 'Éditeur'} — Lemon Lab</title>
 </svelte:head>
 
 <div class="flex h-[calc(100vh-56px)] overflow-hidden -m-6">
@@ -444,7 +444,7 @@
 			<!-- Editor toolbar -->
 			<div class="flex items-center justify-between border-b border-border bg-card px-4 py-2">
 				<div class="flex items-center gap-3 min-w-0">
-					<img src="/favicon.svg" alt="Environnements Simulés" class="h-5 w-5 shrink-0" />
+					<img src="/favicon.svg" alt="Lemon Lab" class="h-5 w-5 shrink-0" />
 					<a href="/admin/tree" class="shrink-0 text-xs text-primary hover:underline flex items-center gap-1">
 						<ArrowLeft class="h-3 w-3" />
 						Retour

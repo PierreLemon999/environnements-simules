@@ -59,7 +59,7 @@ Source : `DESIGN SYSTEM Lemon Learning/` (PDFs couleurs, typographie, icônes)
 
 | Domaine | Usage |
 |---------|-------|
-| **getlemonlab.com** | Back-office / admin (gestion projets, users, obfuscation, analytics) |
+| **getlemonlab.com** | Landing page vitrine (root) + back-office admin (/admin, /login) |
 | **env-ll.com** | Lecteur de démos publiques (URL clean pour prospects/clients) |
 
 - Hébergement : Railway (single service, Dockerfile)

@@ -152,8 +152,40 @@ export async function serveDemoPage(
   html = html.replace(/<base\s[^>]*>/gi, '');
 
   // 8. Inject navigation interceptor for iframe embedding
-  // Catches clicks on rewritten /demo/ links and notifies the parent frame
-  const navScript = `<script>(function(){document.addEventListener("click",function(e){var a=e.target;while(a&&a.tagName!=="A")a=a.parentElement;if(a&&a.getAttribute("href")&&a.getAttribute("href").indexOf("/demo/")===0){e.preventDefault();if(window.parent!==window){window.parent.postMessage({type:"DEMO_NAVIGATE",href:a.getAttribute("href")},"*")}else{window.location.href=a.getAttribute("href")}}},true)})();</script>`;
+  // - Captured links (/demo/…) → postMessage DEMO_NAVIGATE to parent
+  // - Non-captured links → block click entirely (preventDefault)
+  // - Listens for DEMO_HIGHLIGHT_LINKS to outline captured (green) / non-captured (blue)
+  const capturedPaths = JSON.stringify(allPages.map(p => p.urlPath));
+  const navScript = `<script>(function(){
+var captured=${capturedPaths};
+var sub="${subdomain}";
+document.addEventListener("click",function(e){
+  var a=e.target;while(a&&a.tagName!=="A")a=a.parentElement;
+  if(!a||!a.getAttribute("href"))return;
+  var href=a.getAttribute("href");
+  if(href.indexOf("/demo/")===0){
+    e.preventDefault();e.stopPropagation();
+    if(window.parent!==window){window.parent.postMessage({type:"DEMO_NAVIGATE",href:href},"*")}
+  }else if(href.startsWith("http")||href.startsWith("/")){
+    e.preventDefault();e.stopPropagation();
+  }
+},true);
+document.addEventListener("dblclick",function(e){e.preventDefault()},true);
+window.addEventListener("message",function(e){
+  if(e.data&&e.data.type==="DEMO_HIGHLIGHT_LINKS"){
+    var show=e.data.captured;var showMissing=e.data.missing;
+    document.querySelectorAll("[data-ll-hl]").forEach(function(el){el.style.outline="";el.removeAttribute("data-ll-hl")});
+    if(!show&&!showMissing)return;
+    var links=document.querySelectorAll("a[href]");
+    links.forEach(function(a){
+      var h=a.getAttribute("href");
+      var isCaptured=h.indexOf("/demo/")===0;
+      if(isCaptured&&show){a.style.outline="2px solid #10B981";a.style.outlineOffset="2px";a.setAttribute("data-ll-hl","1")}
+      else if(!isCaptured&&(h.startsWith("http")||h.startsWith("/"))&&showMissing){a.style.outline="2px solid #3B82F6";a.style.outlineOffset="2px";a.setAttribute("data-ll-hl","1")}
+    });
+  }
+});
+})();</script>`;
   if (html.includes('</body>')) {
     html = html.replace('</body>', `${navScript}\n</body>`);
   } else {

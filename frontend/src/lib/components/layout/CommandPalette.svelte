@@ -6,10 +6,6 @@
 		FileText,
 		FolderKanban,
 		Users,
-		Zap,
-		Plus,
-		Camera,
-		ArrowRight,
 	} from 'lucide-svelte';
 
 	interface SearchResult {
@@ -38,17 +34,6 @@
 		{ key: 'page', label: 'Pages' },
 		{ key: 'project', label: 'Projets' },
 		{ key: 'user', label: 'Utilisateurs' },
-		{ key: 'action', label: 'Actions' },
-	];
-
-	const quickActions: SearchResult[] = [
-		{ id: 'action-new-project', type: 'action', title: 'Créer un projet', subtitle: 'Initialiser un nouveau projet d\'environnement simulé', href: '/admin/projects?action=create', icon: Plus },
-		{ id: 'action-new-capture', type: 'action', title: 'Nouvelle capture', subtitle: 'Lancer une capture de page depuis l\'extension', href: '/admin/tree', icon: Camera },
-		{ id: 'action-dashboard', type: 'action', title: 'Aller au Dashboard', subtitle: 'Voir le tableau de bord principal', href: '/admin', icon: Zap },
-		{ id: 'action-analytics', type: 'action', title: 'Voir les Analytics', subtitle: 'Consulter les statistiques de visites et sessions', href: '/admin/analytics', icon: Zap },
-		{ id: 'action-users', type: 'action', title: 'Gérer les utilisateurs', subtitle: 'Ajouter, modifier ou supprimer des utilisateurs', href: '/admin/users', icon: Users },
-		{ id: 'action-obfuscation', type: 'action', title: 'Règles d\'obfuscation', subtitle: 'Configurer les règles de masquage des données', href: '/admin/obfuscation', icon: Zap },
-		{ id: 'action-invitations', type: 'action', title: 'Invitations clients', subtitle: 'Gérer les accès démo pour les prospects', href: '/admin/invitations', icon: Zap },
 	];
 
 	const avatarColors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
@@ -77,15 +62,15 @@
 
 	function getBadgeStyle(toolName: string): { bg: string; color: string } {
 		const styles: Record<string, { bg: string; color: string }> = {
-			'Salesforce': { bg: '#eff6ff', color: '#2563eb' },
-			'SAP SuccessFactors': { bg: '#fef3c7', color: '#b45309' },
+			'Salesforce': { bg: '#E3EDFE', color: '#2B72EE' },
+			'SAP SuccessFactors': { bg: '#FDF6EF', color: '#C97623' },
 			'Workday': { bg: '#f5f3ff', color: '#7c3aed' },
 			'ServiceNow': { bg: '#e0e7ff', color: '#4338ca' },
-			'HubSpot': { bg: '#fff1f2', color: '#e11d48' },
+			'HubSpot': { bg: '#FEF0EF', color: '#F1362A' },
 			'Zendesk': { bg: '#f0fdfa', color: '#0f766e' },
-			'Oracle': { bg: '#fef2f2', color: '#dc2626' },
+			'Oracle': { bg: '#FEF0EF', color: '#F1362A' },
 		};
-		return styles[toolName] ?? { bg: '#f3f4f6', color: '#6b7280' };
+		return styles[toolName] ?? { bg: '#F0F1F2', color: '#6D7481' };
 	}
 
 	function getBadgeLabel(toolName: string): string {
@@ -100,7 +85,6 @@
 			case 'page': return FileText;
 			case 'project': return FolderKanban;
 			case 'user': return Users;
-			case 'action': return Zap;
 			default: return FileText;
 		}
 	}
@@ -110,7 +94,6 @@
 			case 'page': return 'Pages';
 			case 'project': return 'Projets';
 			case 'user': return 'Utilisateurs';
-			case 'action': return 'Actions';
 			default: return '';
 		}
 	}
@@ -171,7 +154,7 @@
 		if (open) {
 			query = '';
 			activeFilter = 'all';
-			results = [...quickActions];
+			results = [];
 			selectedIndex = 0;
 			setTimeout(() => inputRef?.focus(), 10);
 		}
@@ -184,7 +167,7 @@
 
 	async function search(q: string) {
 		if (!q.trim()) {
-			results = [...quickActions];
+			results = [];
 			selectedIndex = 0;
 			return;
 		}
@@ -248,12 +231,6 @@
 				}
 			}
 
-			// Search actions
-			for (const action of quickActions) {
-				if (action.title.toLowerCase().includes(ql)) {
-					allResults.push(action);
-				}
-			}
 		} catch (err) {
 			console.error('Command palette search error:', err);
 		} finally {
@@ -317,7 +294,7 @@
 		<div
 			class="palette-modal"
 			role="dialog"
-			aria-label="Recherche admin"
+			aria-label="Recherche"
 			onmousedown={handleModalMousedown}
 		>
 			<!-- Search input -->
@@ -329,7 +306,7 @@
 					oninput={handleInput}
 					onkeydown={handleKeydown}
 					type="text"
-					placeholder="Recherche admin..."
+					placeholder="Recherche..."
 					class="palette-search-input"
 				/>
 			</div>
@@ -352,9 +329,14 @@
 					<div class="palette-loading">
 						<div class="palette-spinner"></div>
 					</div>
+				{:else if !query.trim() && filteredResults().length === 0}
+					<div class="palette-no-results">
+						<Search style="width:32px;height:32px;opacity:0.3;color:#9197A0" />
+						<p class="palette-no-results-desc" style="margin-top: 12px">Tapez pour rechercher...</p>
+					</div>
 				{:else if filteredResults().length === 0}
 					<div class="palette-no-results">
-						<Search style="width:40px;height:40px;opacity:0.4;color:#a8a29e" />
+						<Search style="width:40px;height:40px;opacity:0.4;color:#9197A0" />
 						<p class="palette-no-results-title">Aucun résultat</p>
 						<p class="palette-no-results-desc">Essayez avec d'autres termes de recherche</p>
 					</div>
@@ -380,10 +362,6 @@
 											<div class="palette-avatar {getAvatarColor(result.title)}">
 												{getInitials(result.title)}
 											</div>
-										</div>
-									{:else if result.type === 'action' && result.icon === Plus}
-										<div class="palette-icon-wrap palette-icon-wrap-action">
-											<Plus class="palette-icon" style="color: #16a34a" />
 										</div>
 									{:else}
 										<div class="palette-icon-wrap">
@@ -477,7 +455,7 @@
 		display: flex;
 		align-items: center;
 		padding: 0 16px;
-		border-bottom: 1px solid #e7e5e4;
+		border-bottom: 1px solid #E2E3E6;
 		flex-shrink: 0;
 	}
 
@@ -485,12 +463,12 @@
 		flex-shrink: 0;
 		width: 20px;
 		height: 20px;
-		color: #a8a29e;
+		color: #9197A0;
 		transition: color 0.2s ease;
 	}
 
 	.palette-search-area:focus-within :global(.palette-search-icon) {
-		color: #2563eb;
+		color: #D4C326;
 	}
 
 	.palette-search-input {
@@ -500,14 +478,14 @@
 		font-family: inherit;
 		font-size: 16px;
 		font-weight: 400;
-		color: #0c0a09;
+		color: #242F42;
 		padding: 16px 12px;
 		background: transparent;
 		line-height: 1.5;
 	}
 
 	.palette-search-input::placeholder {
-		color: #a8a29e;
+		color: #9197A0;
 	}
 
 	/* Category tabs */
@@ -516,7 +494,7 @@
 		align-items: center;
 		gap: 2px;
 		padding: 6px 12px;
-		border-bottom: 1px solid #e7e5e4;
+		border-bottom: 1px solid #E2E3E6;
 		flex-shrink: 0;
 	}
 
@@ -525,7 +503,7 @@
 		border-radius: 6px;
 		font-size: 13px;
 		font-weight: 500;
-		color: #6b7280;
+		color: #6D7481;
 		background: transparent;
 		border: none;
 		cursor: pointer;
@@ -534,12 +512,12 @@
 
 	.palette-tab:hover {
 		background: rgba(0, 0, 0, 0.03);
-		color: #0c0a09;
+		color: #242F42;
 	}
 
 	.palette-tab.active {
-		background: #eff6ff;
-		color: #2563eb;
+		background: #E3EDFE;
+		color: #2B72EE;
 	}
 
 	/* Results */
@@ -559,7 +537,7 @@
 	}
 
 	.palette-results::-webkit-scrollbar-thumb {
-		background: #d1d5db;
+		background: #D3D5D9;
 		border-radius: 3px;
 	}
 
@@ -574,7 +552,7 @@
 	.palette-spinner {
 		width: 20px;
 		height: 20px;
-		border: 2px solid #2563eb;
+		border: 2px solid #2B72EE;
 		border-top-color: transparent;
 		border-radius: 50%;
 		animation: spin 0.6s linear infinite;
@@ -591,7 +569,7 @@
 		align-items: center;
 		justify-content: center;
 		padding: 40px 20px;
-		color: #a8a29e;
+		color: #9197A0;
 		text-align: center;
 	}
 
@@ -605,7 +583,7 @@
 
 	.palette-no-results-desc {
 		font-size: 12px;
-		color: #a8a29e;
+		color: #9197A0;
 	}
 
 	/* Group */
@@ -620,7 +598,7 @@
 	.palette-group-label {
 		font-size: 11px;
 		font-weight: 600;
-		color: #a8a29e;
+		color: #9197A0;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		padding: 8px 10px 4px;
@@ -636,7 +614,7 @@
 		padding: 1px 6px;
 		border-radius: 8px;
 		background: rgba(0, 0, 0, 0.04);
-		color: #a8a29e;
+		color: #9197A0;
 		letter-spacing: 0;
 		text-transform: none;
 	}
@@ -658,11 +636,11 @@
 	}
 
 	.palette-result-item:hover {
-		background: #f3f4f6;
+		background: #F0F1F2;
 	}
 
 	.palette-result-item.selected {
-		background: #2563eb;
+		background: #2B72EE;
 	}
 
 	.palette-result-item.selected .palette-result-name,
@@ -700,7 +678,7 @@
 		width: 34px;
 		height: 34px;
 		border-radius: 8px;
-		background: #f3f4f6;
+		background: #F0F1F2;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -709,13 +687,13 @@
 	}
 
 	.palette-icon-wrap-action {
-		background: #f0fdf4;
+		background: #ECFDF5;
 	}
 
 	.palette-icon-wrap :global(.palette-icon) {
 		width: 16px;
 		height: 16px;
-		color: #6b7280;
+		color: #6D7481;
 		transition: color 0.1s ease;
 	}
 
@@ -758,7 +736,7 @@
 	.palette-result-name {
 		font-size: 14px;
 		font-weight: 500;
-		color: #0c0a09;
+		color: #242F42;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -771,7 +749,7 @@
 		color: inherit;
 		font-weight: 600;
 		text-decoration: underline;
-		text-decoration-color: #2563eb;
+		text-decoration-color: #2B72EE;
 		text-underline-offset: 2px;
 		text-decoration-thickness: 2px;
 	}
@@ -794,7 +772,7 @@
 
 	.palette-result-meta {
 		font-size: 12px;
-		color: #a8a29e;
+		color: #9197A0;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -812,7 +790,7 @@
 
 	.palette-result-action-hint {
 		font-size: 11px;
-		color: #a8a29e;
+		color: #9197A0;
 		opacity: 0;
 		transition: opacity 0.15s ease;
 		white-space: nowrap;

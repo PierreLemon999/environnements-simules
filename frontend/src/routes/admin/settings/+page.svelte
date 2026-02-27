@@ -19,6 +19,9 @@
 		Copy,
 		Check,
 		Info,
+		AlertTriangle,
+		Eye,
+		EyeOff,
 	} from 'lucide-svelte';
 
 	// Platform info
@@ -35,13 +38,27 @@
 	let defaultScriptUrl = $state('');
 	let defaultConfigJson = $state('');
 
-	// API Key placeholder
-	let apiKeyMasked = $state('••••••••••••••••');
+	// API Key
+	let apiKeySet = $state(false);
+	let apiKeyPreview = $state('');
 	let showApiKeyInput = $state(false);
 	let newApiKey = $state('');
+	let showApiKeyValue = $state(false);
 
 	let loading = $state(true);
 	let copied = $state(false);
+
+	// SSO domains
+	const ssoDomains = [
+		'lemonlearning.com',
+		'lemonlearning.fr',
+		'goldfuchs-software.de',
+	];
+
+	function maskApiKey(key: string): string {
+		if (!key || key.length < 10) return '••••••••';
+		return key.slice(0, 7) + '••••••••••••' + key.slice(-4);
+	}
 
 	onMount(async () => {
 		try {
@@ -65,12 +82,39 @@
 				totalPages,
 				totalProjects: projects.length,
 			};
+
+			// Check if API key is configured (from env or stored)
+			try {
+				const keyRes = await get('/settings/api-key-status');
+				apiKeySet = keyRes.data?.configured ?? false;
+				apiKeyPreview = keyRes.data?.preview ?? '';
+			} catch {
+				apiKeySet = false;
+				apiKeyPreview = '';
+			}
 		} catch (err) {
 			console.error('Settings fetch error:', err);
 		} finally {
 			loading = false;
 		}
 	});
+
+	async function saveApiKey() {
+		if (!newApiKey.trim()) {
+			toast.error('Veuillez saisir une clé API');
+			return;
+		}
+		try {
+			await post('/settings/api-key', { apiKey: newApiKey.trim() });
+			apiKeySet = true;
+			apiKeyPreview = maskApiKey(newApiKey.trim());
+			newApiKey = '';
+			showApiKeyInput = false;
+			toast.success('Clé API enregistrée de manière sécurisée');
+		} catch {
+			toast.error('Erreur lors de l\'enregistrement de la clé API');
+		}
+	}
 
 	function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text);
@@ -81,13 +125,13 @@
 </script>
 
 <svelte:head>
-	<title>Paramètres — Environnements Simulés</title>
+	<title>Paramètres admin — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<!-- Page header -->
 	<div>
-		<h2 class="text-lg font-semibold text-foreground">Paramètres</h2>
+		<h2 class="text-lg font-semibold text-foreground">Paramètres admin</h2>
 		<p class="text-sm text-muted-foreground mt-1">Configuration générale de la plateforme</p>
 	</div>
 
@@ -185,51 +229,90 @@
 		</CardHeader>
 		<CardContent>
 			<div class="space-y-4">
+				<!-- API Key -->
 				<div>
 					<label class="text-xs font-medium text-muted-foreground">Clé API Claude (génération IA)</label>
-					<div class="flex items-center gap-2 mt-1.5">
+					<div class="mt-1.5">
 						{#if showApiKeyInput}
-							<Input
-								bind:value={newApiKey}
-								placeholder="sk-ant-..."
-								type="password"
-								class="text-sm font-mono"
-							/>
-							<Button size="sm" variant="outline" onclick={() => { showApiKeyInput = false; toast.success('Clé API enregistrée'); }}>
-								Enregistrer
-							</Button>
-							<Button size="sm" variant="ghost" onclick={() => { showApiKeyInput = false; }}>
-								Annuler
-							</Button>
-						{:else}
-							<div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-muted/30 text-sm font-mono text-muted-foreground">
-								{apiKeyMasked}
+							<div class="flex items-center gap-2">
+								<div class="relative flex-1">
+									<Input
+										bind:value={newApiKey}
+										placeholder="sk-ant-api03-..."
+										type={showApiKeyValue ? 'text' : 'password'}
+										class="text-sm font-mono pr-10"
+									/>
+									<button
+										type="button"
+										class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+										onclick={() => { showApiKeyValue = !showApiKeyValue; }}
+									>
+										{#if showApiKeyValue}
+											<EyeOff class="h-3.5 w-3.5" />
+										{:else}
+											<Eye class="h-3.5 w-3.5" />
+										{/if}
+									</button>
+								</div>
+								<Button size="sm" variant="default" onclick={saveApiKey}>
+									Enregistrer
+								</Button>
+								<Button size="sm" variant="ghost" onclick={() => { showApiKeyInput = false; newApiKey = ''; showApiKeyValue = false; }}>
+									Annuler
+								</Button>
 							</div>
-							<Button size="sm" variant="outline" onclick={() => { showApiKeyInput = true; }}>
-								Modifier
-							</Button>
+						{:else if apiKeySet}
+							<div class="flex items-center gap-2">
+								<div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-muted/30 text-sm font-mono text-muted-foreground">
+									<Key class="h-3.5 w-3.5 text-green-500" />
+									<span>{apiKeyPreview}</span>
+								</div>
+								<Badge variant="secondary" class="text-[10px] bg-green-50 text-green-700 border-green-200">Configurée</Badge>
+								<Button size="sm" variant="outline" onclick={() => { showApiKeyInput = true; }}>
+									Modifier
+								</Button>
+							</div>
+						{:else}
+							<div class="flex items-center gap-2">
+								<div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border border-amber-300 bg-amber-50/50 text-sm text-amber-700">
+									<AlertTriangle class="h-3.5 w-3.5" />
+									<span>Non configurée — les fonctionnalités IA ne sont pas disponibles</span>
+								</div>
+								<Button size="sm" variant="outline" onclick={() => { showApiKeyInput = true; }}>
+									Configurer
+								</Button>
+							</div>
 						{/if}
 					</div>
 				</div>
 
+				<!-- Google SSO -->
 				<div class="border-t border-border pt-4">
 					<label class="text-xs font-medium text-muted-foreground">Authentification Google SSO</label>
-					<div class="flex items-center gap-2 mt-1.5">
-						<div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-muted/30 text-sm text-muted-foreground">
-							<Shield class="h-3.5 w-3.5" />
-							<span>Domaine autorisé : @lemonlearning.com</span>
-						</div>
-						<Badge variant="secondary" class="text-[10px]">Actif</Badge>
+					<div class="mt-1.5 space-y-1.5">
+						{#each ssoDomains as domain}
+							<div class="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-muted/30 text-sm text-muted-foreground">
+								<Shield class="h-3.5 w-3.5 text-green-500" />
+								<span>@{domain}</span>
+							</div>
+						{/each}
 					</div>
+					<p class="mt-2 text-xs text-muted-foreground">
+						Les utilisateurs avec un compte Google sur ces domaines sont automatiquement provisionnés en tant qu'administrateurs.
+					</p>
 				</div>
 
+				<!-- JWT Tokens -->
 				<div class="border-t border-border pt-4">
-					<label class="text-xs font-medium text-muted-foreground">Expiration des tokens JWT</label>
+					<label class="text-xs font-medium text-muted-foreground">Tokens JWT</label>
 					<div class="flex items-center gap-2 mt-1.5">
 						<div class="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-muted/30 text-sm text-muted-foreground">
-							7 jours
+							Expiration : 7 jours
 						</div>
 					</div>
+					<p class="mt-2 text-xs text-muted-foreground">
+						Les tokens JWT authentifient les sessions des administrateurs et des clients. Un token est émis à la connexion (SSO Google ou email/mot de passe) et renouvelé automatiquement par l'extension Chrome toutes les 30 minutes. En production, utilisez la variable d'environnement <code class="rounded bg-muted px-1 py-0.5 text-[11px] font-mono">JWT_SECRET</code> pour définir une clé de signature sécurisée.
+					</p>
 				</div>
 			</div>
 		</CardContent>
@@ -260,41 +343,6 @@
 				<div class="flex items-center gap-2 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
 					<Info class="h-3.5 w-3.5 flex-shrink-0" />
 					<span>En production, chaque projet utilise un sous-domaine (ex: salesforce.env01.com). Le domaine racine est configurable via les variables d'environnement Railway.</span>
-				</div>
-			</div>
-		</CardContent>
-	</Card>
-
-	<!-- Database -->
-	<Card>
-		<CardHeader class="pb-3">
-			<div class="flex items-center gap-2">
-				<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-					<Database class="h-4 w-4 text-blue-500" />
-				</div>
-				<div>
-					<CardTitle class="text-sm font-medium">Base de données</CardTitle>
-					<p class="text-xs text-muted-foreground mt-0.5">SQLite via Drizzle ORM</p>
-				</div>
-			</div>
-		</CardHeader>
-		<CardContent>
-			<div class="space-y-3">
-				<div class="grid grid-cols-2 gap-4">
-					<div class="p-3 rounded-lg bg-muted/30 border border-border">
-						<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Moteur</p>
-						<p class="text-sm font-medium mt-1">SQLite (better-sqlite3)</p>
-					</div>
-					<div class="p-3 rounded-lg bg-muted/30 border border-border">
-						<p class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">ORM</p>
-						<p class="text-sm font-medium mt-1">Drizzle</p>
-					</div>
-				</div>
-				<div class="flex items-center gap-2">
-					<Button size="sm" variant="outline" onclick={() => { toast.info('Seed lancé — rechargez la page'); }}>
-						<Database class="h-3.5 w-3.5 mr-1.5" />
-						Relancer le seed
-					</Button>
 				</div>
 			</div>
 		</CardContent>

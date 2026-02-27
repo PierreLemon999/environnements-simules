@@ -102,6 +102,12 @@ export async function uploadPage(
 		urlPath?: string;
 		title: string;
 		captureMode: string;
+		pageType?: string;
+		parentPageId?: string;
+		domFingerprint?: string;
+		syntheticUrl?: string;
+		captureTimingMs?: number;
+		stateIndex?: number;
 	},
 	screenshotBlob?: Blob | null
 ): Promise<{ data: { id: string; fileSize: number } }> {
@@ -128,12 +134,12 @@ export async function uploadPage(
 	try {
 		data = await response.json();
 	} catch (parseErr) {
-		console.error('[ES API] Failed to parse upload response:', response.status, response.statusText);
+		console.error('[LL API] Failed to parse upload response:', response.status, response.statusText);
 		throw new ApiError(response.status, 'PARSE_ERROR', `Server returned ${response.status}: ${response.statusText}`);
 	}
 
 	if (!response.ok) {
-		console.error('[ES API] Upload error:', response.status, data?.error || data);
+		console.error('[LL API] Upload error:', response.status, data?.error || data);
 		throw new ApiError(
 			response.status,
 			data?.code ?? 'UNKNOWN_ERROR',

@@ -1,4 +1,4 @@
-# Implementation Phases — Environnements Simulés
+# Implementation Phases — Lemon Lab
 
 > Each phase is designed to be executed by a single `claude -p` session with a fresh context.
 > Each phase reads CLAUDE.md for full project context.
@@ -24,7 +24,7 @@
   - Redirect to `/admin` on success
 - [x] Create admin layout (`/admin/+layout.svelte`) with Linear-style sidebar:
   - 220px sidebar, collapsible to 48px icon-only mode
-  - "ES" blue avatar + "Env. Simulés" branding
+  - "LL" blue avatar + "Lemon Lab" branding
   - PRINCIPAL section: Dashboard, Projets, Arborescence, Analytics, Invitations (with badge counts)
   - GESTION section: Utilisateurs, Obfuscation, Demandes MAJ, Paramètres
   - OUTILS SIMULÉS section: dynamic list from API with colored dots and page counts
@@ -223,7 +223,7 @@ cd frontend && npm run dev
   - Content script (vanilla JS)
   - Popup (Svelte)
 - [x] Create extension popup matching mockup:
-  - Header: "ES" avatar + "Env. Simulés" + connection status (green "Connecté")
+  - Header: "LL" avatar + "Lemon Lab" + connection status (green "Connecté")
   - Project selector dropdown + "+ Nouveau" button
   - Mode toggle: "Libre" / "Guides" / "Auto" (3 icon buttons)
   - Progress section: "X / Y pages" + progress bar

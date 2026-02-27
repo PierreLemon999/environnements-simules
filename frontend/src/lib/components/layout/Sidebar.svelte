@@ -17,32 +17,36 @@
 		RefreshCw,
 		Settings,
 		Blocks,
+		PenSquare,
 		ChevronDown,
 		ChevronsLeft,
+		Gauge,
+		FlaskConical,
 	} from 'lucide-svelte';
 
 	let { collapsed = $bindable(false), onToggle }: { collapsed?: boolean; onToggle?: () => void } = $props();
 
-	let projects: Array<{ id: string; name: string; toolName: string; pageCount: number }> = $state([]);
+	let projects: Array<{ id: string; name: string; toolName: string; iconColor?: string | null; pageCount: number }> = $state([]);
 	let sessionCount = $state(0);
 	let updateRequestCount = $state(0);
 	let invitationCount = $state(0);
 	let hovered = $state(false);
 
-	const principalItems = [
-		{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard, badgeKey: null },
-		{ href: '/admin/projects', label: 'Projets', icon: FolderKanban, badgeKey: 'projects' },
+	const labItems = [
 		{ href: '/admin/tree', label: 'Arborescence', icon: GitBranch, badgeKey: null },
-		{ href: '/admin/analytics', label: 'Statistiques', icon: BarChart3, badgeKey: 'sessions' },
-		{ href: '/admin/invitations', label: 'Invitations', icon: Send, badgeKey: 'invitations' },
-	];
-
-	const gestionItems = [
-		{ href: '/admin/users', label: 'Utilisateurs', icon: Users, badgeKey: null },
+		{ href: '/admin/editor', label: 'Éditeur', icon: PenSquare, badgeKey: null },
 		{ href: '/admin/obfuscation', label: 'Obfuscation', icon: EyeOff, badgeKey: null },
 		{ href: '/admin/update-requests', label: 'Demandes MAJ', icon: RefreshCw, badgeKey: 'updateRequests' },
 		{ href: '/admin/components', label: 'Composants', icon: Blocks, badgeKey: null },
-		{ href: '/admin/settings', label: 'Paramètres', icon: Settings, badgeKey: null },
+	];
+
+	const gestionItems = [
+		{ href: '/admin', label: 'Dashboard', icon: LayoutDashboard, badgeKey: null },
+		{ href: '/admin/projects', label: 'Projets', icon: FolderKanban, badgeKey: 'projects' },
+		{ href: '/admin/analytics', label: 'Statistiques', icon: BarChart3, badgeKey: 'sessions' },
+		{ href: '/admin/invitations', label: 'Invitations', icon: Send, badgeKey: 'invitations' },
+		{ href: '/admin/users', label: 'Utilisateurs', icon: Users, badgeKey: null },
+		{ href: '/admin/settings', label: 'Paramètres admin', icon: Settings, badgeKey: null },
 	];
 
 	let badges = $derived<Record<string, { value: number; variant: 'default' | 'destructive' }>>({
@@ -62,7 +66,7 @@
 			'Zendesk': '#03363D',
 			'Oracle': '#C74634',
 		};
-		return colors[toolName] ?? '#6B7280';
+		return colors[toolName] ?? '#6D7481';
 	}
 
 	function isActive(href: string): boolean {
@@ -115,33 +119,41 @@
 >
 	<!-- Branding -->
 	<div class="flex h-14 items-center gap-3 border-b border-border px-3">
-		<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold text-white">
-			ES
+		<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+			<svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+				<path d="M12 4 L12 13 L6 25 Q5 27 7 28 L25 28 Q27 27 26 25 L20 13 L20 4" stroke="#2B72EE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+				<line x1="10" y1="4" x2="22" y2="4" stroke="#2B72EE" stroke-width="2.5" stroke-linecap="round"/>
+				<path d="M8.5 21 L12.5 14 L19.5 14 L23.5 21 Q25 24 24 26 Q23 27 22 27 L10 27 Q9 27 8 26 Q7 24 8.5 21Z" fill="#D5E3FC" opacity="0.6"/>
+				<circle cx="14" cy="22" r="1.8" fill="#FAE100"/>
+				<circle cx="18.5" cy="19" r="1.3" fill="#2B72EE" opacity="0.5"/>
+				<circle cx="11.5" cy="18.5" r="1" fill="#FAE100" opacity="0.7"/>
+			</svg>
 		</div>
 		{#if !collapsed}
-			<div class="min-w-0 flex-1">
-				<span class="block truncate text-sm font-semibold text-foreground">Env. Simulés</span>
-				<span class="block truncate text-[10px] text-muted-foreground">Lemon Learning</span>
-			</div>
+			<span class="truncate text-sm font-semibold text-foreground">Lemon Lab</span>
 		{/if}
 	</div>
 
 	<!-- Navigation -->
 	<nav class="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
-		<!-- PRINCIPAL section -->
-		{#if !collapsed}
-			<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Principal</p>
-		{/if}
+		<!-- GESTION section -->
+		<div class="mb-1 flex items-center gap-2 px-2">
+			<Gauge class="h-3.5 w-3.5 text-yellow-dark" />
+			{#if !collapsed}
+				<p class="text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Gestion</p>
+			{/if}
+		</div>
 		<ul class="space-y-0.5">
-			{#each principalItems as item}
+			{#each gestionItems as item}
 				<li>
 					<a
 						href={item.href}
-						class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {isActive(item.href) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+						class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-all duration-200 {isActive(item.href) ? 'text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+						style={isActive(item.href) ? 'background: linear-gradient(90deg, var(--color-yellow-bg) 0%, var(--color-yellow-bg) 30%, transparent 100%)' : ''}
 						title={collapsed ? item.label : undefined}
 					>
 						{#if isActive(item.href)}
-							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary"></span>
+							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm" style="background: #FAE100"></span>
 						{/if}
 						<item.icon class="h-4 w-4 shrink-0 {isActive(item.href) ? 'text-primary' : 'text-muted'}" />
 						{#if !collapsed}
@@ -162,20 +174,24 @@
 
 		<Separator class="my-3" />
 
-		<!-- GESTION section -->
-		{#if !collapsed}
-			<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Gestion</p>
-		{/if}
+		<!-- LAB section -->
+		<div class="mb-1 flex items-center gap-2 px-2">
+			<FlaskConical class="h-3.5 w-3.5 text-yellow-dark" />
+			{#if !collapsed}
+				<p class="text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Lab</p>
+			{/if}
+		</div>
 		<ul class="space-y-0.5">
-			{#each gestionItems as item}
+			{#each labItems as item}
 				<li>
 					<a
 						href={item.href}
-						class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {isActive(item.href) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+						class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-all duration-200 {isActive(item.href) ? 'text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+						style={isActive(item.href) ? 'background: linear-gradient(90deg, var(--color-yellow-bg) 0%, var(--color-yellow-bg) 30%, transparent 100%)' : ''}
 						title={collapsed ? item.label : undefined}
 					>
 						{#if isActive(item.href)}
-							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary"></span>
+							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm" style="background: #FAE100"></span>
 						{/if}
 						<item.icon class="h-4 w-4 shrink-0 {isActive(item.href) ? 'text-primary' : 'text-muted'}" />
 						{#if !collapsed}
@@ -194,11 +210,11 @@
 			{/each}
 		</ul>
 
-		<!-- OUTILS SIMULÉS section -->
+		<!-- MES PROJETS section -->
 		{#if projects.length > 0}
 			<Separator class="my-3" />
 			{#if !collapsed}
-				<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Outils simulés</p>
+				<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Mes projets</p>
 			{/if}
 			<ul class="space-y-0.5">
 				{#each projects.slice(0, 8) as project}
@@ -213,7 +229,7 @@
 						{/if}
 							<span
 								class="h-2.5 w-2.5 shrink-0 rounded-full"
-								style="background-color: {getToolColor(project.toolName)}"
+								style="background-color: {project.iconColor || getToolColor(project.toolName)}"
 							></span>
 							{#if !collapsed}
 								<span class="truncate flex-1">{project.toolName}</span>

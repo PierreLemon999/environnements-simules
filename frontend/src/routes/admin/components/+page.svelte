@@ -71,7 +71,7 @@
 </script>
 
 <svelte:head>
-	<title>Composants — Environnements Simulés</title>
+	<title>Composants — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">

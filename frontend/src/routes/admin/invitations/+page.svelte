@@ -92,7 +92,7 @@
 	let formCompany = $state('');
 	let formProjectId = $state('');
 	let formVersionId = $state('');
-	let formExpiryDays = $state(90);
+	let formExpiryDays = $state(180);
 	let formRequireAccount = $state(false);
 	let formSubmitting = $state(false);
 	let formError = $state('');
@@ -101,7 +101,7 @@
 	let linkCompany = $state('');
 	let linkProjectId = $state('');
 	let linkVersionId = $state('');
-	let linkExpiryDays = $state(90);
+	let linkExpiryDays = $state(180);
 	let linkPassword = $state('');
 	let linkRequireAccount = $state(false);
 	let linkGenerated = $state('');
@@ -357,7 +357,7 @@
 		formCompany = '';
 		formProjectId = projects[0]?.id ?? '';
 		formVersionId = '';
-		formExpiryDays = 90;
+		formExpiryDays = 180;
 		formRequireAccount = false;
 		formError = '';
 		showCredentials = false;
@@ -371,7 +371,7 @@
 		linkCompanyMode = 'select';
 		linkProjectId = projects[0]?.id ?? '';
 		linkVersionId = '';
-		linkExpiryDays = 90;
+		linkExpiryDays = 180;
 		linkPassword = '';
 		linkRequireAccount = false;
 		linkGenerated = '';
@@ -454,10 +454,6 @@
 		setTimeout(() => { copiedField = ''; }, 2000);
 	}
 
-	async function handleResend(assignment: Assignment) {
-		toast.info(`Invitation renvoyée à ${assignment.user.email}`);
-	}
-
 	function openDeleteDialog(assignment: Assignment) {
 		deletingAssignment = assignment;
 		deleteDialogOpen = true;
@@ -528,7 +524,7 @@
 </script>
 
 <svelte:head>
-	<title>Invitations — Environnements Simulés</title>
+	<title>Invitations — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -800,13 +796,6 @@
 											<div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
 												<button
 													class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
-													onclick={() => handleResend(assignment)}
-													title="Renvoyer"
-												>
-													<Send class="h-3.5 w-3.5" />
-												</button>
-												<button
-													class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
 													onclick={() => copyToClipboard(assignment.accessToken, `token-${assignment.id}`)}
 													title="Copier le lien"
 												>
@@ -898,91 +887,36 @@
 					{#if formTab === 'email'}
 						<!-- Email invitation form -->
 						{#if showCredentials && createdCredentials}
-							<!-- Credentials display: mail template block -->
+							<!-- Credentials display: simple copyable message -->
+							{@const project = projects.find(p => p.versions?.some(v => v.id === formVersionId))}
+							{@const expiryDate = (() => { const d = new Date(); d.setDate(d.getDate() + formExpiryDays); return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }); })()}
+							{@const demoUrl = `${window.location.origin}/demo/${project?.subdomain ?? ''}`}
+							{@const messageText = `Bonjour ${formName},\n\nVotre accès démo est prêt.\n\nConnectez-vous sur : ${demoUrl}\nEmail : ${createdCredentials.email}\nMot de passe : ${createdCredentials.password}\n\nCe lien expire le ${expiryDate}.`}
 							<div class="space-y-4">
 								<div class="rounded-lg border border-success/30 bg-success/5 p-3">
-									<div class="flex items-center gap-2 mb-3">
+									<div class="flex items-center gap-2">
 										<Check class="h-4 w-4 text-success" />
-										<span class="text-sm font-medium text-success">Invitation créée</span>
+										<span class="text-sm font-medium text-success">Compte créé</span>
 									</div>
-									<p class="text-xs text-muted-foreground mb-3">
-										Les identifiants ci-dessous ne seront affichés qu'une seule fois.
-									</p>
 								</div>
 
-								<!-- Mail template block -->
-								<div class="rounded-lg border-2 border-dashed border-border p-4">
-									<p class="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted">Bloc à insérer dans votre mail</p>
-									<div class="space-y-2.5 rounded-md bg-accent/50 p-3">
-										<div class="flex items-center justify-between">
-											<span class="text-xs text-muted-foreground">Email</span>
-											<div class="flex items-center gap-1.5">
-												<code class="rounded bg-background px-2 py-0.5 font-mono text-xs">{createdCredentials.email}</code>
-												<button onclick={() => copyToClipboard(createdCredentials!.email, 'cred-email')} class="rounded p-1 hover:bg-background">
-													{#if copiedField === 'cred-email'}
-														<Check class="h-3 w-3 text-success" />
-													{:else}
-														<Copy class="h-3 w-3 text-muted-foreground" />
-													{/if}
-												</button>
-											</div>
-										</div>
-										<Separator />
-										<div class="flex items-center justify-between">
-											<span class="text-xs text-muted-foreground">Mot de passe</span>
-											<div class="flex items-center gap-1.5">
-												<code class="rounded bg-background px-2 py-0.5 font-mono text-xs">
-													{passwordVisible ? createdCredentials.password : '••••••••'}
-												</code>
-												<button onclick={() => { passwordVisible = !passwordVisible; }} class="rounded p-1 hover:bg-background">
-													{#if passwordVisible}
-														<EyeOff class="h-3 w-3 text-muted-foreground" />
-													{:else}
-														<Eye class="h-3 w-3 text-muted-foreground" />
-													{/if}
-												</button>
-												<button onclick={() => copyToClipboard(createdCredentials!.password, 'cred-pass')} class="rounded p-1 hover:bg-background">
-													{#if copiedField === 'cred-pass'}
-														<Check class="h-3 w-3 text-success" />
-													{:else}
-														<Copy class="h-3 w-3 text-muted-foreground" />
-													{/if}
-												</button>
-											</div>
-										</div>
-										<Separator />
-										<div class="flex items-center justify-between">
-											<span class="text-xs text-muted-foreground">Token d'accès</span>
-											<div class="flex items-center gap-1.5">
-												<code class="max-w-[140px] truncate rounded bg-background px-2 py-0.5 font-mono text-xs">{createdCredentials.accessToken}</code>
-												<button onclick={() => copyToClipboard(createdCredentials!.accessToken, 'cred-token')} class="rounded p-1 hover:bg-background">
-													{#if copiedField === 'cred-token'}
-														<Check class="h-3 w-3 text-success" />
-													{:else}
-														<Copy class="h-3 w-3 text-muted-foreground" />
-													{/if}
-												</button>
-											</div>
-										</div>
-									</div>
-									<Button
-										variant="outline"
-										size="sm"
-										class="mt-3 w-full gap-1.5 text-xs"
-										onclick={() => {
-											const block = `Email: ${createdCredentials!.email}\nMot de passe: ${createdCredentials!.password}\nToken: ${createdCredentials!.accessToken}`;
-											copyToClipboard(block, 'cred-block');
-										}}
-									>
-										{#if copiedField === 'cred-block'}
-											<Check class="h-3.5 w-3.5 text-success" />
-											Copié !
-										{:else}
-											<Copy class="h-3.5 w-3.5" />
-											Tout copier
-										{/if}
-									</Button>
+								<div class="rounded-lg border border-border bg-accent/30 p-4">
+									<pre class="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">{messageText}</pre>
 								</div>
+
+								<Button
+									variant="outline"
+									class="w-full gap-1.5"
+									onclick={() => copyToClipboard(messageText, 'cred-message')}
+								>
+									{#if copiedField === 'cred-message'}
+										<Check class="h-3.5 w-3.5 text-success" />
+										Copié !
+									{:else}
+										<Copy class="h-3.5 w-3.5" />
+										Copier le message
+									{/if}
+								</Button>
 
 								<Button
 									class="w-full"
@@ -1040,8 +974,8 @@
 										value={String(formExpiryDays)}
 										options={[
 											{ value: '30', label: '1 mois' },
-											{ value: '90', label: '3 mois (recommandé)' },
-											{ value: '180', label: '6 mois' },
+											{ value: '90', label: '3 mois' },
+											{ value: '180', label: '6 mois (recommandé)' },
 											{ value: '365', label: '1 an' },
 											{ value: '730', label: '2 ans' },
 										]}
@@ -1071,8 +1005,8 @@
 									{#if formSubmitting}
 										Création...
 									{:else}
-										<Send class="h-3.5 w-3.5" />
-										Envoyer l'invitation
+										<Plus class="h-3.5 w-3.5" />
+										Créer le compte
 									{/if}
 								</Button>
 							</form>
@@ -1190,8 +1124,8 @@
 										value={String(linkExpiryDays)}
 										options={[
 											{ value: '30', label: '1 mois' },
-											{ value: '90', label: '3 mois (recommandé)' },
-											{ value: '180', label: '6 mois' },
+											{ value: '90', label: '3 mois' },
+											{ value: '180', label: '6 mois (recommandé)' },
 											{ value: '365', label: '1 an' },
 											{ value: '730', label: '2 ans' },
 										]}

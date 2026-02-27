@@ -99,10 +99,17 @@
 	<div class="w-full max-w-sm">
 		<!-- Logo -->
 		<div class="flex flex-col items-center mb-8">
-			<div class="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-white font-bold text-2xl mb-3 shadow-lg shadow-blue-200">
-				ES
+			<div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3 shadow-lg shadow-blue-100">
+				<svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+					<path d="M12 4 L12 13 L6 25 Q5 27 7 28 L25 28 Q27 27 26 25 L20 13 L20 4" stroke="#2B72EE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+					<line x1="10" y1="4" x2="22" y2="4" stroke="#2B72EE" stroke-width="2.5" stroke-linecap="round"/>
+					<path d="M8.5 21 L12.5 14 L19.5 14 L23.5 21 Q25 24 24 26 Q23 27 22 27 L10 27 Q9 27 8 26 Q7 24 8.5 21Z" fill="#D5E3FC" opacity="0.6"/>
+					<circle cx="14" cy="22" r="1.8" fill="#FAE100"/>
+					<circle cx="18.5" cy="19" r="1.3" fill="#2B72EE" opacity="0.5"/>
+					<circle cx="11.5" cy="18.5" r="1" fill="#FAE100" opacity="0.7"/>
+				</svg>
 			</div>
-			<h1 class="text-lg font-semibold text-gray-900">Environnements Simulés</h1>
+			<h1 class="text-lg font-semibold text-gray-900">Lemon Lab</h1>
 			<p class="text-sm text-gray-500 mt-1">Connectez-vous pour commencer</p>
 		</div>
 
@@ -173,7 +180,7 @@
 		</button>
 
 		<p class="text-center text-xs text-gray-400 mt-3">
-			Extension Lemon Learning v0.1.0
+			Lemon Lab v0.2.1
 		</p>
 	</div>
 </div>

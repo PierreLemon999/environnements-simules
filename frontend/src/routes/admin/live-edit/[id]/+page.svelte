@@ -67,12 +67,12 @@
 		style.id = 'live-edit-styles';
 		style.textContent = `
 			[contenteditable="true"]:hover {
-				outline: 2px dashed #3B82F6 !important;
+				outline: 2px dashed #2B72EE !important;
 				outline-offset: 2px !important;
 				cursor: text !important;
 			}
 			[contenteditable="true"]:focus {
-				outline: 2px solid #3B82F6 !important;
+				outline: 2px solid #2B72EE !important;
 				outline-offset: 2px !important;
 				background-color: rgba(59, 130, 246, 0.05) !important;
 			}
@@ -142,11 +142,11 @@
 			}
 			input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):hover,
 			textarea:hover, select:hover {
-				outline: 2px dashed #F59E0B !important;
+				outline: 2px dashed #F18E2A !important;
 				cursor: pointer !important;
 			}
 			.es-validation-selected {
-				outline: 2px solid #F59E0B !important;
+				outline: 2px solid #F18E2A !important;
 				outline-offset: 2px !important;
 				background-color: rgba(245, 158, 11, 0.05) !important;
 			}
@@ -154,7 +154,7 @@
 				border-left: 3px solid #10B981 !important;
 			}
 			[data-es-validation="true"] {
-				border-left: 3px solid #F59E0B !important;
+				border-left: 3px solid #F18E2A !important;
 			}
 		`;
 		doc.head.appendChild(style);
@@ -404,7 +404,7 @@
 	<!-- Toolbar -->
 	<div class="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-2">
 		<div class="flex items-center gap-3">
-			<img src="/favicon.svg" alt="Environnements Simulés" class="h-5 w-5 shrink-0" />
+			<img src="/favicon.svg" alt="Lemon Lab" class="h-5 w-5 shrink-0" />
 			<a
 				href="/admin/tree"
 				class="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"

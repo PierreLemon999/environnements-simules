@@ -79,6 +79,7 @@
 		subdomain: string;
 		description: string | null;
 		logoUrl: string | null;
+		iconColor: string | null;
 		createdAt: string;
 		updatedAt: string;
 		versions: Version[];
@@ -158,6 +159,7 @@
 	let editSubdomain = $state('');
 	let editDescription = $state('');
 	let editLogoUrl = $state('');
+	let editIconColor = $state('');
 	let editSubmitting = $state(false);
 	let editError = $state('');
 	let editLogoInput: HTMLInputElement | undefined = $state();
@@ -173,10 +175,16 @@
 		return p ? p.versions : [];
 	});
 
+	const statusOrder: Record<string, number> = { active: 0, test: 1, deprecated: 2 };
+
 	let visibleVersions: Version[] = $derived(
-		showDeprecated
+		(showDeprecated
 			? allVersions
 			: allVersions.filter((v) => v.status !== 'deprecated')
+		).toSorted((a, b) =>
+			(statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9) ||
+			new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+		)
 	);
 
 	let deprecatedCount = $derived(
@@ -242,6 +250,7 @@
 		editSubdomain = project.subdomain;
 		editDescription = project.description ?? '';
 		editLogoUrl = project.logoUrl ?? '';
+		editIconColor = project.iconColor ?? getToolColor(project.toolName);
 		editError = '';
 		editProjectOpen = true;
 	}
@@ -260,6 +269,7 @@
 				subdomain: editSubdomain.trim() || project.subdomain,
 				description: editDescription.trim() || null,
 				logoUrl: editLogoUrl || null,
+				iconColor: editIconColor || null,
 			};
 			const res = await put<{ data: ProjectDetail }>(`/projects/${project.id}`, body);
 			project = { ...project, ...res.data };
@@ -277,8 +287,9 @@
 		const file = input.files?.[0];
 		if (!file) return;
 		try {
-			const { optimizeLogoImage } = await import('$lib/utils');
+			const { optimizeLogoImage, extractDominantColor } = await import('$lib/utils');
 			editLogoUrl = await optimizeLogoImage(file);
+			editIconColor = await extractDominantColor(editLogoUrl);
 		} catch {
 			const reader = new FileReader();
 			reader.onload = () => { editLogoUrl = reader.result as string; };
@@ -402,7 +413,7 @@
 
 	function getDemoUrl(assignment: Assignment): string {
 		if (!project) return '';
-		return `${project.subdomain}.en-ll.com/?token=${assignment.accessToken}`;
+		return `${project.subdomain}.env-ll.com/?token=${assignment.accessToken}`;
 	}
 
 	async function copyToClipboard(text: string, id?: string) {
@@ -630,7 +641,7 @@
 </script>
 
 <svelte:head>
-	<title>{project?.name ?? 'Projet'} — Environnements Simulés</title>
+	<title>{project?.name ?? 'Projet'} — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -687,7 +698,7 @@
 						{:else}
 							<div
 								class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-white text-sm font-bold shadow-sm"
-								style="background: linear-gradient(135deg, {getToolColor(project.toolName)}, {getToolColor(project.toolName)}dd);"
+								style="background: linear-gradient(135deg, {project.iconColor || getToolColor(project.toolName)}, {(project.iconColor || getToolColor(project.toolName))}dd);"
 							>
 								{getToolInitials(project.toolName)}
 							</div>
@@ -713,11 +724,11 @@
 							<div class="mt-1.5 flex items-center gap-3 text-sm text-muted-foreground">
 								<button
 									class="inline-flex items-center gap-1.5 rounded-md bg-accent/60 px-2 py-0.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-									onclick={() => copyToClipboard(`${project?.subdomain}.en-ll.com`, 'subdomain')}
+									onclick={() => copyToClipboard(`${project?.subdomain}.env-ll.com`, 'subdomain')}
 									title="Copier le sous-domaine"
 								>
 									<Globe class="h-3 w-3" />
-									{project.subdomain}.en-ll.com
+									{project.subdomain}.env-ll.com
 									{#if copiedId === 'subdomain'}
 										<Check class="h-3 w-3 text-emerald-500" />
 									{:else}
@@ -742,14 +753,14 @@
 								<circle
 									cx="36" cy="36" r="30"
 									fill="none"
-									stroke="#E5E7EB"
+									stroke="#E2E3E6"
 									stroke-width="5"
 								/>
 								<!-- Progress arc -->
 								<circle
 									cx="36" cy="36" r="30"
 									fill="none"
-									stroke={healthScore >= 80 ? '#10B981' : healthScore >= 50 ? '#F59E0B' : '#EF4444'}
+									stroke={healthScore >= 80 ? '#10B981' : healthScore >= 50 ? '#F18E2A' : '#F1362A'}
 									stroke-width="5"
 									stroke-linecap="round"
 									stroke-dasharray={`${(healthScore / 100) * (2 * Math.PI * 30)} ${2 * Math.PI * 30}`}
@@ -1206,9 +1217,9 @@
 							<dd class="mt-0.5">
 								<button
 									class="inline-flex items-center gap-1.5 rounded-md bg-accent/60 px-2 py-0.5 font-mono text-xs text-foreground transition-colors hover:bg-accent"
-									onclick={() => copyToClipboard(`${project?.subdomain}.en-ll.com`, 'config-subdomain')}
+									onclick={() => copyToClipboard(`${project?.subdomain}.env-ll.com`, 'config-subdomain')}
 								>
-									{project.subdomain}.en-ll.com
+									{project.subdomain}.env-ll.com
 									{#if copiedId === 'config-subdomain'}
 										<Check class="h-3 w-3 text-emerald-500" />
 									{:else}
@@ -1436,12 +1447,22 @@
 				<label for="edit-project-subdomain" class="text-sm font-medium text-foreground">Sous-domaine des démos</label>
 				<div class="flex items-center gap-2">
 					<Input id="edit-project-subdomain" bind:value={editSubdomain} placeholder="salesforce-crm" class="flex-1" />
-					<span class="text-xs text-muted-foreground shrink-0">.en-ll.com</span>
+					<span class="text-xs text-muted-foreground shrink-0">.env-ll.com</span>
 				</div>
 			</div>
 			<div class="space-y-1.5">
 				<label for="edit-project-desc" class="text-sm font-medium text-foreground">Description <span class="text-muted-foreground">(optionnel)</span></label>
 				<textarea id="edit-project-desc" bind:value={editDescription} placeholder="Description du projet..." rows="2" class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"></textarea>
+			</div>
+			<div class="space-y-1.5">
+				<label for="edit-icon-color" class="text-sm font-medium text-foreground">Couleur de l'icône</label>
+				<div class="flex items-center gap-3">
+					<label class="relative h-8 w-8 shrink-0 cursor-pointer rounded-full border border-border shadow-xs transition-shadow hover:shadow-md" style="background-color: {editIconColor || '#6D7481'}">
+						<input type="color" id="edit-icon-color" bind:value={editIconColor} class="absolute inset-0 cursor-pointer opacity-0" />
+					</label>
+					<span class="text-xs text-muted-foreground font-mono">{editIconColor || '#6D7481'}</span>
+					<span class="text-xs text-muted-foreground">Extraite automatiquement du logo</span>
+				</div>
 			</div>
 			{#if editError}
 				<p class="text-sm text-destructive">{editError}</p>

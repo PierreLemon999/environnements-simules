@@ -2,9 +2,10 @@ import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
 import { chromeExtensionReload } from './scripts/reload-plugin';
+import { validateManifest } from './scripts/validate-manifest-plugin';
 
 export default defineConfig(({ mode }) => ({
-	plugins: [svelte(), ...(mode === 'development' ? [chromeExtensionReload()] : [])],
+	plugins: [svelte(), validateManifest(), ...(mode === 'development' ? [chromeExtensionReload()] : [])],
 	base: './',
 	build: {
 		outDir: 'dist',

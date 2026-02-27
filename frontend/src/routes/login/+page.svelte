@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { login, loginWithGoogle, loginDevBypass } from '$lib/stores/auth';
-	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, KeyRound } from 'lucide-svelte';
+	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, KeyRound, ExternalLink } from 'lucide-svelte';
 
 	let email = $state('');
 	let password = $state('');
@@ -134,7 +134,7 @@
 </script>
 
 <svelte:head>
-	<title>Connexion — Environnements Simulés</title>
+	<title>Connexion — Lemon Lab</title>
 </svelte:head>
 
 <div class="login-page">
@@ -159,17 +159,16 @@
 				<!-- Brand -->
 				<div class="brand">
 					<div class="brand-logo">
-						<svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-							<path d="M4 10 L4 5 Q4 4 5 4 L10 4" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-							<path d="M22 4 L27 4 Q28 4 28 5 L28 10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-							<path d="M28 22 L28 27 Q28 28 27 28 L22 28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-							<path d="M10 28 L5 28 Q4 28 4 27 L4 22" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
-							<circle cx="16" cy="16" r="6.5" fill="#FACC15"/>
-							<circle cx="16" cy="16" r="5" fill="#FDE68A"/>
-							<circle cx="16" cy="16" r="1" fill="#F59E0B"/>
+						<svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+							<path d="M12 4 L12 13 L6 25 Q5 27 7 28 L25 28 Q27 27 26 25 L20 13 L20 4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+							<line x1="10" y1="4" x2="22" y2="4" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+							<path d="M8.5 21 L12.5 14 L19.5 14 L23.5 21 Q25 24 24 26 Q23 27 22 27 L10 27 Q9 27 8 26 Q7 24 8.5 21Z" fill="rgba(255,255,255,0.2)"/>
+							<circle cx="14" cy="22" r="1.8" fill="#FAE100"/>
+							<circle cx="18.5" cy="19" r="1.3" fill="rgba(255,255,255,0.5)"/>
+							<circle cx="11.5" cy="18.5" r="1" fill="#FAE100" opacity="0.7"/>
 						</svg>
 					</div>
-					<h1 class="brand-title">Environnements Simulés</h1>
+					<h1 class="brand-title">Lemon Lab</h1>
 					<p class="brand-subtitle">Lemon Learning</p>
 				</div>
 
@@ -289,7 +288,7 @@
 			<!-- Footer -->
 			<div class="login-footer fade-up" style="animation-delay: 200ms">
 				Propulsé par <span class="footer-brand">Lemon Learning</span>
-				<br />&copy; 2026 Environnements Simulés &middot; Confidentialité &middot; Conditions
+				<br />&copy; 2026 Lab &middot; Confidentialité &middot; Conditions
 			</div>
 		{/if}
 	</div>
@@ -323,6 +322,16 @@
 				{/if}
 				Client
 			</button>
+			<a
+				class="magic-door magic-door-site"
+				href="https://getlemonlab.com"
+				target="_blank"
+				rel="noopener noreferrer"
+				title="Voir le site vitrine en production"
+			>
+				<ExternalLink size={14} />
+				Site
+			</a>
 		</div>
 	{/if}
 </div>
@@ -355,15 +364,15 @@
 	.bg-gradient {
 		position: absolute;
 		inset: 0;
-		background: radial-gradient(ellipse at 30% 20%, rgba(37, 99, 235, 0.06) 0%, transparent 50%),
-					radial-gradient(ellipse at 70% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 50%);
+		background: radial-gradient(ellipse at 30% 20%, rgba(43, 114, 238, 0.06) 0%, transparent 50%),
+					radial-gradient(ellipse at 70% 80%, rgba(43, 114, 238, 0.04) 0%, transparent 50%);
 		pointer-events: none;
 	}
 
 	.bg-dots {
 		position: absolute;
 		inset: 0;
-		background-image: radial-gradient(circle, rgba(37, 99, 235, 0.07) 1px, transparent 1px);
+		background-image: radial-gradient(circle, rgba(43, 114, 238, 0.07) 1px, transparent 1px);
 		background-size: 24px 24px;
 		pointer-events: none;
 	}
@@ -381,7 +390,7 @@
 		height: 720px;
 		top: -220px;
 		right: -160px;
-		background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(124, 58, 237, 0.07) 50%, transparent 70%);
+		background: radial-gradient(circle, rgba(43, 114, 238, 0.12) 0%, rgba(124, 58, 237, 0.07) 50%, transparent 70%);
 	}
 
 	.login-container {
@@ -418,8 +427,8 @@
 		width: 52px;
 		height: 52px;
 		border-radius: 14px;
-		background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-		box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+		background: linear-gradient(135deg, #2B72EE 0%, #1D4C9F 100%);
+		box-shadow: 0 4px 12px rgba(43, 114, 238, 0.3);
 		color: white;
 		font-size: 18px;
 		font-weight: 700;
@@ -515,7 +524,7 @@
 
 	.form-input:focus {
 		border-color: var(--color-primary);
-		box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+		box-shadow: 0 0 0 3px rgba(43, 114, 238, 0.12);
 	}
 
 	.form-input:disabled {
@@ -579,7 +588,7 @@
 	}
 
 	.forgot-password:hover {
-		color: var(--color-primary-hover, #1d4ed8);
+		color: var(--color-primary-hover, #245FC6);
 		text-decoration: underline;
 	}
 
@@ -622,7 +631,7 @@
 	.btn-primary:hover:not(:disabled) {
 		background: var(--color-primary-hover);
 		transform: translateY(-1px);
-		box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+		box-shadow: 0 6px 20px rgba(43, 114, 238, 0.3);
 	}
 
 	.btn-primary:disabled {
@@ -780,15 +789,25 @@
 	}
 
 	.magic-door-admin:hover:not(:disabled) {
-		color: #3b82f6;
-		border-color: #3b82f6;
-		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+		color: #2B72EE;
+		border-color: #2B72EE;
+		box-shadow: 0 4px 12px rgba(43, 114, 238, 0.15);
 	}
 
 	.magic-door-client:hover:not(:disabled) {
-		color: #f59e0b;
-		border-color: #f59e0b;
-		box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+		color: #F18E2A;
+		border-color: #F18E2A;
+		box-shadow: 0 4px 12px rgba(241, 142, 42, 0.15);
+	}
+
+	.magic-door-site {
+		text-decoration: none;
+	}
+
+	.magic-door-site:hover {
+		color: #10B981;
+		border-color: #10B981;
+		box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
 	}
 
 	.magic-door:disabled {

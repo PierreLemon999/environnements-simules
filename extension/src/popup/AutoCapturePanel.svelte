@@ -109,20 +109,35 @@
 				class="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition"
 			>
 				<svg class="w-3 h-3 transition-transform {showDelay ? 'rotate-90' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-				Délai entre pages
-				<span class="text-[10px] text-gray-300">{config.delayBetweenPages}ms</span>
+				Délais
+				<span class="text-[10px] text-gray-300">{config.delayBetweenPages}ms · {config.pageTimeout / 1000}s</span>
 			</button>
 			{#if showDelay}
-				<div>
-					<input
-						type="number"
-						min="200"
-						max="10000"
-						step="100"
-						bind:value={config.delayBetweenPages}
-						class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-					/>
-					<p class="text-[10px] text-gray-400 mt-0.5">Temps d'attente entre chaque capture (ms)</p>
+				<div class="grid grid-cols-2 gap-2">
+					<div>
+						<label class="block text-[10px] font-medium text-gray-500 mb-0.5">Délai entre pages</label>
+						<input
+							type="number"
+							min="200"
+							max="10000"
+							step="100"
+							bind:value={config.delayBetweenPages}
+							class="w-full text-[11px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+						/>
+						<p class="text-[9px] text-gray-400 mt-0.5">Attente entre captures (ms)</p>
+					</div>
+					<div>
+						<label class="block text-[10px] font-medium text-gray-500 mb-0.5">Timeout par page</label>
+						<input
+							type="number"
+							min="5000"
+							max="120000"
+							step="5000"
+							bind:value={config.pageTimeout}
+							class="w-full text-[11px] border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+						/>
+						<p class="text-[9px] text-gray-400 mt-0.5">Passe à la suite si bloqué (ms)</p>
+					</div>
 				</div>
 			{/if}
 		</div>

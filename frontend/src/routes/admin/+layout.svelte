@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import Sidebar from '$components/layout/Sidebar.svelte';
 	import Header from '$components/layout/Header.svelte';
 	import CommandPalette from '$components/layout/CommandPalette.svelte';
@@ -10,44 +9,22 @@
 
 	let collapsed = $state(false);
 	let commandPalette: ReturnType<typeof CommandPalette> | undefined = $state();
-	let userHasToggled = $state(false);
 
-	// Auto-collapse sidebar on tree page (full-width three-panel layout)
-	let isTreePage = $derived($page.url.pathname === '/admin/tree');
-
-	// Restore persisted sidebar state, or auto-collapse on small screens
+	// Restore persisted sidebar state (default: open)
 	$effect(() => {
 		if (!browser) return;
-
 		const stored = localStorage.getItem('sidebar-collapsed');
 		if (stored !== null) {
 			collapsed = stored === 'true';
-			userHasToggled = true;
-		} else {
-			collapsed = window.innerWidth < 1024;
 		}
 	});
 
-	// Auto-collapse on tree page (only once, not preventing manual expand)
-	let treePageAutoCollapsed = $state(false);
-	$effect(() => {
-		if (!browser) return;
-		if (isTreePage && !treePageAutoCollapsed) {
-			collapsed = true;
-			treePageAutoCollapsed = true;
-		}
-		if (!isTreePage) {
-			treePageAutoCollapsed = false;
-		}
-	});
-
-	// Persist collapse state whenever user toggles
-	$effect(() => {
-		if (!browser) return;
-		if (userHasToggled) {
+	// Sidebar toggles collapsed via $bindable — we just persist
+	function handleToggle() {
+		if (browser) {
 			localStorage.setItem('sidebar-collapsed', String(collapsed));
 		}
-	});
+	}
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
 		const metaOrCtrl = e.metaKey || e.ctrlKey;
@@ -63,7 +40,7 @@
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="min-h-screen bg-background">
-	<Sidebar bind:collapsed onToggle={() => { userHasToggled = true; }} />
+	<Sidebar bind:collapsed onToggle={handleToggle} />
 	<Header {collapsed} onOpenCommandPalette={() => commandPalette?.toggle()} />
 	<CommandPalette bind:this={commandPalette} />
 

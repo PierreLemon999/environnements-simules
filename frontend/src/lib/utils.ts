@@ -55,3 +55,76 @@ export function optimizeLogoImage(
 		img.src = url;
 	});
 }
+
+/**
+ * Extract the dominant color from a data URL image, excluding white/near-white pixels.
+ * Returns a hex color string like "#2B72EE".
+ */
+export function extractDominantColor(dataUrl: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const size = 64; // downsample for speed
+			const canvas = document.createElement('canvas');
+			canvas.width = size;
+			canvas.height = size;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				resolve('#6D7481');
+				return;
+			}
+
+			ctx.drawImage(img, 0, 0, size, size);
+			const { data } = ctx.getImageData(0, 0, size, size);
+
+			// Count colors in buckets (quantize to 4-bit per channel)
+			const buckets = new Map<string, { r: number; g: number; b: number; count: number }>();
+
+			for (let i = 0; i < data.length; i += 4) {
+				const r = data[i];
+				const g = data[i + 1];
+				const b = data[i + 2];
+				const a = data[i + 3];
+
+				// Skip transparent or near-white pixels
+				if (a < 128) continue;
+				if (r > 230 && g > 230 && b > 230) continue;
+				// Skip near-black too (often background)
+				if (r < 25 && g < 25 && b < 25) continue;
+
+				const key = `${(r >> 4)}-${(g >> 4)}-${(b >> 4)}`;
+				const existing = buckets.get(key);
+				if (existing) {
+					existing.r += r;
+					existing.g += g;
+					existing.b += b;
+					existing.count++;
+				} else {
+					buckets.set(key, { r, g, b, count: 1 });
+				}
+			}
+
+			if (buckets.size === 0) {
+				resolve('#6D7481');
+				return;
+			}
+
+			// Find the most frequent bucket
+			let best = { r: 109, g: 116, b: 129, count: 0 };
+			for (const bucket of buckets.values()) {
+				if (bucket.count > best.count) best = bucket;
+			}
+
+			// Average the color in the winning bucket
+			const avgR = Math.round(best.r / best.count);
+			const avgG = Math.round(best.g / best.count);
+			const avgB = Math.round(best.b / best.count);
+
+			const hex = '#' + [avgR, avgG, avgB].map(c => c.toString(16).padStart(2, '0')).join('');
+			resolve(hex);
+		};
+
+		img.onerror = () => resolve('#6D7481');
+		img.src = dataUrl;
+	});
+}

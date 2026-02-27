@@ -123,7 +123,7 @@ export async function loadFromStorage(): Promise<void> {
 		const res = await post<{
 			data: {
 				valid: boolean;
-				user: { userId: string; email: string; role: 'admin' | 'client'; name: string } | null;
+				user: { userId: string; email: string; role: 'admin' | 'client'; name: string; avatarUrl?: string | null } | null;
 			};
 		}>('/auth/verify', {
 			token: stored
@@ -136,7 +136,7 @@ export async function loadFromStorage(): Promise<void> {
 				name: res.data.user.name,
 				email: res.data.user.email,
 				role: res.data.user.role,
-				avatarUrl: null,
+				avatarUrl: res.data.user.avatarUrl ?? null,
 			});
 		} else {
 			removeToken();

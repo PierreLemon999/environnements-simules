@@ -15,7 +15,7 @@ export function getPreviewStylesCSS(): string {
 			outline-offset: 1px !important;
 		}
 		.es-invalid {
-			outline: 2px solid #EF4444 !important;
+			outline: 2px solid #F1362A !important;
 			outline-offset: 1px !important;
 		}
 		.es-validation-msg {
@@ -27,8 +27,8 @@ export function getPreviewStylesCSS(): string {
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 		}
 		.es-validation-msg.es-msg-error {
-			color: #DC2626;
-			background: #FEF2F2;
+			color: #F1362A;
+			background: #FEF0EF;
 		}
 		.es-validation-msg.es-msg-success {
 			color: #059669;

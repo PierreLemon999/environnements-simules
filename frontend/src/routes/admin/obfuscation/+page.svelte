@@ -365,7 +365,7 @@
 </script>
 
 <svelte:head>
-	<title>Obfuscation — Environnements Simulés</title>
+	<title>Obfuscation — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -459,7 +459,7 @@
 									{#each filteredRules() as rule}
 										<tr
 											class="group border-b border-border last:border-0 transition-colors hover:bg-accent/50"
-											style="border-left: 3px solid {rule.isActive ? '#16a34a' : '#e7e5e4'};"
+											style="border-left: 3px solid {rule.isActive ? '#10B981' : '#E2E3E6'};"
 											draggable="true"
 											ondragstart={() => { draggedRuleId = rule.id; }}
 											ondragend={() => { draggedRuleId = null; }}
@@ -713,7 +713,7 @@
 						<div class="h-1.5 overflow-hidden rounded-full bg-border">
 							<div
 								class="h-full rounded-full transition-all duration-1000 ease-out"
-								style="width: {previewStats().coverage}%; background: linear-gradient(90deg, #2563eb, #60a5fa);"
+								style="width: {previewStats().coverage}%; background: linear-gradient(90deg, #2B72EE, #4E89F1);"
 							></div>
 						</div>
 					</div>

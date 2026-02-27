@@ -19,6 +19,7 @@ export interface AutoCaptureConfig {
 	targetPageCount: number;
 	maxDepth: number;
 	delayBetweenPages: number; // ms
+	pageTimeout: number; // ms — max time per page before skipping with error
 	interestZones: InterestZone[];
 	blacklist: string[];
 }
@@ -38,6 +39,7 @@ const DEFAULT_CONFIG: AutoCaptureConfig = {
 	targetPageCount: 20,
 	maxDepth: 3,
 	delayBetweenPages: 500,
+	pageTimeout: 60000,
 	interestZones: [],
 	blacklist: [
 		'Supprimer',
@@ -60,8 +62,21 @@ const STORAGE_KEY_AUTO_CONFIG = 'auto_capture_config';
 
 let crawlQueue: CrawlQueueItem[] = [];
 let visitedUrls: Set<string> = new Set();
+let visitedPaths: Set<string> = new Set(); // Deduplicate by pathname (ignore query params)
 let isRunning = false;
 let currentTabId: number | null = null;
+let consecutiveErrors = 0;
+
+const MAX_CONSECUTIVE_ERRORS = 3;
+
+// URL patterns that are NOT navigable pages (API endpoints, resources, etc.)
+const SKIP_URL_PATTERNS = [
+	'/api/', '/services/', '/aura/', '/_ui/', '/apexremote',
+	'/servlet/', '/.well-known/', '/siteassets/',
+	'.json', '.xml', '.js', '.css', '.png', '.jpg', '.gif', '.svg',
+	'.woff', '.woff2', '.ttf', '.pdf', '.zip', '.csv',
+	'oauth', 'login.', 'logout', 'secur/frontdoor',
+];
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -72,7 +87,10 @@ let currentTabId: number | null = null;
  */
 export async function getAutoConfig(): Promise<AutoCaptureConfig> {
 	const result = await chrome.storage.local.get(STORAGE_KEY_AUTO_CONFIG);
-	return result[STORAGE_KEY_AUTO_CONFIG] || { ...DEFAULT_CONFIG };
+	const saved = result[STORAGE_KEY_AUTO_CONFIG];
+	if (!saved) return { ...DEFAULT_CONFIG };
+	// Merge with defaults so new fields always have a value
+	return { ...DEFAULT_CONFIG, ...saved };
 }
 
 /**
@@ -102,8 +120,10 @@ export async function startAutoCrawl(tabId: number, config: AutoCaptureConfig): 
 	// Reset state
 	crawlQueue = [{ url: tab.url, depth: 0 }];
 	visitedUrls = new Set();
+	visitedPaths = new Set();
 	isRunning = true;
 	currentTabId = tabId;
+	consecutiveErrors = 0;
 
 	// Update capture state
 	await updateCaptureState({
@@ -224,78 +244,155 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 
 		const normalizedUrl = normalizeUrl(item.url);
 
-		// Skip already visited
+		// Skip already visited (full URL)
 		if (visitedUrls.has(normalizedUrl)) continue;
 		visitedUrls.add(normalizedUrl);
+
+		// Skip if we already captured a page with the same pathname (ignore query params)
+		const urlPathname = extractPathname(item.url);
+		if (visitedPaths.has(urlPathname)) {
+			console.log(`[Auto Capture] Skip duplicate path: ${urlPathname}`);
+			continue;
+		}
+
+		// Skip non-page URLs (API endpoints, resources, files)
+		if (isNonPageUrl(item.url)) {
+			console.log(`[Auto Capture] Skip non-page URL: ${item.url}`);
+			continue;
+		}
 
 		// Check depth limit (with interest zone multipliers)
 		const effectiveMaxDepth = getEffectiveDepth(config, item.url);
 		if (item.depth > effectiveMaxDepth) continue;
 
 		try {
-			// Navigate to the page
-			if (currentTabId !== null) {
-				await navigateAndWait(currentTabId, item.url);
-			}
-
-			// Wait for initial DOM load
-			await sleep(500);
-
-			// Scroll to trigger lazy loading
-			if (currentTabId !== null) {
-				try {
-					await chrome.tabs.sendMessage(currentTabId, { type: 'SCROLL_PAGE' });
-				} catch {
-					// Content script might not be injected yet
+			// Wrap the entire page processing in a timeout
+			await withTimeout(config.pageTimeout, item.url, async () => {
+				// Navigate to the page
+				if (currentTabId !== null) {
+					await navigateAndWait(currentTabId, item.url);
 				}
-			}
 
-			// Wait for DOM stabilization (MutationObserver + image tracking)
-			if (currentTabId !== null) {
-				try {
-					await chrome.tabs.sendMessage(currentTabId, { type: 'WAIT_FOR_STABLE_DOM', timeout: 6000 });
-				} catch {
-					// Fallback: simple delay if content script not available
-					await sleep(1500);
-				}
-			}
+				// Wait for initial DOM load
+				await sleep(500);
 
-			// Capture the page
-			if (currentTabId !== null) {
-				await captureAndUploadPage(currentTabId, versionId, config);
-
-				// Update capture job progress on backend
-				const postCaptureState = await getCaptureState();
-				if (postCaptureState.jobId) {
-					const capturedCount = postCaptureState.pages.filter(
-						(p) => p.status === PAGE_STATUS.DONE
-					).length;
-					await api.put(`/capture-jobs/${postCaptureState.jobId}`, {
-						pagesCaptured: capturedCount,
-						status: capturedCount >= config.targetPageCount ? 'done' : 'running'
-					}).catch(() => {});
-				}
-			}
-
-			// Extract links for BFS
-			if (currentTabId !== null && item.depth < effectiveMaxDepth) {
-				const links = await extractPageLinks(currentTabId, config.blacklist);
-				for (const link of links) {
-					const normalized = normalizeUrl(link);
-					if (!visitedUrls.has(normalized)) {
-						crawlQueue.push({
-							url: link,
-							depth: item.depth + 1,
-							parentUrl: item.url
-						});
+				// Check for HTTP errors (431, 429, 5xx, etc.)
+				if (currentTabId !== null) {
+					const httpError = await detectHttpError(currentTabId);
+					if (httpError) {
+						console.error(`[Auto Capture] HTTP ${httpError.code} on ${item.url}: ${httpError.message}`);
+						throw new HttpPageError(item.url, httpError.code, httpError.message);
 					}
 				}
-			}
+
+				// Verify the page is actual HTML (not JSON/API/resource)
+				if (currentTabId !== null) {
+					const isHtml = await verifyPageIsHtml(currentTabId);
+					if (!isHtml) {
+						console.log(`[Auto Capture] Skipping non-HTML page: ${item.url}`);
+						return;
+					}
+				}
+
+				// Scroll to trigger lazy loading
+				if (currentTabId !== null) {
+					try {
+						await chrome.tabs.sendMessage(currentTabId, { type: 'SCROLL_PAGE' });
+					} catch {
+						// Content script might not be injected yet
+					}
+				}
+
+				// Wait for DOM stabilization (MutationObserver + image tracking)
+				if (currentTabId !== null) {
+					try {
+						await chrome.tabs.sendMessage(currentTabId, { type: 'WAIT_FOR_STABLE_DOM', timeout: 6000 });
+					} catch {
+						// Fallback: simple delay if content script not available
+						await sleep(1500);
+					}
+				}
+
+				// Mark this pathname as captured
+				visitedPaths.add(urlPathname);
+
+				// Capture the page
+				if (currentTabId !== null) {
+					await captureAndUploadPage(currentTabId, versionId, config);
+
+					// Update capture job progress on backend
+					const postCaptureState = await getCaptureState();
+					if (postCaptureState.jobId) {
+						const capturedCount = postCaptureState.pages.filter(
+							(p) => p.status === PAGE_STATUS.DONE
+						).length;
+						await api.put(`/capture-jobs/${postCaptureState.jobId}`, {
+							pagesCaptured: capturedCount,
+							status: capturedCount >= config.targetPageCount ? 'done' : 'running'
+						}).catch(() => {});
+					}
+				}
+
+				// Extract links for BFS
+				if (currentTabId !== null && item.depth < effectiveMaxDepth) {
+					const links = await extractPageLinks(currentTabId, config.blacklist);
+					for (const link of links) {
+						const normalized = normalizeUrl(link);
+						const linkPath = extractPathname(link);
+						// Skip if already visited by full URL, pathname, or non-page URL
+						if (!visitedUrls.has(normalized) && !visitedPaths.has(linkPath) && !isNonPageUrl(link)) {
+							crawlQueue.push({
+								url: link,
+								depth: item.depth + 1,
+								parentUrl: item.url
+							});
+						}
+					}
+				}
+			});
+
+			// Success — reset consecutive error counter
+			consecutiveErrors = 0;
 
 			// Delay between pages
 			await sleep(config.delayBetweenPages);
 		} catch (err) {
-			console.error(`[Auto Capture] Error processing ${item.url}:`, err);
+			consecutiveErrors++;
+			console.error(`[Auto Capture] Error processing ${item.url} (${consecutiveErrors} consecutive):`, err);
+
+			// Too many consecutive errors: rotate queue to explore other branches
+			if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && crawlQueue.length > 1) {
+				rotateQueueToNewBranch(item);
+			}
+
+			// Add an error page entry so the user sees it in the list
+			if (err instanceof PageTimeoutError) {
+				const localId = uuidv4();
+				const errorPage: CapturedPage = {
+					id: '',
+					localId,
+					title: `Timeout — ${item.url}`,
+					url: item.url,
+					fileSize: 0,
+					status: PAGE_STATUS.ERROR,
+					error: `Timeout après ${Math.round(config.pageTimeout / 1000)}s`,
+					capturedAt: new Date().toISOString()
+				};
+				await addCapturedPageToState(errorPage);
+			} else if (err instanceof HttpPageError) {
+				const localId = uuidv4();
+				const errorPage: CapturedPage = {
+					id: '',
+					localId,
+					title: `HTTP ${err.httpCode} — ${item.url}`,
+					url: item.url,
+					fileSize: 0,
+					status: PAGE_STATUS.ERROR,
+					error: `HTTP ${err.httpCode}: ${err.httpMessage}`,
+					capturedAt: new Date().toISOString()
+				};
+				await addCapturedPageToState(errorPage);
+			}
 			// Continue with next URL
 		}
 	}
@@ -331,6 +428,15 @@ async function captureAndUploadPage(
 	try {
 		// Phase 1: Collect DOM + resource manifest
 		const collected = await captureCurrentPage(tabId);
+
+		// Safety net: reject pages whose title looks like an HTTP error page
+		const httpErrorMatch = collected.title.match(/^(?:Error\s+)?(\d{3})\b/i);
+		if (httpErrorMatch) {
+			const code = parseInt(httpErrorMatch[1], 10);
+			if (code >= 400 && code < 600) {
+				throw new Error(`Page is an HTTP error page (${code}): ${collected.title}`);
+			}
+		}
 
 		await updatePageStatus(localId, PAGE_STATUS.UPLOADING, {
 			title: collected.title,
@@ -449,6 +555,26 @@ function extractLinksFromDOM(blacklist: string[]): string[] {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * After too many consecutive errors, rotate the queue so the next item
+ * comes from a different branch (different parent or different depth).
+ * This avoids getting stuck on a cluster of broken sibling pages.
+ */
+function rotateQueueToNewBranch(failedItem: CrawlQueueItem): void {
+	const idx = crawlQueue.findIndex(
+		(q) => q.depth !== failedItem.depth || q.parentUrl !== failedItem.parentUrl
+	);
+	if (idx > 0) {
+		// Move items from a different branch to the front
+		const rotated = crawlQueue.splice(idx);
+		crawlQueue = [...rotated, ...crawlQueue];
+		console.log(
+			`[Auto Capture] ${consecutiveErrors} erreurs consécutives — rotation de la queue ` +
+			`(${rotated.length} URLs d'une autre branche passent devant)`
+		);
+	}
+}
+
 function normalizeUrl(url: string): string {
 	try {
 		const u = new URL(url);
@@ -513,6 +639,144 @@ function simplifyHtml(html: string): string {
 		.replace(/url\(data:image\/[^)]+\)/g, 'url()');
 }
 
+class PageTimeoutError extends Error {
+	constructor(url: string, timeoutMs: number) {
+		super(`Page timeout après ${Math.round(timeoutMs / 1000)}s : ${url}`);
+		this.name = 'PageTimeoutError';
+	}
+}
+
+class HttpPageError extends Error {
+	constructor(
+		public readonly url: string,
+		public readonly httpCode: number,
+		public readonly httpMessage: string
+	) {
+		super(`HTTP ${httpCode} sur ${url} : ${httpMessage}`);
+		this.name = 'HttpPageError';
+	}
+}
+
+async function withTimeout(timeoutMs: number, url: string, fn: () => Promise<void>): Promise<void> {
+	return new Promise<void>((resolve, reject) => {
+		let settled = false;
+		const timer = setTimeout(() => {
+			if (!settled) {
+				settled = true;
+				reject(new PageTimeoutError(url, timeoutMs));
+			}
+		}, timeoutMs);
+
+		fn()
+			.then(() => {
+				if (!settled) {
+					settled = true;
+					clearTimeout(timer);
+					resolve();
+				}
+			})
+			.catch((err) => {
+				if (!settled) {
+					settled = true;
+					clearTimeout(timer);
+					reject(err);
+				}
+			});
+	});
+}
+
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Extract just the pathname from a URL (no origin, no query, no hash).
+ */
+function extractPathname(url: string): string {
+	try {
+		const u = new URL(url);
+		return u.pathname.replace(/\/+$/, '') || '/';
+	} catch {
+		return url;
+	}
+}
+
+/**
+ * Check if a URL is likely a non-page resource (API, file, etc.).
+ */
+function isNonPageUrl(url: string): boolean {
+	const lower = url.toLowerCase();
+	return SKIP_URL_PATTERNS.some(pattern => lower.includes(pattern));
+}
+
+/**
+ * After navigating, check if the page hit an HTTP error (431, 429, etc.).
+ * Chrome renders error pages that look like HTML, so we detect them by content.
+ * Returns the HTTP error code if detected, or null if the page is fine.
+ */
+async function detectHttpError(tabId: number): Promise<{ code: number; message: string } | null> {
+	try {
+		const results = await chrome.scripting.executeScript({
+			target: { tabId },
+			func: () => {
+				const body = document.body?.innerText || '';
+				// Chrome's built-in error page format: "HTTP ERROR NNN"
+				const match = body.match(/HTTP\s+ERROR\s+(\d{3})/i);
+				if (match) {
+					const code = parseInt(match[1], 10);
+					// Extract the status message (e.g. "Request Header Fields Too Large")
+					const msgMatch = body.match(/MESSAGE:\s*(.+)/i);
+					const message = msgMatch?.[1]?.trim() || `HTTP ${code}`;
+					return { code, message };
+				}
+				// Also check page title for error indicators
+				const title = document.title || '';
+				if (/^\d{3}\s/.test(title) || title.includes('Error')) {
+					const titleCode = parseInt(title, 10);
+					if (titleCode >= 400 && titleCode < 600) {
+						return { code: titleCode, message: title };
+					}
+				}
+				return null;
+			}
+		});
+		return results?.[0]?.result ?? null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * After navigating, verify the page is actual HTML (not JSON, plain text, etc.).
+ * Checks the document content type via the content script.
+ */
+async function verifyPageIsHtml(tabId: number): Promise<boolean> {
+	try {
+		const results = await chrome.scripting.executeScript({
+			target: { tabId },
+			func: () => {
+				// Check if the page looks like rendered HTML vs raw code
+				const body = document.body;
+				if (!body) return false;
+
+				// If the body only contains a <pre> tag, it's likely raw text/JSON
+				const children = body.children;
+				if (children.length === 1 && children[0].tagName === 'PRE') {
+					return false;
+				}
+
+				// Check content type from document
+				const ct = document.contentType;
+				if (ct && !ct.includes('html')) {
+					return false;
+				}
+
+				return true;
+			}
+		});
+		return results?.[0]?.result ?? true;
+	} catch {
+		// If we can't check, assume it's OK
+		return true;
+	}
 }

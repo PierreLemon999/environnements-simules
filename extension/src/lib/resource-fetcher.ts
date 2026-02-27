@@ -107,7 +107,7 @@ async function fetchWithTimeout(url: string): Promise<Response> {
 	try {
 		const response = await fetch(url, {
 			signal: controller.signal,
-			credentials: 'include',
+			credentials: 'omit',
 		});
 		return response;
 	} finally {
@@ -466,7 +466,7 @@ export async function buildSelfContainedPage(
 	resources: ResourceManifest,
 	baseUrl: string
 ): Promise<string> {
-	const LOG = '[ES Resources]';
+	const LOG = '[LL Resources]';
 	// Reset per-capture state
 	dataUriCache = new Map();
 	fetchCount = 0;

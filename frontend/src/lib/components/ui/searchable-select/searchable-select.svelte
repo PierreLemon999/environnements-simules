@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
-	import { ChevronDown, Search, Check } from 'lucide-svelte';
+	import { ChevronDown, Search, Check, Plus } from 'lucide-svelte';
 
 	interface Option {
 		value: string;
@@ -14,18 +14,24 @@
 		placeholder = 'Sélectionner...',
 		searchable = false,
 		searchPlaceholder = 'Rechercher...',
+		creatable = false,
+		createLabel = 'Créer',
 		class: className,
 		disabled = false,
 		onchange,
+		oncreate,
 	}: {
 		value?: string;
 		options: Option[];
 		placeholder?: string;
 		searchable?: boolean;
 		searchPlaceholder?: string;
+		creatable?: boolean;
+		createLabel?: string;
 		class?: string;
 		disabled?: boolean;
 		onchange?: (value: string) => void;
+		oncreate?: (value: string) => void;
 	} = $props();
 
 	let open = $state(false);
@@ -34,7 +40,7 @@
 
 	let selectedLabel = $derived(() => {
 		const opt = options.find(o => o.value === value);
-		return opt?.label ?? '';
+		return opt?.label ?? (value || '');
 	});
 
 	let filtered = $derived(() => {
@@ -43,10 +49,26 @@
 		return options.filter(o => o.label.toLowerCase().includes(q));
 	});
 
+	let showCreateOption = $derived(() => {
+		if (!creatable || !query.trim()) return false;
+		const q = query.toLowerCase();
+		return !options.some(o => o.label.toLowerCase() === q);
+	});
+
 	function select(val: string) {
 		value = val;
 		open = false;
 		query = '';
+		onchange?.(val);
+	}
+
+	function createNew() {
+		const val = query.trim();
+		if (!val) return;
+		value = val;
+		open = false;
+		query = '';
+		oncreate?.(val);
 		onchange?.(val);
 	}
 
@@ -116,8 +138,20 @@
 						{/if}
 					</button>
 				{:else}
-					<p class="px-2.5 py-3 text-center text-sm text-muted-foreground">Aucun résultat</p>
+					{#if !showCreateOption()}
+						<p class="px-2.5 py-3 text-center text-sm text-muted-foreground">Aucun résultat</p>
+					{/if}
 				{/each}
+				{#if showCreateOption()}
+					<button
+						type="button"
+						class="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-accent text-primary font-medium"
+						onclick={createNew}
+					>
+						<Plus class="h-3.5 w-3.5 shrink-0" />
+						<span class="truncate flex-1">{createLabel} « {query.trim()} »</span>
+					</button>
+				{/if}
 			</div>
 		</div>
 	{/if}

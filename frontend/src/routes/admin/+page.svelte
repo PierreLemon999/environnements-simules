@@ -150,7 +150,7 @@
 			'Zendesk': '#03363D',
 			'Oracle': '#C74634',
 		};
-		return colors[toolName] ?? '#6B7280';
+		return colors[toolName] ?? '#6D7481';
 	}
 
 	function getToolNameForSession(session: Session): string {
@@ -162,11 +162,11 @@
 	}
 
 	function getActionBadge(session: Session): { label: string; color: string; bg: string; dot: string } {
-		if (session.eventCount > 5) return { label: 'Guide terminé', color: '#16a34a', bg: '#f0fdf4', dot: '#16a34a' };
-		if (session.eventCount > 3) return { label: 'Guide démarré', color: '#d97706', bg: '#fffbeb', dot: '#d97706' };
-		if (session.eventCount > 1) return { label: 'Page consultée', color: '#2563eb', bg: '#eff6ff', dot: '#2563eb' };
-		if (session.eventCount > 0) return { label: 'Session démarrée', color: '#2563eb', bg: '#eff6ff', dot: '#2563eb' };
-		return { label: 'Visite', color: '#6b7280', bg: '#f3f4f6', dot: '#6b7280' };
+		if (session.eventCount > 5) return { label: 'Guide terminé', color: '#10B981', bg: '#ECFDF5', dot: '#10B981' };
+		if (session.eventCount > 3) return { label: 'Guide démarré', color: '#F18E2A', bg: '#FDF6EF', dot: '#F18E2A' };
+		if (session.eventCount > 1) return { label: 'Page consultée', color: '#2B72EE', bg: '#E3EDFE', dot: '#2B72EE' };
+		if (session.eventCount > 0) return { label: 'Session démarrée', color: '#2B72EE', bg: '#E3EDFE', dot: '#2B72EE' };
+		return { label: 'Visite', color: '#6D7481', bg: '#f3f4f6', dot: '#6D7481' };
 	}
 
 	function formatRelativeTime(dateStr: string): string {
@@ -243,7 +243,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard — Environnements Simulés</title>
+	<title>Dashboard — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">

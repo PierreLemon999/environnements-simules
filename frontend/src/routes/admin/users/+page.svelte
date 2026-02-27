@@ -29,6 +29,12 @@
 		Mail,
 		Calendar,
 		MoreVertical,
+		Eye,
+		EyeOff,
+		Copy,
+		Check,
+		RefreshCw,
+		Send,
 	} from 'lucide-svelte';
 	import {
 		DropdownMenu,
@@ -65,12 +71,24 @@
 	let formCompany = $state('');
 	let formSubmitting = $state(false);
 	let formError = $state('');
+	let showPassword = $state(false);
+	let passwordCopied = $state(false);
+	let sendEmail = $state(false);
 
 	// Delete dialog
 	let deleteDialogOpen = $state(false);
 	let deletingUser: UserRecord | null = $state(null);
 	let deleteSubmitting = $state(false);
 	let deleteError = $state('');
+
+	// Companies extracted from existing users
+	let companyOptions = $derived.by(() => {
+		const companies = new Set<string>();
+		for (const u of users) {
+			if (u.company) companies.add(u.company);
+		}
+		return [...companies].sort().map(c => ({ value: c, label: c }));
+	});
 
 	let filteredUsers = $derived.by(() => {
 		let result = users;
@@ -93,6 +111,69 @@
 
 	let adminCount = $derived(users.filter(u => u.role === 'admin').length);
 	let clientCount = $derived(users.filter(u => u.role === 'client').length);
+
+	// Password validation
+	let passwordErrors = $derived.by(() => {
+		const pw = formPassword;
+		if (!pw) return [];
+		const errors: string[] = [];
+		if (pw.length < 12) errors.push('Au moins 12 caractères');
+		if (!/[A-Z]/.test(pw)) errors.push('Au moins une majuscule');
+		if (!/[a-z]/.test(pw)) errors.push('Au moins une minuscule');
+		if (!/[0-9]/.test(pw)) errors.push('Au moins un chiffre');
+		if (!/[^A-Za-z0-9]/.test(pw)) errors.push('Au moins un caractère spécial');
+		if (/lemon/i.test(pw)) errors.push('Ne doit pas contenir "lemon"');
+		return errors;
+	});
+
+	let passwordStrong = $derived(formPassword.length > 0 && passwordErrors.length === 0);
+
+	function generatePassword(): string {
+		const upper = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+		const lower = 'abcdefghjkmnpqrstuvwxyz';
+		const digits = '23456789';
+		const specials = '!@#$%&*-_+=?';
+		const all = upper + lower + digits + specials;
+
+		let pw: string;
+		do {
+			const chars: string[] = [
+				upper[Math.floor(Math.random() * upper.length)],
+				upper[Math.floor(Math.random() * upper.length)],
+				lower[Math.floor(Math.random() * lower.length)],
+				lower[Math.floor(Math.random() * lower.length)],
+				lower[Math.floor(Math.random() * lower.length)],
+				digits[Math.floor(Math.random() * digits.length)],
+				digits[Math.floor(Math.random() * digits.length)],
+				specials[Math.floor(Math.random() * specials.length)],
+				specials[Math.floor(Math.random() * specials.length)],
+			];
+			while (chars.length < 16) {
+				chars.push(all[Math.floor(Math.random() * all.length)]);
+			}
+			// Shuffle
+			for (let i = chars.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[chars[i], chars[j]] = [chars[j], chars[i]];
+			}
+			pw = chars.join('');
+		} while (/lemon/i.test(pw));
+
+		return pw;
+	}
+
+	function handleGeneratePassword() {
+		formPassword = generatePassword();
+		showPassword = true;
+	}
+
+	function copyPassword() {
+		if (!formPassword) return;
+		navigator.clipboard.writeText(formPassword);
+		passwordCopied = true;
+		setTimeout(() => { passwordCopied = false; }, 2000);
+		toast.success('Mot de passe copié');
+	}
 
 	function formatDate(dateStr: string): string {
 		return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -119,6 +200,9 @@
 		formRole = 'client';
 		formCompany = '';
 		formError = '';
+		showPassword = false;
+		passwordCopied = false;
+		sendEmail = false;
 		dialogOpen = true;
 	}
 
@@ -130,6 +214,9 @@
 		formRole = user.role;
 		formCompany = user.company ?? '';
 		formError = '';
+		showPassword = false;
+		passwordCopied = false;
+		sendEmail = false;
 		dialogOpen = true;
 	}
 
@@ -139,14 +226,27 @@
 		deleteDialogOpen = true;
 	}
 
-	async function handleSubmit() {
+	async function handleSubmit(withEmail = false) {
 		if (!formName.trim() || !formEmail.trim()) {
 			formError = 'Le nom et l\'email sont requis.';
 			return;
 		}
 
+		const isNew = !editingUser;
+
+		if (isNew && !formPassword.trim()) {
+			formError = 'Un mot de passe est requis pour les nouveaux utilisateurs.';
+			return;
+		}
+
+		if (formPassword.trim() && passwordErrors.length > 0) {
+			formError = 'Le mot de passe ne respecte pas les critères de sécurité.';
+			return;
+		}
+
 		formSubmitting = true;
 		formError = '';
+		sendEmail = withEmail;
 
 		try {
 			const body: Record<string, unknown> = {
@@ -166,14 +266,10 @@
 				users = users.map(u => u.id === editingUser!.id ? res.data : u);
 				toast.success('Utilisateur modifié');
 			} else {
-				if (!formPassword.trim()) {
-					formError = 'Un mot de passe est requis pour les nouveaux utilisateurs.';
-					formSubmitting = false;
-					return;
-				}
+				body.sendEmail = withEmail;
 				const res = await post<{ data: UserRecord }>('/users', body);
 				users = [res.data, ...users];
-				toast.success('Utilisateur créé');
+				toast.success(withEmail ? 'Utilisateur créé et email envoyé' : 'Utilisateur créé');
 			}
 			dialogOpen = false;
 		} catch (err: any) {
@@ -215,7 +311,7 @@
 </script>
 
 <svelte:head>
-	<title>Utilisateurs — Environnements Simulés</title>
+	<title>Utilisateurs — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -373,14 +469,14 @@
 
 <!-- Create/Edit Dialog -->
 <Dialog bind:open={dialogOpen}>
-	<DialogContent>
+	<DialogContent class="sm:max-w-lg">
 		<DialogHeader>
 			<DialogTitle>{editingUser ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}</DialogTitle>
 			<DialogDescription>
 				{editingUser ? 'Modifiez les informations de l\'utilisateur.' : 'Créez un nouveau compte utilisateur.'}
 			</DialogDescription>
 		</DialogHeader>
-		<form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+		<form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleSubmit(false); }}>
 			<div class="space-y-2">
 				<label for="user-name" class="text-sm font-medium text-foreground">Nom</label>
 				<Input id="user-name" bind:value={formName} placeholder="Jean Dupont" />
@@ -389,15 +485,81 @@
 				<label for="user-email" class="text-sm font-medium text-foreground">Email</label>
 				<Input id="user-email" bind:value={formEmail} placeholder="jean@example.com" type="email" />
 			</div>
+
+			<!-- Password field with generate/copy/show -->
 			<div class="space-y-2">
-				<label for="user-password" class="text-sm font-medium text-foreground">
-					Mot de passe
-					{#if editingUser}
-						<span class="text-muted-foreground">(laisser vide pour ne pas modifier)</span>
-					{/if}
-				</label>
-				<Input id="user-password" bind:value={formPassword} placeholder="••••••••" type="password" />
+				<div class="flex items-center justify-between">
+					<label for="user-password" class="text-sm font-medium text-foreground">
+						Mot de passe
+						{#if editingUser}
+							<span class="font-normal text-muted-foreground">(laisser vide pour ne pas modifier)</span>
+						{/if}
+					</label>
+					<button
+						type="button"
+						class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+						onclick={handleGeneratePassword}
+					>
+						<RefreshCw class="h-3 w-3" />
+						Générer
+					</button>
+				</div>
+				<div class="flex items-center gap-1.5">
+					<div class="relative flex-1">
+						<Input
+							id="user-password"
+							bind:value={formPassword}
+							placeholder="••••••••••••"
+							type={showPassword ? 'text' : 'password'}
+							class="pr-10 font-mono text-sm"
+						/>
+						<button
+							type="button"
+							class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+							onclick={() => { showPassword = !showPassword; }}
+						>
+							{#if showPassword}
+								<EyeOff class="h-3.5 w-3.5" />
+							{:else}
+								<Eye class="h-3.5 w-3.5" />
+							{/if}
+						</button>
+					</div>
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						class="h-9 w-9 shrink-0"
+						onclick={copyPassword}
+						disabled={!formPassword}
+						title="Copier le mot de passe"
+					>
+						{#if passwordCopied}
+							<Check class="h-3.5 w-3.5 text-green-500" />
+						{:else}
+							<Copy class="h-3.5 w-3.5" />
+						{/if}
+					</Button>
+				</div>
+				<!-- Password strength indicators -->
+				{#if formPassword}
+					<div class="space-y-1">
+						{#if passwordErrors.length > 0}
+							<div class="flex flex-wrap gap-1.5">
+								{#each passwordErrors as err}
+									<span class="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">{err}</span>
+								{/each}
+							</div>
+						{:else}
+							<span class="inline-flex items-center gap-1 text-[11px] text-green-600">
+								<Check class="h-3 w-3" />
+								Mot de passe sécurisé
+							</span>
+						{/if}
+					</div>
+				{/if}
 			</div>
+
 			<div class="space-y-2">
 				<label for="user-role" class="text-sm font-medium text-foreground">Rôle</label>
 				<SearchableSelect
@@ -409,10 +571,19 @@
 					placeholder="Sélectionner un rôle"
 				/>
 			</div>
+
 			{#if formRole === 'client'}
 				<div class="space-y-2">
 					<label for="user-company" class="text-sm font-medium text-foreground">Entreprise</label>
-					<Input id="user-company" bind:value={formCompany} placeholder="Nom de l'entreprise" />
+					<SearchableSelect
+						bind:value={formCompany}
+						options={companyOptions}
+						placeholder="Rechercher ou créer une entreprise..."
+						searchable={true}
+						searchPlaceholder="Tapez pour rechercher..."
+						creatable={true}
+						createLabel="Créer l'entreprise"
+					/>
 				</div>
 			{/if}
 
@@ -422,9 +593,19 @@
 
 			<DialogFooter>
 				<Button variant="outline" type="button" onclick={() => { dialogOpen = false; }}>Annuler</Button>
-				<Button type="submit" disabled={formSubmitting}>
-					{formSubmitting ? 'Enregistrement...' : (editingUser ? 'Enregistrer' : 'Créer')}
-				</Button>
+				{#if editingUser}
+					<Button type="submit" disabled={formSubmitting}>
+						{formSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+					</Button>
+				{:else}
+					<Button type="submit" disabled={formSubmitting} variant="outline">
+						{formSubmitting && !sendEmail ? 'Création...' : 'Créer'}
+					</Button>
+					<Button type="button" disabled={formSubmitting} class="gap-1.5" onclick={() => handleSubmit(true)}>
+						<Send class="h-3.5 w-3.5" />
+						{formSubmitting && sendEmail ? 'Envoi...' : 'Créer et envoyer un mail'}
+					</Button>
+				{/if}
 			</DialogFooter>
 		</form>
 	</DialogContent>

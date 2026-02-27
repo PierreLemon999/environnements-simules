@@ -132,7 +132,7 @@
 		onclick={() => onOpenCommandPalette?.()}
 	>
 		<Search class="h-3.5 w-3.5" />
-		<span class="flex-1 text-left text-xs">Recherche admin...</span>
+		<span class="flex-1 text-left text-xs">Recherche...</span>
 		<kbd class="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-[10px] text-muted">⌘K</kbd>
 	</button>
 
@@ -140,19 +140,16 @@
 
 	<!-- Action buttons -->
 	<button
-		class="relative rounded-md p-2 text-muted transition-colors hover:bg-accent hover:text-foreground"
+		class="relative rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 		title="Notifications"
 	>
 		<Bell class="h-4 w-4" />
-		<!-- Notification dot -->
-		<span class="absolute right-1.5 top-1.5 flex h-1.5 w-1.5">
-			<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-75"></span>
-			<span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-destructive"></span>
-		</span>
+		<!-- Notification dot — subtle -->
+		<span class="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/60"></span>
 	</button>
 
 	<button
-		class="relative rounded-md p-2 text-muted transition-colors hover:bg-accent hover:text-foreground"
+		class="relative rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 		title="Aide"
 	>
 		<HelpCircle class="h-4 w-4" />
@@ -161,7 +158,7 @@
 	<a
 		href="/demo/salesforce/"
 		target="_blank"
-		class="inline-flex h-8 items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+		class="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 		title="Ouvrir l'interface de démo"
 	>
 		<ExternalLink class="h-3.5 w-3.5" />
@@ -169,10 +166,10 @@
 	</a>
 
 	{#if extensionStatus === 'installed'}
-		<div class="group relative inline-flex h-8 items-center gap-1.5 rounded-md border border-green-400/40 bg-green-50 px-3 text-xs font-medium text-green-700 cursor-default">
-			<svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#4285F4"/><path d="M24 8c8.837 0 16 7.163 16 16H24V8z" fill="#EA4335"/><circle cx="24" cy="24" r="7" fill="#fff"/><path d="M8 24c0-5.946 3.244-11.13 8.06-13.89L24 24H8z" fill="#34A853"/><path d="M24 24l-7.94-13.89A15.94 15.94 0 0 1 24 8v16z" fill="#FBBC05"/></svg>
+		<div class="group relative inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-muted-foreground cursor-default">
+			<svg class="h-4 w-4 flex-shrink-0 opacity-70" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#4285F4"/><path d="M24 8c8.837 0 16 7.163 16 16H24V8z" fill="#EA4335"/><circle cx="24" cy="24" r="7" fill="#fff"/><path d="M8 24c0-5.946 3.244-11.13 8.06-13.89L24 24H8z" fill="#34A853"/><path d="M24 24l-7.94-13.89A15.94 15.94 0 0 1 24 8v16z" fill="#FBBC05"/></svg>
 			<span class="flex items-center gap-1">
-				<svg class="h-3.5 w-3.5 text-green-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+				<Check class="h-3 w-3 text-success" />
 				Extension
 			</span>
 			<!-- Tooltip on hover -->
@@ -181,13 +178,13 @@
 			</div>
 		</div>
 	{:else if extensionStatus === 'outdated'}
-		<Button variant="outline" size="sm" class="gap-1.5 border-warning/30 text-warning hover:bg-warning/5" title="Mise à jour disponible">
-			<svg class="h-4 w-4 flex-shrink-0" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#4285F4"/><path d="M24 8c8.837 0 16 7.163 16 16H24V8z" fill="#EA4335"/><circle cx="24" cy="24" r="7" fill="#fff"/><path d="M8 24c0-5.946 3.244-11.13 8.06-13.89L24 24H8z" fill="#34A853"/><path d="M24 24l-7.94-13.89A15.94 15.94 0 0 1 24 8v16z" fill="#FBBC05"/></svg>
+		<Button variant="outline" size="sm" class="gap-1.5 border-border text-muted-foreground hover:bg-accent hover:text-foreground" title="Mise à jour disponible">
+			<svg class="h-4 w-4 flex-shrink-0 opacity-70" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#4285F4"/><path d="M24 8c8.837 0 16 7.163 16 16H24V8z" fill="#EA4335"/><circle cx="24" cy="24" r="7" fill="#fff"/><path d="M8 24c0-5.946 3.244-11.13 8.06-13.89L24 24H8z" fill="#34A853"/><path d="M24 24l-7.94-13.89A15.94 15.94 0 0 1 24 8v16z" fill="#FBBC05"/></svg>
 			Mettre à jour
 		</Button>
 	{:else}
-		<Button variant="outline" size="sm" class="gap-1.5" title="Installer l'extension Chrome">
-			<svg class="h-4 w-4 flex-shrink-0 opacity-60" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#4285F4"/><path d="M24 8c8.837 0 16 7.163 16 16H24V8z" fill="#EA4335"/><circle cx="24" cy="24" r="7" fill="#fff"/><path d="M8 24c0-5.946 3.244-11.13 8.06-13.89L24 24H8z" fill="#34A853"/><path d="M24 24l-7.94-13.89A15.94 15.94 0 0 1 24 8v16z" fill="#FBBC05"/></svg>
+		<Button variant="outline" size="sm" class="gap-1.5 border-border text-muted-foreground" title="Installer l'extension Chrome">
+			<svg class="h-4 w-4 flex-shrink-0 opacity-50" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#4285F4"/><path d="M24 8c8.837 0 16 7.163 16 16H24V8z" fill="#EA4335"/><circle cx="24" cy="24" r="7" fill="#fff"/><path d="M8 24c0-5.946 3.244-11.13 8.06-13.89L24 24H8z" fill="#34A853"/><path d="M24 24l-7.94-13.89A15.94 15.94 0 0 1 24 8v16z" fill="#FBBC05"/></svg>
 			Extension
 		</Button>
 	{/if}

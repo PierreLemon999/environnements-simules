@@ -152,7 +152,7 @@
 </script>
 
 <svelte:head>
-	<title>Demandes de mise à jour — Environnements Simulés</title>
+	<title>Demandes de mise à jour — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">

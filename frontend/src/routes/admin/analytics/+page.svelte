@@ -264,8 +264,8 @@
 
 	function getEngagementColor(score: number): string {
 		if (score >= 70) return '#10B981';
-		if (score >= 40) return '#F59E0B';
-		return '#EF4444';
+		if (score >= 40) return '#F18E2A';
+		return '#F1362A';
 	}
 
 	function getClientDisplayName(session: Session | SessionDetail): string {
@@ -365,7 +365,7 @@
 	}
 
 	// Tool dot color palette
-	const toolColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+	const toolColors = ['#2B72EE', '#10B981', '#F18E2A', '#F1362A', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
 	function getToolColor(index: number): string {
 		return toolColors[index % toolColors.length];
@@ -556,7 +556,7 @@
 </script>
 
 <svelte:head>
-	<title>Statistiques — Environnements Simulés</title>
+	<title>Statistiques — Lemon Lab</title>
 </svelte:head>
 
 <div class="flex gap-0">
@@ -643,12 +643,12 @@
 								<svg viewBox="0 0 200 30" class="h-8 w-full" preserveAspectRatio="none">
 									<defs>
 										<linearGradient id="areaGradientBlue" x1="0" y1="0" x2="0" y2="1">
-											<stop offset="0%" stop-color="#3B82F6" stop-opacity="0.2" />
-											<stop offset="100%" stop-color="#3B82F6" stop-opacity="0" />
+											<stop offset="0%" stop-color="#2B72EE" stop-opacity="0.2" />
+											<stop offset="100%" stop-color="#2B72EE" stop-opacity="0" />
 										</linearGradient>
 									</defs>
 									<path d={areaPath(data)} fill="url(#areaGradientBlue)" />
-									<path d={sparklinePath(data)} fill="none" stroke="#3B82F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									<path d={sparklinePath(data)} fill="none" stroke="#2B72EE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
 							</div>
 						{/if}
@@ -724,12 +724,12 @@
 								<svg viewBox="0 0 200 30" class="h-8 w-full" preserveAspectRatio="none">
 									<defs>
 										<linearGradient id="areaGradientAmber" x1="0" y1="0" x2="0" y2="1">
-											<stop offset="0%" stop-color="#F59E0B" stop-opacity="0.2" />
-											<stop offset="100%" stop-color="#F59E0B" stop-opacity="0" />
+											<stop offset="0%" stop-color="#F18E2A" stop-opacity="0.2" />
+											<stop offset="100%" stop-color="#F18E2A" stop-opacity="0" />
 										</linearGradient>
 									</defs>
 									<path d={areaPath(durationData)} fill="url(#areaGradientAmber)" />
-									<path d={sparklinePath(durationData)} fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									<path d={sparklinePath(durationData)} fill="none" stroke="#F18E2A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
 								</svg>
 							</div>
 						{/if}

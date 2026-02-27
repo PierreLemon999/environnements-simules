@@ -138,13 +138,23 @@ router.post('/google', async (req: Request, res: Response) => {
     // Check if user already exists
     let user = await db.select().from(users).where(eq(users.googleId, googleId)).get();
 
-    if (!user) {
-      // Auto-provision admin if @lemonlearning.com
-      const isLemonLearning = email.endsWith('@lemonlearning.com');
+    if (user) {
+      // Update avatar and name on each login (may change on Google side)
+      const updates: Record<string, string> = {};
+      if (avatarUrl && avatarUrl !== user.avatarUrl) updates.avatarUrl = avatarUrl;
+      if (name && name !== user.name) updates.name = name;
+      if (Object.keys(updates).length > 0) {
+        await db.update(users).set(updates).where(eq(users.id, user.id));
+        user = { ...user, ...updates };
+      }
+    } else {
+      // Auto-provision admin if allowed SSO domain
+      const ssoDomains = ['lemonlearning.com', 'lemonlearning.fr', 'goldfuchs-software.de'];
+      const isAllowedDomain = ssoDomains.some(d => email.endsWith(`@${d}`));
 
-      if (!isLemonLearning) {
+      if (!isAllowedDomain) {
         res.status(403).json({
-          error: 'Seuls les comptes @lemonlearning.com peuvent se connecter avec Google',
+          error: 'Seuls les comptes @lemonlearning.com, @lemonlearning.fr et @goldfuchs-software.de peuvent se connecter avec Google',
           code: 403,
         });
         return;
@@ -278,10 +288,16 @@ router.post('/verify', async (req: Request, res: Response) => {
 
     const decoded = verifyToken(token);
 
+    // Fetch full user from DB to include avatarUrl
+    const fullUser = await db.select().from(users).where(eq(users.id, decoded.userId)).get();
+
     res.json({
       data: {
         valid: true,
-        user: decoded,
+        user: {
+          ...decoded,
+          avatarUrl: fullUser?.avatarUrl ?? null,
+        },
       },
     });
   } catch {

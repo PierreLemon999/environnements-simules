@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { get } from '$lib/api';
 	import { Card, CardContent } from '$components/ui/card';
 	import { Button } from '$components/ui/button';
@@ -376,21 +376,21 @@
 
 	function getTriggerColor(type: string): string {
 		switch (type) {
-			case 'click': return '#9CA3AF';
-			case 'pushState': return '#3B82F6';
+			case 'click': return '#9197A0';
+			case 'pushState': return '#2B72EE';
 			case 'replaceState': return '#8B5CF6';
-			case 'popstate': return '#F59E0B';
+			case 'popstate': return '#F18E2A';
 			case 'hashchange': return '#14B8A6';
-			default: return '#D1D5DB';
+			default: return '#D3D5D9';
 		}
 	}
 
 	function getHealthFill(status: string): string {
 		switch (status) {
 			case 'ok': return '#10B981';
-			case 'warning': return '#F59E0B';
-			case 'error': return '#EF4444';
-			default: return '#9CA3AF';
+			case 'warning': return '#F18E2A';
+			case 'error': return '#F1362A';
+			default: return '#9197A0';
 		}
 	}
 
@@ -481,14 +481,14 @@
 
 	// Category color palette for tree sections
 	const sectionColors = [
-		'#3B82F6', '#14B8A6', '#F59E0B', '#8B5CF6', '#EF4444',
+		'#2B72EE', '#14B8A6', '#F18E2A', '#8B5CF6', '#F1362A',
 		'#10B981', '#EC4899', '#06B6D4', '#F97316', '#6366F1',
 	];
 
 	// Background colors matching section colors
 	const sectionBgColors = [
-		'#DBEAFE', '#CCFBF1', '#FEF3C7', '#EDE9FE', '#FEE2E2',
-		'#D1FAE5', '#FCE7F3', '#CFFAFE', '#FFEDD5', '#E0E7FF',
+		'#D5E3FC', '#CCFBF1', '#FDF6EF', '#EDE9FE', '#FEF0EF',
+		'#D1FAE5', '#FCE7F3', '#CFFAFE', '#FCE8D4', '#E0E7FF',
 	];
 
 	function getSectionColor(index: number): string {
@@ -611,9 +611,10 @@
 		isResizing = true;
 		const startX = e.clientX;
 		const startWidth = treePanelWidth;
+		const maxWidth = Math.floor(window.innerWidth * 0.6);
 		function onMove(e: MouseEvent) {
 			const delta = e.clientX - startX;
-			treePanelWidth = Math.max(240, Math.min(600, startWidth + delta));
+			treePanelWidth = Math.max(240, Math.min(maxWidth, startWidth + delta));
 		}
 		function onUp() {
 			isResizing = false;
@@ -789,8 +790,27 @@
 		}
 	});
 
+	// Listen for navigation messages from the preview iframe
+	function handlePreviewNavigate(e: MessageEvent) {
+		if (e.data?.type === 'DEMO_NAVIGATE' && e.data.href && selectedProject) {
+			// href is like /demo/{subdomain}/{urlPath}
+			const prefix = `/demo/${selectedProject.subdomain}/`;
+			if (e.data.href.startsWith(prefix)) {
+				const targetUrlPath = e.data.href.slice(prefix.length);
+				const allPages = collectAllPages();
+				const targetPage = allPages.find(p => p.urlPath === targetUrlPath);
+				if (targetPage) selectPage(targetPage);
+			}
+		}
+	}
+
 	onMount(() => {
+		window.addEventListener('message', handlePreviewNavigate);
 		loadProjects();
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('message', handlePreviewNavigate);
 	});
 </script>
 
@@ -1038,7 +1058,7 @@
 						>
 							<defs>
 								<marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-									<polygon points="0 0, 8 3, 0 6" fill="#D1D5DB" />
+									<polygon points="0 0, 8 3, 0 6" fill="#D3D5D9" />
 								</marker>
 								{#each ['click', 'pushState', 'replaceState', 'popstate', 'hashchange', 'manual'] as tt}
 									<marker id="arrow-{tt}" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
@@ -1061,7 +1081,7 @@
 										<line
 											x1={parent.x} y1={parent.y + 20}
 											x2={node.x} y2={node.y - 20}
-											stroke="#E5E7EB" stroke-width="1.5"
+											stroke="#E2E3E6" stroke-width="1.5"
 											marker-end="url(#arrowhead)"
 										/>
 									{/if}
@@ -1119,7 +1139,7 @@
 									<rect
 										width="140" height="40" rx="6"
 										fill="white"
-										stroke={isSelected ? '#3B82F6' : isStarCenter ? '#8B5CF6' : '#E5E7EB'}
+										stroke={isSelected ? '#2B72EE' : isStarCenter ? '#8B5CF6' : '#E2E3E6'}
 										stroke-width={isSelected || isStarCenter ? 2 : 1}
 									/>
 									{#if node.page.thumbnailPath}
@@ -1131,7 +1151,7 @@
 										/>
 										<text
 											x="36" y="16"
-											font-size="10" fill="#111827"
+											font-size="10" fill="#242F42"
 											dominant-baseline="middle"
 										>
 											{node.page.title.length > 11 ? node.page.title.slice(0, 11) + '…' : node.page.title}
@@ -1139,7 +1159,7 @@
 									{:else}
 										<text
 											x="8" y="16"
-											font-size="10" fill="#111827"
+											font-size="10" fill="#242F42"
 											dominant-baseline="middle"
 										>
 											{node.page.title.length > 16 ? node.page.title.slice(0, 16) + '…' : node.page.title}
@@ -1147,7 +1167,7 @@
 									{/if}
 									<text
 										x={node.page.thumbnailPath ? 36 : 8} y="30"
-										font-size="8" fill="#9CA3AF"
+										font-size="8" fill="#9197A0"
 										dominant-baseline="middle"
 									>
 										/{node.page.urlPath.length > 16 ? '…' + node.page.urlPath.slice(-14) : node.page.urlPath}
@@ -1167,10 +1187,10 @@
 						<!-- Legend -->
 						{#if mapView === 'navigation' && allTransitions.length > 0}
 							<div class="absolute bottom-3 left-3 flex items-center gap-3 rounded-md border border-border bg-card/90 px-3 py-1.5 text-[10px] text-muted-foreground backdrop-blur-sm">
-								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #9CA3AF"></span> clic</span>
-								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #3B82F6"></span> pushState</span>
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #9197A0"></span> clic</span>
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #2B72EE"></span> pushState</span>
 								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #8B5CF6"></span> replaceState</span>
-								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #F59E0B"></span> retour</span>
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #F18E2A"></span> retour</span>
 							</div>
 						{/if}
 						{#if mapView === 'star'}
@@ -1486,7 +1506,7 @@
 									<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
 								</svg>
 								<span>
-									<span class="text-success">https://</span><span class="font-medium text-foreground">{selectedProject?.subdomain ?? ''}.en-ll.com</span>/{selectedPage.urlPath}
+									<span class="text-success">https://</span><span class="font-medium text-foreground">{selectedProject?.subdomain ?? ''}.env-ll.com</span>/{selectedPage.urlPath}
 								</span>
 							</div>
 						</div>
@@ -1497,7 +1517,7 @@
 									src={previewUrl()}
 									title="Aperçu de {selectedPage.title}"
 									class="h-full w-full border-0"
-									sandbox="allow-same-origin"
+									sandbox="allow-same-origin allow-scripts"
 								></iframe>
 							{:else}
 								<div class="flex h-full items-center justify-center">

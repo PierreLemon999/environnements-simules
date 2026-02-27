@@ -45,6 +45,7 @@
 		subdomain: string;
 		description: string | null;
 		logoUrl: string | null;
+		iconColor: string | null;
 		createdAt: string;
 		updatedAt: string;
 		versionCount: number;
@@ -64,6 +65,8 @@
 	let formSubdomain = $state('');
 	let formDescription = $state('');
 	let formLogoUrl = $state('');
+	let formIconColor = $state('');
+	let formVersionName = $state('Version 1');
 	let formSubmitting = $state(false);
 	let formError = $state('');
 
@@ -130,8 +133,9 @@
 		const file = input.files?.[0];
 		if (!file) return;
 		try {
-			const { optimizeLogoImage } = await import('$lib/utils');
+			const { optimizeLogoImage, extractDominantColor } = await import('$lib/utils');
 			formLogoUrl = await optimizeLogoImage(file);
+			formIconColor = await extractDominantColor(formLogoUrl);
 		} catch {
 			// Fallback to raw data URL
 			const reader = new FileReader();
@@ -142,6 +146,7 @@
 
 	function removeLogo() {
 		formLogoUrl = '';
+		formIconColor = '';
 		if (logoFileInput) logoFileInput.value = '';
 	}
 
@@ -159,7 +164,7 @@
 			'Jira': '#0052CC',
 			'Confluence': '#1868DB',
 		};
-		return colors[toolName] ?? '#6B7280';
+		return colors[toolName] ?? '#6D7481';
 	}
 
 	function formatDate(dateStr: string): string {
@@ -217,6 +222,8 @@
 		formSubdomain = '';
 		formDescription = '';
 		formLogoUrl = '';
+		formIconColor = '';
+		formVersionName = 'Version 1';
 		formError = '';
 		toolSearchQuery = '';
 		toolDropdownOpen = false;
@@ -231,6 +238,7 @@
 		formSubdomain = project.subdomain;
 		formDescription = project.description ?? '';
 		formLogoUrl = project.logoUrl ?? '';
+		formIconColor = project.iconColor ?? getToolColor(project.toolName);
 		formError = '';
 		toolSearchQuery = '';
 		toolDropdownOpen = false;
@@ -259,6 +267,7 @@
 				subdomain: formSubdomain.trim() || generateSubdomain(formName),
 				description: formDescription.trim() || null,
 				logoUrl: formLogoUrl || null,
+				iconColor: formIconColor || null,
 			};
 
 			if (editingProject) {
@@ -270,7 +279,23 @@
 				toast.success('Projet modifié avec succès');
 			} else {
 				const res = await post<{ data: Project }>('/projects', body);
-				projects = [{ ...res.data, versionCount: 0, pageCount: 0 }, ...projects];
+				let versionCount = 0;
+
+				// Create initial version if name is provided
+				if (formVersionName.trim()) {
+					try {
+						await post(`/projects/${res.data.id}/versions`, {
+							name: formVersionName.trim(),
+							status: 'active',
+							language: 'fr',
+						});
+						versionCount = 1;
+					} catch {
+						// Project created but version failed — not blocking
+					}
+				}
+
+				projects = [{ ...res.data, versionCount, pageCount: 0 }, ...projects];
 				toast.success('Projet créé avec succès');
 			}
 
@@ -334,7 +359,7 @@
 }} />
 
 <svelte:head>
-	<title>Projets — Environnements Simulés</title>
+	<title>Projets — Lemon Lab</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -455,7 +480,7 @@
 								{:else}
 									<div
 										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
-										style="background-color: {getToolColor(project.toolName)}"
+										style="background-color: {project.iconColor || getToolColor(project.toolName)}"
 									>
 										{project.toolName.slice(0, 2).toUpperCase()}
 									</div>
@@ -665,7 +690,7 @@
 						placeholder="salesforce-crm"
 						class="flex-1"
 					/>
-					<span class="text-xs text-muted-foreground shrink-0">.en-ll.com</span>
+					<span class="text-xs text-muted-foreground shrink-0">.env-ll.com</span>
 				</div>
 			</div>
 
@@ -679,6 +704,30 @@
 					class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				></textarea>
 			</div>
+
+			<div class="space-y-1.5">
+				<label for="project-icon-color" class="text-sm font-medium text-foreground">Couleur de l'icône</label>
+				<div class="flex items-center gap-3">
+					<label class="relative h-8 w-8 shrink-0 cursor-pointer rounded-full border border-border shadow-xs transition-shadow hover:shadow-md" style="background-color: {formIconColor || '#6D7481'}">
+						<input type="color" id="project-icon-color" bind:value={formIconColor} class="absolute inset-0 cursor-pointer opacity-0" />
+					</label>
+					<span class="text-xs text-muted-foreground font-mono">{formIconColor || '#6D7481'}</span>
+					<span class="text-xs text-muted-foreground">Extraite automatiquement du logo</span>
+				</div>
+			</div>
+
+			{#if !editingProject}
+				<div class="space-y-1.5">
+					<label for="project-version" class="text-sm font-medium text-foreground">Première version <span class="text-muted-foreground">(optionnel)</span></label>
+					<Input
+						id="project-version"
+						bind:value={formVersionName}
+						placeholder="Version 1"
+						class=""
+					/>
+					<p class="text-xs text-muted-foreground">Laissez vide pour ne pas créer de version.</p>
+				</div>
+			{/if}
 
 			{#if formError}
 				<p class="text-sm text-destructive">{formError}</p>

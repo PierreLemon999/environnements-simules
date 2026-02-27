@@ -5,6 +5,7 @@ import { eq, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
+import { getToolLogo } from '../db/tool-logos.js';
 
 const router = Router();
 
@@ -56,7 +57,7 @@ router.get('/', authenticate, async (_req: Request, res: Response) => {
  */
 router.post('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const { name, toolName, subdomain, description, logoUrl } = req.body;
+    const { name, toolName, subdomain, description, logoUrl, iconColor } = req.body;
 
     if (!name || !toolName || !subdomain) {
       res.status(400).json({ error: 'Name, toolName, and subdomain are required', code: 400 });
@@ -81,7 +82,8 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       toolName,
       subdomain,
       description: description || null,
-      logoUrl: logoUrl || null,
+      logoUrl: logoUrl || getToolLogo(toolName) || null,
+      iconColor: iconColor || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -163,7 +165,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       return;
     }
 
-    const { name, toolName, subdomain, description, logoUrl } = req.body;
+    const { name, toolName, subdomain, description, logoUrl, iconColor } = req.body;
 
     // Check subdomain uniqueness if changing
     if (subdomain && subdomain !== project.subdomain) {
@@ -184,6 +186,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       subdomain: subdomain ?? project.subdomain,
       description: description !== undefined ? description : project.description,
       logoUrl: logoUrl !== undefined ? (logoUrl || null) : project.logoUrl,
+      iconColor: iconColor !== undefined ? (iconColor || null) : project.iconColor,
       updatedAt: new Date().toISOString(),
     };
 

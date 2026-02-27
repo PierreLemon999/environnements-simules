@@ -4,58 +4,94 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				border: '#e7e5e4',
-				input: '#f5f5f4',
-				ring: '#2563eb',
-				background: '#f8f8f8',
-				foreground: '#0c0a09',
+				/* --- Neutral (bluish grays from Lemon Learning DS) --- */
+				gray: {
+					50: '#F7F7F8',
+					100: '#F0F1F2',
+					200: '#E2E3E6',
+					300: '#D3D5D9',
+					400: '#B6BAC0',
+					500: '#9197A0',
+					600: '#6D7481',
+					700: '#485261',
+					800: '#242F42',
+					900: '#1E2737'
+				},
+
+				/* --- Semantic tokens --- */
+				border: '#E2E3E6',
+				input: '#F0F1F2',
+				ring: '#2B72EE',
+				background: '#F7F7F8',
+				foreground: '#242F42',
 				primary: {
-					DEFAULT: '#2563eb',
-					foreground: '#fafaf9',
-					hover: '#1d4ed8'
+					DEFAULT: '#2B72EE',
+					foreground: '#FFFFFF',
+					hover: '#245FC6',
+					light: '#71A4FA'
 				},
 				secondary: {
-					DEFAULT: '#57534e',
-					foreground: '#fafaf9'
+					DEFAULT: '#485261',
+					foreground: '#FFFFFF'
 				},
 				muted: {
-					DEFAULT: '#a8a29e',
-					foreground: '#57534e'
+					DEFAULT: '#9197A0',
+					foreground: '#6D7481'
 				},
 				accent: {
-					DEFAULT: '#eff6ff',
-					foreground: '#2563eb'
+					DEFAULT: '#E3EDFE',
+					foreground: '#2B72EE'
 				},
 				card: {
 					DEFAULT: '#ffffff',
-					foreground: '#0c0a09'
+					foreground: '#242F42'
 				},
 				sidebar: {
-					DEFAULT: '#fafaf9'
+					DEFAULT: '#F7F7F8'
 				},
 				success: {
-					DEFAULT: '#16a34a',
-					bg: '#f0fdf4',
-					border: '#bbf7d0'
+					DEFAULT: '#10B981',
+					bg: '#ECFDF5',
+					border: '#A7F3D0'
 				},
 				warning: {
-					DEFAULT: '#d97706',
-					bg: '#fffbeb',
-					border: '#fde68a'
+					DEFAULT: '#F18E2A',
+					bg: '#FDF6EF',
+					border: '#F8C694'
 				},
 				destructive: {
-					DEFAULT: '#dc2626',
-					bg: '#fef2f2',
-					border: '#fecaca'
+					DEFAULT: '#F1362A',
+					bg: '#FEF0EF',
+					border: '#FCA5A0'
 				},
 				purple: {
 					DEFAULT: '#7c3aed',
 					bg: '#f5f3ff',
 					border: '#ddd6fe'
+				},
+				yellow: {
+					DEFAULT: '#FAE100',
+					light: '#FFF496',
+					bg: '#FFFBD5',
+					dark: '#D4C326'
+				},
+
+				/* --- Lemon Learning blue palette --- */
+				ll: {
+					50: '#E3EDFE',
+					100: '#D5E3FC',
+					200: '#B8D0F9',
+					300: '#95B8F6',
+					400: '#72A1F4',
+					500: '#4E89F1',
+					600: '#2B72EE',
+					700: '#245FC6',
+					800: '#1D4C9F',
+					900: '#153977'
 				}
 			},
 			fontFamily: {
-				sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+				sans: ['Albert Sans', 'system-ui', '-apple-system', 'sans-serif'],
 				mono: ['SF Mono', 'JetBrains Mono', 'Fira Code', 'monospace']
 			},
 			borderRadius: {

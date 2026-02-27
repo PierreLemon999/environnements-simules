@@ -27,15 +27,21 @@ import api, { uploadPage } from '$lib/api';
 // Register MAIN world content script programmatically
 // (static manifest declaration of world: "MAIN" is unreliable)
 // ---------------------------------------------------------------------------
-chrome.scripting.registerContentScripts([{
-	id: 'capture-hooks-main',
-	matches: ['<all_urls>'],
-	js: ['content/capture-hooks.js'],
-	runAt: 'document_start',
-	world: 'MAIN' as chrome.scripting.ExecutionWorld,
-}]).catch(() => {
-	// Already registered — ignore
-});
+(async () => {
+	try {
+		// Unregister first to avoid "already registered" errors across SW restarts
+		await chrome.scripting.unregisterContentScripts({ ids: ['capture-hooks-main'] }).catch(() => {});
+		await chrome.scripting.registerContentScripts([{
+			id: 'capture-hooks-main',
+			matches: ['<all_urls>'],
+			js: ['content/capture-hooks.js'],
+			runAt: 'document_start',
+			world: 'MAIN' as chrome.scripting.ExecutionWorld,
+		}]);
+	} catch {
+		// Ignore — may fail on restricted pages
+	}
+})();
 
 // ---------------------------------------------------------------------------
 // Message handler
