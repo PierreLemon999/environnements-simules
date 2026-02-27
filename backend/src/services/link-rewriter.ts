@@ -7,6 +7,7 @@ export interface PageInfo {
   id: string;
   urlSource: string;
   urlPath: string;
+  syntheticUrl?: string;
 }
 
 /**
@@ -48,6 +49,11 @@ export function rewriteLinks(
       }
     } catch {
       // If URL parsing fails, skip pathname matching
+    }
+
+    // Map synthetic URL for fingerprint-based SPA pages
+    if (page.syntheticUrl) {
+      urlMap.set(page.syntheticUrl, demoUrl);
     }
   }
 

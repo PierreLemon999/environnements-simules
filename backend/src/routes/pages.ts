@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db, dataDir } from '../db/index.js';
 import { pages, versions } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, and, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
@@ -58,6 +58,12 @@ router.post(
         urlPath?: string;
         title?: string;
         captureMode?: string;
+        pageType?: string;
+        parentPageId?: string;
+        domFingerprint?: string;
+        syntheticUrl?: string;
+        captureTimingMs?: number;
+        stateIndex?: number;
       } = {};
 
       if (req.body.metadata) {
@@ -73,6 +79,12 @@ router.post(
           urlPath: req.body.urlPath,
           title: req.body.title,
           captureMode: req.body.captureMode,
+          pageType: req.body.pageType,
+          parentPageId: req.body.parentPageId,
+          domFingerprint: req.body.domFingerprint,
+          syntheticUrl: req.body.syntheticUrl,
+          captureTimingMs: req.body.captureTimingMs ? parseInt(req.body.captureTimingMs, 10) : undefined,
+          stateIndex: req.body.stateIndex ? parseInt(req.body.stateIndex, 10) : undefined,
         };
       }
 
@@ -84,14 +96,33 @@ router.post(
         return;
       }
 
+      // Determine page type
+      const pageType = (metadata.pageType as 'page' | 'modal' | 'spa_state') || 'page';
+
       // Generate URL path from source URL if not provided, always normalize
       let urlPath = metadata.urlPath;
       if (!urlPath) {
-        try {
-          const parsed = new URL(metadata.urlSource);
-          urlPath = parsed.pathname.replace(/^\/+|\/+$/g, '') || 'index';
-        } catch {
-          urlPath = 'index';
+        if (pageType === 'modal' && metadata.parentPageId) {
+          // For modal pages without explicit urlPath, derive from parent
+          const parentPage = await db
+            .select()
+            .from(pages)
+            .where(eq(pages.id, metadata.parentPageId))
+            .get();
+          const parentPath = parentPage?.urlPath || 'index';
+          const titleSlug = (metadata.title || 'modal')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+            .substring(0, 50);
+          urlPath = `${parentPath}/__modal/${titleSlug}`;
+        } else {
+          try {
+            const parsed = new URL(metadata.urlSource);
+            urlPath = parsed.pathname.replace(/^\/+|\/+$/g, '') || 'index';
+          } catch {
+            urlPath = 'index';
+          }
         }
       } else {
         // Normalize: strip leading/trailing slashes and query string
@@ -134,6 +165,12 @@ router.post(
         captureMode: (metadata.captureMode as 'free' | 'guided' | 'auto') || 'free',
         thumbnailPath: screenshotRelativePath,
         healthStatus: 'ok' as const,
+        pageType,
+        parentPageId: metadata.parentPageId || null,
+        domFingerprint: metadata.domFingerprint || null,
+        syntheticUrl: metadata.syntheticUrl || null,
+        captureTimingMs: metadata.captureTimingMs ?? null,
+        stateIndex: metadata.stateIndex ?? null,
         createdAt: new Date().toISOString(),
       };
 
@@ -201,17 +238,46 @@ router.get(
         return;
       }
 
+      // Fetch non-modal pages for the tree
       const pageList = await db
         .select()
         .from(pages)
-        .where(eq(pages.versionId, req.params.versionId))
+        .where(
+          and(
+            eq(pages.versionId, req.params.versionId),
+            ne(pages.pageType, 'modal')
+          )
+        )
         .all();
+
+      // Fetch modal pages separately
+      const modalList = await db
+        .select()
+        .from(pages)
+        .where(
+          and(
+            eq(pages.versionId, req.params.versionId),
+            eq(pages.pageType, 'modal')
+          )
+        )
+        .all();
+
+      // Group modals by parentPageId
+      const modalsByParent = new Map<string, typeof modalList>();
+      for (const modal of modalList) {
+        if (modal.parentPageId) {
+          const existing = modalsByParent.get(modal.parentPageId) || [];
+          existing.push(modal);
+          modalsByParent.set(modal.parentPageId, existing);
+        }
+      }
 
       // Build tree structure from URL paths
       interface TreeNode {
         name: string;
         path: string;
         page?: typeof pageList[number];
+        modals?: typeof modalList;
         children: TreeNode[];
       }
 
@@ -233,6 +299,11 @@ router.get(
 
           if (i === segments.length - 1) {
             child.page = page;
+            // Attach modals to their parent page node
+            const pageModals = modalsByParent.get(page.id);
+            if (pageModals && pageModals.length > 0) {
+              child.modals = pageModals;
+            }
           }
 
           current = child;
@@ -264,7 +335,19 @@ router.get('/pages/:id', authenticate, async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({ data: page });
+    // Include child modals for this page
+    const childModals = await db
+      .select()
+      .from(pages)
+      .where(
+        and(
+          eq(pages.parentPageId, req.params.id),
+          eq(pages.pageType, 'modal')
+        )
+      )
+      .all();
+
+    res.json({ data: { ...page, modals: childModals } });
   } catch (error) {
     console.error('Error getting page:', error);
     res.status(500).json({ error: 'Internal server error', code: 500 });

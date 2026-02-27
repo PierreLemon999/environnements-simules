@@ -8,7 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { db, dataDir } from '../db/index.js';
 import { projects, versions, pages, obfuscationRules, tagManagerConfig } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { applyObfuscation } from './obfuscation.js';
 import { rewriteLinks, type PageInfo } from './link-rewriter.js';
 
@@ -46,11 +46,12 @@ export async function serveDemoPage(
     throw new NotFoundError(`Project with subdomain "${subdomain}" not found`);
   }
 
-  // 2. Find the active version for this project
+  // 2. Find the most recent active version for this project
   const version = await db
     .select()
     .from(versions)
     .where(and(eq(versions.projectId, project.id), eq(versions.status, 'active')))
+    .orderBy(desc(versions.createdAt))
     .get();
 
   if (!version) {
@@ -68,6 +69,15 @@ export async function serveDemoPage(
       .select()
       .from(pages)
       .where(and(eq(pages.versionId, version.id), eq(pages.urlPath, normalizedPath)))
+      .get();
+  }
+
+  // Fallback: try to find page by synthetic URL (fingerprint-based SPA pages)
+  if (!page && normalizedPath.includes('__state/')) {
+    page = await db
+      .select()
+      .from(pages)
+      .where(and(eq(pages.versionId, version.id), eq(pages.syntheticUrl, normalizedPath)))
       .get();
   }
 
@@ -123,6 +133,7 @@ export async function serveDemoPage(
       id: pages.id,
       urlSource: pages.urlSource,
       urlPath: pages.urlPath,
+      syntheticUrl: pages.syntheticUrl,
     })
     .from(pages)
     .where(eq(pages.versionId, version.id))
@@ -132,6 +143,7 @@ export async function serveDemoPage(
     id: p.id,
     urlSource: p.urlSource,
     urlPath: p.urlPath,
+    syntheticUrl: p.syntheticUrl ?? undefined,
   }));
 
   html = rewriteLinks(html, pageInfos, subdomain, normalizedPath);

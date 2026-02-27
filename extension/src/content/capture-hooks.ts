@@ -222,4 +222,128 @@
 	} else {
 		document.addEventListener('DOMContentLoaded', startLazyObserver, { once: true });
 	}
+
+	// -----------------------------------------------------------------------
+	// 5. Click tracking for transition recording
+	// -----------------------------------------------------------------------
+
+	// Track last interactive click for transition recording
+	(window as any).__ES_PENDING_CLICK__ = null;
+	(window as any).__ES_LAST_TRANSITION__ = null;
+
+	document.addEventListener('click', function(e: MouseEvent) {
+		var target = e.target as HTMLElement;
+		// Walk up to find the interactive element
+		while (target && target !== document.body) {
+			var tag = target.tagName;
+			var role = target.getAttribute && target.getAttribute('role');
+			if (tag === 'A' || tag === 'BUTTON' || role === 'button' || role === 'link' ||
+				tag === 'INPUT' && ((target as HTMLInputElement).type === 'submit' || (target as HTMLInputElement).type === 'button') ||
+				target.getAttribute && target.getAttribute('onclick')) {
+				break;
+			}
+			target = target.parentElement as HTMLElement;
+		}
+		if (!target || target === document.body) return;
+
+		// Generate a minimal CSS selector
+		var selector = '';
+		if (target.id) {
+			selector = '#' + target.id;
+		} else if (target.getAttribute && target.getAttribute('data-testid')) {
+			selector = '[data-testid="' + target.getAttribute('data-testid') + '"]';
+		} else {
+			selector = target.tagName.toLowerCase();
+			if (target.className && typeof target.className === 'string') {
+				var cls = target.className.trim().split(/\s+/).slice(0, 2).join('.');
+				if (cls) selector += '.' + cls;
+			}
+		}
+
+		(window as any).__ES_PENDING_CLICK__ = {
+			triggerSelector: selector,
+			triggerText: (target.textContent || '').trim().substring(0, 100),
+			timestamp: Date.now()
+		};
+	}, true); // capture phase
+
+	// -----------------------------------------------------------------------
+	// 6. pushState / replaceState hooks for SPA navigation tracking
+	// -----------------------------------------------------------------------
+
+	var origPushState = history.pushState;
+	var origReplaceState = history.replaceState;
+
+	history.pushState = function() {
+		var click = (window as any).__ES_PENDING_CLICK__;
+		(window as any).__ES_LAST_TRANSITION__ = {
+			type: 'pushState',
+			sourceUrl: location.href,
+			targetUrl: arguments[2] ? String(arguments[2]) : location.href,
+			timestamp: Date.now(),
+			triggerSelector: click ? click.triggerSelector : null,
+			triggerText: click ? click.triggerText : null,
+			clickTimestamp: click ? click.timestamp : null
+		};
+		(window as any).__ES_PENDING_CLICK__ = null;
+		return origPushState.apply(this, arguments as any);
+	};
+
+	history.replaceState = function() {
+		var click = (window as any).__ES_PENDING_CLICK__;
+		(window as any).__ES_LAST_TRANSITION__ = {
+			type: 'replaceState',
+			sourceUrl: location.href,
+			targetUrl: arguments[2] ? String(arguments[2]) : location.href,
+			timestamp: Date.now(),
+			triggerSelector: click ? click.triggerSelector : null,
+			triggerText: click ? click.triggerText : null,
+			clickTimestamp: click ? click.timestamp : null
+		};
+		(window as any).__ES_PENDING_CLICK__ = null;
+		return origReplaceState.apply(this, arguments as any);
+	};
+
+	// -----------------------------------------------------------------------
+	// 7. popstate / hashchange tracking
+	// -----------------------------------------------------------------------
+
+	window.addEventListener('popstate', function() {
+		(window as any).__ES_LAST_TRANSITION__ = {
+			type: 'popstate',
+			sourceUrl: location.href,
+			targetUrl: location.href,
+			timestamp: Date.now(),
+			triggerSelector: null,
+			triggerText: null,
+			clickTimestamp: null
+		};
+	});
+
+	window.addEventListener('hashchange', function(e: HashChangeEvent) {
+		(window as any).__ES_LAST_TRANSITION__ = {
+			type: 'hashchange',
+			sourceUrl: e.oldURL,
+			targetUrl: e.newURL,
+			timestamp: Date.now(),
+			triggerSelector: null,
+			triggerText: null,
+			clickTimestamp: null
+		};
+	});
+
+	// -----------------------------------------------------------------------
+	// 8. Custom event bridge for transition data (MAIN <-> ISOLATED world)
+	// -----------------------------------------------------------------------
+
+	window.addEventListener('__ES_GET_LAST_TRANSITION__', function() {
+		window.dispatchEvent(new CustomEvent('__ES_LAST_TRANSITION_RESULT__', {
+			detail: (window as any).__ES_LAST_TRANSITION__
+		}));
+	});
+
+	window.addEventListener('__ES_CLEAR_LAST_TRANSITION__', function() {
+		(window as any).__ES_LAST_TRANSITION__ = null;
+		(window as any).__ES_PENDING_CLICK__ = null;
+	});
 })();

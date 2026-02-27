@@ -34,6 +34,7 @@ export const versions = sqliteTable('versions', {
   status: text('status', { enum: ['active', 'test', 'deprecated'] }).notNull().default('active'),
   language: text('language').notNull().default('fr'),
   authorId: text('author_id').notNull().references(() => users.id),
+  captureStrategy: text('capture_strategy', { enum: ['url_based', 'fingerprint_based'] }).notNull().default('url_based'),
   createdAt: text('created_at').notNull(),
 });
 
@@ -49,6 +50,12 @@ export const pages = sqliteTable('pages', {
   captureMode: text('capture_mode', { enum: ['free', 'guided', 'auto'] }).notNull().default('free'),
   thumbnailPath: text('thumbnail_path'),
   healthStatus: text('health_status', { enum: ['ok', 'warning', 'error'] }).notNull().default('ok'),
+  pageType: text('page_type', { enum: ['page', 'modal', 'spa_state'] }).notNull().default('page'),
+  parentPageId: text('parent_page_id'),
+  domFingerprint: text('dom_fingerprint'),
+  syntheticUrl: text('synthetic_url'),
+  captureTimingMs: integer('capture_timing_ms'),
+  stateIndex: integer('state_index'),
   createdAt: text('created_at').notNull(),
 });
 
@@ -59,6 +66,22 @@ export const pageLinks = sqliteTable('page_links', {
   targetPageId: text('target_page_id').notNull().references(() => pages.id, { onDelete: 'cascade' }),
   originalHref: text('original_href').notNull(),
   rewrittenHref: text('rewritten_href'),
+});
+
+// ── Page Transitions ─────────────────────────────────────────────────────────
+export const pageTransitions = sqliteTable('page_transitions', {
+  id: text('id').primaryKey(),
+  versionId: text('version_id').notNull().references(() => versions.id, { onDelete: 'cascade' }),
+  sourcePageId: text('source_page_id').notNull().references(() => pages.id, { onDelete: 'cascade' }),
+  targetPageId: text('target_page_id').notNull().references(() => pages.id, { onDelete: 'cascade' }),
+  triggerType: text('trigger_type', { enum: ['click', 'pushState', 'replaceState', 'popstate', 'hashchange', 'manual'] }).notNull(),
+  triggerSelector: text('trigger_selector'),
+  triggerText: text('trigger_text'),
+  loadingTimeMs: integer('loading_time_ms'),
+  hadLoadingIndicator: integer('had_loading_indicator').notNull().default(0),
+  loadingIndicatorType: text('loading_indicator_type'),
+  captureMode: text('capture_mode', { enum: ['free', 'guided', 'auto'] }).notNull(),
+  createdAt: text('created_at').notNull(),
 });
 
 // ── Guides ───────────────────────────────────────────────────────────────────

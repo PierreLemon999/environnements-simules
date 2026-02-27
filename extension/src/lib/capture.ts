@@ -24,7 +24,7 @@ export interface CollectedPageData {
  * Resource URLs are collected for the service worker to fetch separately.
  */
 export async function captureCurrentPage(tabId: number): Promise<CollectedPageData> {
-	const LOG = '[ES Capture]';
+	const LOG = '[LL Capture]';
 	let results;
 	try {
 		results = await chrome.scripting.executeScript({
@@ -533,7 +533,7 @@ export async function uploadCapturedPage(
 	captureMode: string,
 	screenshotBlob?: Blob | null
 ): Promise<{ id: string; fileSize: number }> {
-	const LOG = '[ES Capture]';
+	const LOG = '[LL Capture]';
 	const blob = new Blob([page.html], { type: 'text/html' });
 
 	// Derive URL path from the full URL (strip leading/trailing slashes, no query string)
@@ -556,6 +556,52 @@ export async function uploadCapturedPage(
 		console.error(`${LOG} Upload failed:`, err instanceof Error ? err.message : err);
 		throw err;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Modal capture
+// ---------------------------------------------------------------------------
+
+/**
+ * Capture a modal element as a self-contained page via the content script.
+ * Sends CAPTURE_MODAL to the content script which extracts the modal subtree.
+ */
+export async function captureModalAsPage(
+	tabId: number,
+	modalSelector: string
+): Promise<CollectedPageData> {
+	const LOG = '[LL Modal Capture]';
+	console.log(`${LOG} Capturing modal: ${modalSelector}`);
+
+	let response;
+	try {
+		response = await chrome.tabs.sendMessage(tabId, {
+			type: 'CAPTURE_MODAL',
+			modalSelector,
+		});
+	} catch (err) {
+		const msg = `Content script CAPTURE_MODAL failed: ${err instanceof Error ? err.message : String(err)}`;
+		console.error(`${LOG} ${msg}`);
+		throw new Error(msg);
+	}
+
+	if (response?.error) {
+		console.error(`${LOG} Modal capture error:`, response.error);
+		throw new Error(response.error);
+	}
+
+	if (!response?.html) {
+		throw new Error('Modal capture returned empty result');
+	}
+
+	console.log(`${LOG} Modal captured: "${response.title}" (${(response.html.length / 1024).toFixed(0)}KB)`);
+
+	return {
+		html: response.html,
+		title: response.title,
+		url: response.url,
+		resources: { stylesheetUrls: [], imageUrls: [], faviconUrls: [] },
+	};
 }
 
 // ---------------------------------------------------------------------------

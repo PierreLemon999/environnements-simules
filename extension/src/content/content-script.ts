@@ -5,7 +5,10 @@
  * - Scroll the page to trigger lazy loading
  * - Capture the DOM
  * - Highlight elements for guided capture
+ * - Compute DOM fingerprint for SPA state identification
  */
+
+import { computeStateIdentity } from '../lib/dom-fingerprint';
 
 // ---------------------------------------------------------------------------
 // Message listener
@@ -56,6 +59,43 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 				.then((result) => sendResponse(result))
 				.catch((err) => sendResponse({ stable: false, error: err.message }));
 			return true;
+
+		case 'DETECT_MODALS':
+			sendResponse({ modals: detectVisibleModalsInPage() });
+			return false;
+
+		case 'CAPTURE_MODAL':
+			captureModalSubtree(message.modalSelector as string)
+				.then((data) => sendResponse(data))
+				.catch((err) => sendResponse({ error: err.message }));
+			return true;
+
+		case 'GET_LAST_TRANSITION': {
+			let transitionData: unknown = null;
+			const transitionHandler = (e: Event) => {
+				transitionData = (e as CustomEvent).detail ?? null;
+			};
+			window.addEventListener('__ES_LAST_TRANSITION_RESULT__', transitionHandler, { once: true });
+			window.dispatchEvent(new Event('__ES_GET_LAST_TRANSITION__'));
+			window.removeEventListener('__ES_LAST_TRANSITION_RESULT__', transitionHandler);
+			sendResponse({ transition: transitionData });
+			return false;
+		}
+
+		case 'CLEAR_LAST_TRANSITION':
+			window.dispatchEvent(new Event('__ES_CLEAR_LAST_TRANSITION__'));
+			sendResponse({ success: true });
+			return false;
+
+		case 'DETECT_LOADING_INDICATOR': {
+			const detection = detectLoadingIndicatorFromDOM();
+			sendResponse(detection);
+			return false;
+		}
+
+		case 'COMPUTE_DOM_FINGERPRINT':
+			sendResponse(computeStateIdentity());
+			return false;
 
 		case 'PING':
 			sendResponse({ pong: true });
@@ -267,6 +307,408 @@ function detectLLPlayer(): { detected: boolean; method?: string } {
 function scanLLGuides(): { guides: Array<{ id: string; name: string; stepCount: number }> } {
 	// DOM-only fallback — real scanning happens in MAIN world from service worker
 	return { guides: [] };
+}
+
+// ---------------------------------------------------------------------------
+// Loading indicator detection (DOM query from isolated world)
+// ---------------------------------------------------------------------------
+
+function detectLoadingIndicatorFromDOM(): { detected: boolean; type: string | null; selector: string | null } {
+	// 1. Check for ARIA progressbar
+	const progressbar = document.querySelector('[role="progressbar"]');
+	if (progressbar) {
+		return { detected: true, type: 'progress', selector: buildMinimalSelector(progressbar) };
+	}
+
+	// 2. Check for aria-busy="true"
+	const ariaBusy = document.querySelector('[aria-busy="true"]');
+	if (ariaBusy) {
+		return { detected: true, type: 'spinner', selector: buildMinimalSelector(ariaBusy) };
+	}
+
+	// 3. Check for classes containing spinner/loader/loading/skeleton
+	const loadingPatterns = ['spinner', 'loader', 'loading', 'skeleton'];
+	for (const pattern of loadingPatterns) {
+		const match = document.querySelector(`[class*="${pattern}"]`);
+		if (match && isElementVisible(match)) {
+			const type = pattern === 'skeleton' ? 'skeleton' : 'spinner';
+			return { detected: true, type, selector: buildMinimalSelector(match) };
+		}
+	}
+
+	// 4. Check for animated elements inside overlay/fixed containers
+	const allElements = document.querySelectorAll('*');
+	for (const el of allElements) {
+		const style = window.getComputedStyle(el);
+		const isAnimated = style.animationName !== 'none' && style.animationName !== '';
+		if (!isAnimated) continue;
+
+		let parent: Element | null = el;
+		while (parent && parent !== document.documentElement) {
+			const parentStyle = window.getComputedStyle(parent);
+			if (parentStyle.position === 'fixed' || parentStyle.position === 'absolute') {
+				return { detected: true, type: 'spinner', selector: buildMinimalSelector(el) };
+			}
+			parent = parent.parentElement;
+		}
+	}
+
+	return { detected: false, type: null, selector: null };
+}
+
+function buildMinimalSelector(el: Element): string {
+	if (el.id) return `#${el.id}`;
+	const testId = el.getAttribute('data-testid');
+	if (testId) return `[data-testid="${testId}"]`;
+	let selector = el.tagName.toLowerCase();
+	if (el.className && typeof el.className === 'string') {
+		const cls = el.className.trim().split(/\s+/).slice(0, 2).join('.');
+		if (cls) selector += `.${cls}`;
+	}
+	return selector;
+}
+
+function isElementVisible(el: Element): boolean {
+	const style = window.getComputedStyle(el);
+	if (style.display === 'none' || style.visibility === 'hidden') return false;
+	const rect = el.getBoundingClientRect();
+	return rect.width > 0 || rect.height > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Modal detection (DOM-only, runs in content script isolated world)
+// ---------------------------------------------------------------------------
+
+interface DetectedModalResult {
+	selector: string;
+	detectionMethod: 'role_dialog' | 'aria_modal' | 'z_index' | 'position_fixed' | 'css_class';
+	title: string;
+	triggerSelector?: string;
+	triggerText?: string;
+}
+
+function generateModalSelector(el: Element): string {
+	if (el.id) {
+		const escaped = CSS.escape(el.id);
+		if (document.querySelectorAll(`#${escaped}`).length === 1) {
+			return `#${escaped}`;
+		}
+	}
+	for (const attr of Array.from(el.attributes)) {
+		if (attr.name.startsWith('data-') && attr.value) {
+			const selector = `${el.tagName.toLowerCase()}[${attr.name}="${CSS.escape(attr.value)}"]`;
+			try {
+				if (document.querySelectorAll(selector).length === 1) return selector;
+			} catch { /* skip */ }
+		}
+	}
+	const role = el.getAttribute('role');
+	if (role) {
+		const ariaLabel = el.getAttribute('aria-label');
+		if (ariaLabel) {
+			const selector = `[role="${role}"][aria-label="${CSS.escape(ariaLabel)}"]`;
+			try {
+				if (document.querySelectorAll(selector).length === 1) return selector;
+			} catch { /* skip */ }
+		}
+	}
+	const parts: string[] = [];
+	let current: Element | null = el;
+	while (current && current !== document.documentElement) {
+		const tag = current.tagName.toLowerCase();
+		const parent = current.parentElement;
+		if (current.id) {
+			parts.unshift(`#${CSS.escape(current.id)}`);
+			break;
+		}
+		if (parent) {
+			const siblings = Array.from(parent.children).filter((c) => c.tagName === current!.tagName);
+			if (siblings.length === 1) {
+				parts.unshift(tag);
+			} else {
+				const index = siblings.indexOf(current) + 1;
+				parts.unshift(`${tag}:nth-child(${index})`);
+			}
+		} else {
+			parts.unshift(tag);
+		}
+		current = parent;
+		const partial = parts.join(' > ');
+		try {
+			if (document.querySelectorAll(partial).length === 1) return partial;
+		} catch { /* keep building */ }
+	}
+	return parts.join(' > ');
+}
+
+function extractModalTitle(el: Element): string {
+	const ariaLabel = el.getAttribute('aria-label');
+	if (ariaLabel?.trim()) return ariaLabel.trim().substring(0, 100);
+	const labelledBy = el.getAttribute('aria-labelledby');
+	if (labelledBy) {
+		const labelEl = document.getElementById(labelledBy);
+		if (labelEl?.textContent?.trim()) return labelEl.textContent.trim().substring(0, 100);
+	}
+	const heading = el.querySelector('h1, h2, h3');
+	if (heading?.textContent?.trim()) return heading.textContent.trim().substring(0, 100);
+	const text = el.textContent?.trim() || '';
+	if (text.length > 0) return text.substring(0, 50) + (text.length > 50 ? '...' : '');
+	return 'Modal';
+}
+
+function getModalViewportCoverage(el: Element): number {
+	const rect = el.getBoundingClientRect();
+	const vpArea = window.innerWidth * window.innerHeight;
+	if (vpArea === 0) return 0;
+	const overlapW = Math.max(0, Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0));
+	const overlapH = Math.max(0, Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0));
+	return (overlapW * overlapH) / vpArea;
+}
+
+function isModalAlreadyDetected(el: Element, detected: Element[]): boolean {
+	for (const existing of detected) {
+		if (existing === el || existing.contains(el) || el.contains(existing)) return true;
+	}
+	return false;
+}
+
+function detectVisibleModalsInPage(): DetectedModalResult[] {
+	const results: DetectedModalResult[] = [];
+	const detectedElements: Element[] = [];
+
+	// 1. role="dialog" / role="alertdialog"
+	for (const el of Array.from(document.querySelectorAll('[role="dialog"], [role="alertdialog"]'))) {
+		if (!isElementVisible(el) || isModalAlreadyDetected(el, detectedElements)) continue;
+		detectedElements.push(el);
+		results.push({ selector: generateModalSelector(el), detectionMethod: 'role_dialog', title: extractModalTitle(el) });
+	}
+
+	// 2. aria-modal="true"
+	for (const el of Array.from(document.querySelectorAll('[aria-modal="true"]'))) {
+		if (!isElementVisible(el) || isModalAlreadyDetected(el, detectedElements)) continue;
+		detectedElements.push(el);
+		results.push({ selector: generateModalSelector(el), detectionMethod: 'aria_modal', title: extractModalTitle(el) });
+	}
+
+	// 3. position fixed/absolute + z-index >= 1000 + >30% viewport
+	for (const el of Array.from(document.querySelectorAll('*'))) {
+		if (isModalAlreadyDetected(el, detectedElements)) continue;
+		const style = window.getComputedStyle(el);
+		if (style.position !== 'fixed' && style.position !== 'absolute') continue;
+		const zIndex = parseInt(style.zIndex, 10);
+		if (isNaN(zIndex) || zIndex < 1000) continue;
+		if (!isElementVisible(el) || getModalViewportCoverage(el) < 0.3) continue;
+		if (el.children.length === 0 && (el.textContent?.trim() || '').length < 5) continue;
+		detectedElements.push(el);
+		results.push({ selector: generateModalSelector(el), detectionMethod: 'z_index', title: extractModalTitle(el) });
+	}
+
+	// 4. CSS class patterns
+	for (const el of Array.from(document.querySelectorAll(
+		'.modal, .dialog, .popup, .overlay-content, ' +
+		'[class*="modal"]:not([class*="modal-backdrop"]):not([class*="modal-overlay"]), ' +
+		'[class*="dialog"], [class*="Dialog"]'
+	))) {
+		if (!isElementVisible(el) || isModalAlreadyDetected(el, detectedElements)) continue;
+		const rect = el.getBoundingClientRect();
+		if (rect.width < 100 || rect.height < 50) continue;
+		const style = window.getComputedStyle(el);
+		const zIndex = parseInt(style.zIndex, 10);
+		if (style.position !== 'fixed' && style.position !== 'absolute' && !(zIndex >= 1)) continue;
+		detectedElements.push(el);
+		results.push({ selector: generateModalSelector(el), detectionMethod: 'css_class', title: extractModalTitle(el) });
+	}
+
+	return results;
+}
+
+// ---------------------------------------------------------------------------
+// Modal capture — extract a modal subtree as a self-contained HTML page
+// ---------------------------------------------------------------------------
+
+async function captureModalSubtree(modalSelector: string): Promise<{
+	html: string;
+	title: string;
+	url: string;
+}> {
+	const modalEl = document.querySelector(modalSelector);
+	if (!modalEl) {
+		throw new Error(`Modal element not found: ${modalSelector}`);
+	}
+
+	const title = extractModalTitle(modalEl);
+	const url = window.location.href;
+	const origin = window.location.origin;
+
+	// Find backdrop/overlay behind the modal
+	let backdropEl: Element | null = null;
+	const candidates = [
+		modalEl.previousElementSibling,
+		modalEl.parentElement,
+	];
+	for (const candidate of candidates) {
+		if (!candidate || candidate === document.documentElement || candidate === document.body) continue;
+		const style = window.getComputedStyle(candidate);
+		const isOverlay = (
+			(style.position === 'fixed' || style.position === 'absolute') &&
+			(parseFloat(style.opacity) < 1 || style.backgroundColor.includes('rgba'))
+		);
+		if (isOverlay) {
+			backdropEl = candidate;
+			break;
+		}
+	}
+	// Check common backdrop selectors as fallback
+	if (!backdropEl) {
+		const backdropSelectors = [
+			'.modal-backdrop', '.modal-overlay', '.overlay',
+			'[class*="backdrop"]', '[class*="overlay"]',
+			'[data-backdrop]'
+		];
+		for (const sel of backdropSelectors) {
+			const el = document.querySelector(sel);
+			if (el && isElementVisible(el)) {
+				backdropEl = el;
+				break;
+			}
+		}
+	}
+
+	// Clone modal and backdrop
+	const modalClone = modalEl.cloneNode(true) as HTMLElement;
+	const backdropClone = backdropEl ? backdropEl.cloneNode(true) as HTMLElement : null;
+
+	// Collect all stylesheets from the page
+	const stylesheetUrls: string[] = [];
+	const inlineStyles: string[] = [];
+
+	document.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+		const href = link.getAttribute('href');
+		if (href) {
+			stylesheetUrls.push(modalToAbsoluteUrl(href, url, origin));
+		}
+	});
+
+	document.querySelectorAll('style').forEach((style) => {
+		if (style.textContent?.trim()) {
+			inlineStyles.push(style.textContent);
+		}
+	});
+
+	// Capture adopted stylesheets
+	try {
+		const adopted = (document as unknown as { adoptedStyleSheets?: CSSStyleSheet[] }).adoptedStyleSheets;
+		if (adopted && adopted.length > 0) {
+			for (const sheet of adopted) {
+				try {
+					const rules = Array.from(sheet.cssRules || []);
+					if (rules.length > 0) {
+						inlineStyles.push(rules.map((r) => r.cssText).join('\n'));
+					}
+				} catch { /* cross-origin */ }
+			}
+		}
+	} catch { /* ignore */ }
+
+	// Capture runtime styles from document.styleSheets
+	try {
+		for (const sheet of Array.from(document.styleSheets)) {
+			try {
+				if (sheet.href) continue;
+				if (sheet.ownerNode && document.documentElement.contains(sheet.ownerNode)) continue;
+				const rules = Array.from(sheet.cssRules || []);
+				if (rules.length > 0) {
+					inlineStyles.push(rules.map((r) => r.cssText).join('\n'));
+				}
+			} catch { /* cross-origin */ }
+		}
+	} catch { /* ignore */ }
+
+	// Build stylesheet links and inline style tags
+	const stylesheetLinks = stylesheetUrls
+		.map((href) => `<link rel="stylesheet" href="${modalEscapeAttr(href)}">`)
+		.join('\n    ');
+
+	const inlineStyleTags = inlineStyles
+		.map((css) => `<style>${css}</style>`)
+		.join('\n    ');
+
+	// Build body content with absolute URLs
+	let bodyContent = '';
+	if (backdropClone) {
+		bodyContent += backdropClone.outerHTML + '\n';
+	}
+	bodyContent += modalClone.outerHTML;
+
+	const tempDiv = document.createElement('div');
+	tempDiv.innerHTML = bodyContent;
+
+	tempDiv.querySelectorAll('img[src]').forEach((img) => {
+		const src = img.getAttribute('src');
+		if (src && !src.startsWith('data:') && !src.startsWith('blob:')) {
+			img.setAttribute('src', modalToAbsoluteUrl(src, url, origin));
+		}
+	});
+
+	tempDiv.querySelectorAll('a[href]').forEach((a) => {
+		const href = a.getAttribute('href');
+		if (href && !href.startsWith('#') && !href.startsWith('javascript:') && !href.startsWith('mailto:') && !href.startsWith('data:')) {
+			a.setAttribute('href', modalToAbsoluteUrl(href, url, origin));
+		}
+	});
+
+	tempDiv.querySelectorAll('[srcset]').forEach((el) => {
+		const srcset = el.getAttribute('srcset');
+		if (!srcset) return;
+		const entries = srcset.split(',').map((entry) => {
+			const parts = entry.trim().split(/\s+/);
+			const entryUrl = parts[0];
+			if (entryUrl && !entryUrl.startsWith('data:') && !entryUrl.startsWith('blob:')) {
+				parts[0] = modalToAbsoluteUrl(entryUrl, url, origin);
+			}
+			return parts.join(' ');
+		});
+		el.setAttribute('srcset', entries.join(', '));
+	});
+
+	bodyContent = tempDiv.innerHTML;
+
+	const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${modalEscapeHtml(title)}</title>
+    ${stylesheetLinks}
+    ${inlineStyleTags}
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+${bodyContent}
+</body>
+</html>`;
+
+	return { html, title, url };
+}
+
+function modalToAbsoluteUrl(href: string, base: string, origin: string): string {
+	try {
+		if (href.startsWith('http') || href.startsWith('//')) return href.startsWith('//') ? `https:${href}` : href;
+		if (href.startsWith('/')) return `${origin}${href}`;
+		return new URL(href, base).href;
+	} catch {
+		return href;
+	}
+}
+
+function modalEscapeAttr(str: string): string {
+	return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function modalEscapeHtml(str: string): string {
+	return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ---------------------------------------------------------------------------

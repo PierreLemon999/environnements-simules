@@ -33,6 +33,17 @@
 		Code,
 		Download,
 		Image,
+		Layers,
+		Fingerprint,
+		ArrowRight,
+		ArrowLeft,
+		Clock,
+		Network,
+		GitFork,
+		Circle,
+		ZoomIn,
+		ZoomOut,
+		RotateCcw,
 	} from 'lucide-svelte';
 
 	// Types
@@ -47,6 +58,12 @@
 		captureMode: 'free' | 'guided' | 'auto';
 		thumbnailPath: string | null;
 		healthStatus: 'ok' | 'warning' | 'error';
+		pageType?: 'page' | 'modal' | 'spa_state';
+		parentPageId?: string | null;
+		domFingerprint?: string | null;
+		syntheticUrl?: string | null;
+		captureTimingMs?: number | null;
+		stateIndex?: number | null;
 		createdAt: string;
 	}
 
@@ -54,6 +71,7 @@
 		name: string;
 		path: string;
 		page?: Page;
+		modals?: Page[];
 		children: TreeNode[];
 	}
 
@@ -87,6 +105,26 @@
 		completionCount: number;
 	}
 
+	interface Transition {
+		id: string;
+		versionId: string;
+		sourcePageId: string;
+		targetPageId: string;
+		triggerType: string;
+		triggerSelector: string | null;
+		triggerText: string | null;
+		loadingTimeMs: number | null;
+		hadLoadingIndicator: number;
+		loadingIndicatorType: string | null;
+		captureMode: string;
+		createdAt: string;
+	}
+
+	interface PageTransitionsData {
+		incoming: Transition[];
+		outgoing: Transition[];
+	}
+
 	// State
 	let projects: Project[] = $state([]);
 	let selectedProjectId = $state('');
@@ -98,9 +136,271 @@
 	let loading = $state(true);
 	let treeLoading = $state(false);
 	let searchQuery = $state('');
+	let pageTransitionsData: PageTransitionsData | null = $state(null);
+	let transitionsLoading = $state(false);
 	let treeTab = $state('site');
 	let treeSubTab = $state<'site' | 'guide'>('site');
 	let detailSubTab = $state('preview');
+
+	// Map / graph state
+	let mapView = $state<'navigation' | 'hierarchy' | 'star'>('navigation');
+	let allTransitions: Transition[] = $state([]);
+	let mapLoading = $state(false);
+	let mapScale = $state(1);
+	let mapPanX = $state(0);
+	let mapPanY = $state(0);
+	let isPanning = $state(false);
+	let panStartX = $state(0);
+	let panStartY = $state(0);
+	let panStartPanX = $state(0);
+	let panStartPanY = $state(0);
+	let starCenterPageId = $state<string | null>(null);
+
+	interface GraphNode {
+		page: Page;
+		x: number;
+		y: number;
+	}
+
+	// Collect all pages from tree
+	function collectAllPages(): Page[] {
+		if (!tree) return [];
+		const pages: Page[] = [];
+		function walk(node: TreeNode) {
+			if (node.page) pages.push(node.page);
+			if (node.modals) pages.push(...node.modals);
+			node.children.forEach(walk);
+		}
+		walk(tree);
+		return pages;
+	}
+
+	// Navigation layout: BFS layers top-to-bottom
+	function computeNavigationLayout(pages: Page[], transitions: Transition[]): GraphNode[] {
+		if (pages.length === 0) return [];
+		const incomingSet = new Set(transitions.map(t => t.targetPageId));
+		const adj = new Map<string, string[]>();
+		for (const t of transitions) {
+			const arr = adj.get(t.sourcePageId) || [];
+			arr.push(t.targetPageId);
+			adj.set(t.sourcePageId, arr);
+		}
+		const roots = pages.filter(p => !incomingSet.has(p.id));
+		if (roots.length === 0 && pages.length > 0) roots.push(pages[0]);
+
+		const layerMap = new Map<string, number>();
+		const queue = roots.map(r => ({ id: r.id, layer: 0 }));
+		while (queue.length > 0) {
+			const { id, layer } = queue.shift()!;
+			if (layerMap.has(id)) continue;
+			layerMap.set(id, layer);
+			for (const n of (adj.get(id) || [])) {
+				if (!layerMap.has(n)) queue.push({ id: n, layer: layer + 1 });
+			}
+		}
+		// Assign unvisited pages to last layer + 1
+		const maxLayer = Math.max(0, ...layerMap.values());
+		for (const p of pages) {
+			if (!layerMap.has(p.id)) layerMap.set(p.id, maxLayer + 1);
+		}
+
+		const layerGroups = new Map<number, Page[]>();
+		for (const p of pages) {
+			const l = layerMap.get(p.id) ?? 0;
+			const arr = layerGroups.get(l) || [];
+			arr.push(p);
+			layerGroups.set(l, arr);
+		}
+
+		const result: GraphNode[] = [];
+		for (const [layer, group] of layerGroups) {
+			const startX = -(group.length - 1) * 100;
+			group.forEach((p, i) => {
+				result.push({ page: p, x: startX + i * 200, y: layer * 120 });
+			});
+		}
+		return result;
+	}
+
+	// Hierarchy layout: tree based on URL structure
+	function computeHierarchyLayout(treeRoot: TreeNode): GraphNode[] {
+		const result: GraphNode[] = [];
+		let leafIndex = 0;
+
+		// First pass: count leaves to determine widths
+		function countLeaves(node: TreeNode): number {
+			if (node.children.length === 0) return 1;
+			return node.children.reduce((sum, c) => sum + countLeaves(c), 0);
+		}
+
+		function layout(node: TreeNode, depth: number, offsetX: number): number {
+			const leaves = countLeaves(node);
+			const width = leaves * 180;
+
+			if (node.page) {
+				result.push({ page: node.page, x: offsetX + width / 2, y: depth * 100 });
+			}
+
+			let childX = offsetX;
+			for (const child of node.children) {
+				const childWidth = countLeaves(child) * 180;
+				layout(child, depth + 1, childX);
+				childX += childWidth;
+			}
+
+			// Modals positioned slightly offset below
+			if (node.modals) {
+				node.modals.forEach((modal, i) => {
+					result.push({ page: modal, x: offsetX + width / 2 + (i + 1) * 160, y: depth * 100 + 50 });
+				});
+			}
+
+			return width;
+		}
+
+		if (treeRoot.children.length > 0) {
+			let offsetX = 0;
+			for (const child of treeRoot.children) {
+				const w = layout(child, 0, offsetX);
+				offsetX += w;
+			}
+		}
+		return result;
+	}
+
+	// Star layout: selected page at center, connected pages in a circle
+	function computeStarLayout(pages: Page[], transitions: Transition[], centerId: string): GraphNode[] {
+		if (pages.length === 0) return [];
+		const centerPage = pages.find(p => p.id === centerId);
+		if (!centerPage) return pages.map((p, i) => ({ page: p, x: Math.cos(i * 2 * Math.PI / pages.length) * 250, y: Math.sin(i * 2 * Math.PI / pages.length) * 250 }));
+
+		const connectedIds = new Set<string>();
+		for (const t of transitions) {
+			if (t.sourcePageId === centerId) connectedIds.add(t.targetPageId);
+			if (t.targetPageId === centerId) connectedIds.add(t.sourcePageId);
+		}
+		connectedIds.delete(centerId);
+
+		const connectedPages = pages.filter(p => connectedIds.has(p.id));
+		const unconnectedPages = pages.filter(p => p.id !== centerId && !connectedIds.has(p.id));
+
+		const result: GraphNode[] = [{ page: centerPage, x: 0, y: 0 }];
+
+		// Inner ring: connected pages
+		const innerRadius = Math.max(200, connectedPages.length * 30);
+		connectedPages.forEach((p, i) => {
+			const angle = (i * 2 * Math.PI) / connectedPages.length - Math.PI / 2;
+			result.push({ page: p, x: Math.cos(angle) * innerRadius, y: Math.sin(angle) * innerRadius });
+		});
+
+		// Outer ring: unconnected pages (if any)
+		if (unconnectedPages.length > 0) {
+			const outerRadius = innerRadius + 180;
+			unconnectedPages.forEach((p, i) => {
+				const angle = (i * 2 * Math.PI) / unconnectedPages.length - Math.PI / 2;
+				result.push({ page: p, x: Math.cos(angle) * outerRadius, y: Math.sin(angle) * outerRadius });
+			});
+		}
+
+		return result;
+	}
+
+	// Compute graph nodes based on current view
+	let graphNodes = $derived(() => {
+		const pages = collectAllPages();
+		if (pages.length === 0) return [];
+
+		if (mapView === 'navigation') {
+			return computeNavigationLayout(pages, allTransitions);
+		} else if (mapView === 'hierarchy') {
+			return tree ? computeHierarchyLayout(tree) : [];
+		} else {
+			const center = starCenterPageId || selectedPage?.id || pages[0]?.id;
+			return computeStarLayout(pages, allTransitions, center);
+		}
+	});
+
+	let graphNodesById = $derived(() => {
+		const map = new Map<string, GraphNode>();
+		for (const n of graphNodes()) {
+			map.set(n.page.id, n);
+		}
+		return map;
+	});
+
+	// SVG viewBox
+	let svgViewBox = $derived(() => {
+		const w = 1200 / mapScale;
+		const h = 800 / mapScale;
+		return `${-w / 2 - mapPanX} ${-60 - mapPanY} ${w} ${h}`;
+	});
+
+	async function loadAllTransitions() {
+		if (!selectedVersionId) return;
+		mapLoading = true;
+		try {
+			const res = await get<{ data: Transition[] }>(`/versions/${selectedVersionId}/transitions`);
+			allTransitions = res.data;
+		} catch {
+			allTransitions = [];
+		} finally {
+			mapLoading = false;
+		}
+	}
+
+	function mapZoomIn() { mapScale = Math.min(4, mapScale * 1.3); }
+	function mapZoomOut() { mapScale = Math.max(0.2, mapScale / 1.3); }
+	function mapResetView() { mapScale = 1; mapPanX = 0; mapPanY = 0; }
+
+	function mapStartPan(e: MouseEvent) {
+		isPanning = true;
+		panStartX = e.clientX;
+		panStartY = e.clientY;
+		panStartPanX = mapPanX;
+		panStartPanY = mapPanY;
+	}
+
+	function mapOnPan(e: MouseEvent) {
+		if (!isPanning) return;
+		mapPanX = panStartPanX + (e.clientX - panStartX) / mapScale;
+		mapPanY = panStartPanY + (e.clientY - panStartY) / mapScale;
+	}
+
+	function mapEndPan() { isPanning = false; }
+
+	function mapOnWheel(e: WheelEvent) {
+		e.preventDefault();
+		if (e.deltaY < 0) mapZoomIn();
+		else mapZoomOut();
+	}
+
+	function getTriggerColor(type: string): string {
+		switch (type) {
+			case 'click': return '#9CA3AF';
+			case 'pushState': return '#3B82F6';
+			case 'replaceState': return '#8B5CF6';
+			case 'popstate': return '#F59E0B';
+			case 'hashchange': return '#14B8A6';
+			default: return '#D1D5DB';
+		}
+	}
+
+	function getHealthFill(status: string): string {
+		switch (status) {
+			case 'ok': return '#10B981';
+			case 'warning': return '#F59E0B';
+			case 'error': return '#EF4444';
+			default: return '#9CA3AF';
+		}
+	}
+
+	// Compute curved path between two nodes
+	function computeEdgePath(x1: number, y1: number, x2: number, y2: number): string {
+		const dy = y2 - y1;
+		const dx = x2 - x1;
+		const midY = y1 + dy / 2;
+		return `M ${x1} ${y1 + 20} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2 - 20}`;
+	}
 
 	// Resizable tree panel
 	let treePanelWidth = $state(320);
@@ -116,15 +416,18 @@
 
 	// Page statistics from tree
 	let pageStats = $derived(() => {
-		if (!tree) return { ok: 0, warning: 0, error: 0, total: 0, modals: 0 };
-		const stats = { ok: 0, warning: 0, error: 0, total: 0, modals: 0 };
+		if (!tree) return { ok: 0, warning: 0, error: 0, total: 0, modals: 0, totalSize: 0 };
+		const stats = { ok: 0, warning: 0, error: 0, total: 0, modals: 0, totalSize: 0 };
 		function walk(node: TreeNode) {
 			if (node.page) {
 				stats.total++;
 				stats[node.page.healthStatus]++;
-				if (node.page.captureMode === 'guided') {
-					stats.modals++;
-				}
+				stats.totalSize += node.page.fileSize || 0;
+			}
+			if (node.modals) {
+				stats.modals += node.modals.length;
+				stats.total += node.modals.length;
+				for (const m of node.modals) stats.totalSize += m.fileSize || 0;
 			}
 			node.children.forEach(walk);
 		}
@@ -146,7 +449,11 @@
 			(node.page.title.toLowerCase().includes(q) ||
 				node.page.urlPath.toLowerCase().includes(q));
 
-		if (matchesPage || filteredChildren.length > 0) {
+		const matchesModal = node.modals?.some(m =>
+			m.title.toLowerCase().includes(q)
+		);
+
+		if (matchesPage || matchesModal || filteredChildren.length > 0) {
 			return { ...node, children: filteredChildren };
 		}
 		return null;
@@ -155,6 +462,21 @@
 	let filteredTree = $derived(() => {
 		if (!tree) return null;
 		return filterTree(tree, searchQuery);
+	});
+
+	// Map of all pages by ID for name resolution in transitions
+	let pagesById = $derived(() => {
+		if (!tree) return new Map<string, Page>();
+		const map = new Map<string, Page>();
+		function walk(node: TreeNode) {
+			if (node.page) map.set(node.page.id, node.page);
+			if (node.modals) {
+				for (const modal of node.modals) map.set(modal.id, modal);
+			}
+			node.children.forEach(walk);
+		}
+		walk(tree);
+		return map;
 	});
 
 	// Category color palette for tree sections
@@ -205,6 +527,32 @@
 		}
 	}
 
+	function getPageTypeLabel(type: string | undefined): string {
+		switch (type) {
+			case 'modal': return 'Modale';
+			case 'spa_state': return 'État SPA';
+			default: return 'Page';
+		}
+	}
+
+	function getTriggerTypeLabel(type: string): string {
+		switch (type) {
+			case 'click': return 'Clic';
+			case 'pushState': return 'pushState';
+			case 'replaceState': return 'replaceState';
+			case 'popstate': return 'Retour';
+			case 'hashchange': return 'Hash';
+			case 'manual': return 'Manuel';
+			default: return type;
+		}
+	}
+
+	function formatLoadingTime(ms: number | null): string {
+		if (ms === null || ms === undefined) return '—';
+		if (ms < 1000) return `${ms} ms`;
+		return `${(ms / 1000).toFixed(1)} s`;
+	}
+
 	function formatFileSize(bytes: number | null): string {
 		if (!bytes) return '—';
 		if (bytes < 1024) return `${bytes} o`;
@@ -235,10 +583,24 @@
 	function selectPage(p: Page) {
 		selectedPage = p;
 		detailSubTab = 'preview';
+		loadPageTransitions(p.id);
+	}
+
+	async function loadPageTransitions(pageId: string) {
+		transitionsLoading = true;
+		try {
+			const res = await get<{ data: PageTransitionsData }>(`/pages/${pageId}/transitions`);
+			pageTransitionsData = res.data;
+		} catch {
+			pageTransitionsData = null;
+		} finally {
+			transitionsLoading = false;
+		}
 	}
 
 	function countPages(node: TreeNode): number {
 		let count = node.page ? 1 : 0;
+		if (node.modals) count += node.modals.length;
 		for (const child of node.children) {
 			count += countPages(child);
 		}
@@ -421,13 +783,19 @@
 		}
 	});
 
+	$effect(() => {
+		if (treeTab === 'map' && selectedVersionId) {
+			loadAllTransitions();
+		}
+	});
+
 	onMount(() => {
 		loadProjects();
 	});
 </script>
 
 <svelte:head>
-	<title>Arborescence — Environnements Simulés</title>
+	<title>Arborescence capture — Lemon Lab</title>
 </svelte:head>
 
 <div class="flex h-[calc(100vh-56px)] overflow-hidden -m-6">
@@ -501,6 +869,10 @@
 					<span class="h-1.5 w-1.5 rounded-full bg-destructive"></span>
 					{stats.error} erreurs
 				</span>
+				<span class="inline-flex items-center gap-1 font-medium">
+					<HardDrive class="h-3 w-3" />
+					{formatFileSize(stats.totalSize)}
+				</span>
 			</div>
 		{/if}
 
@@ -561,6 +933,7 @@
 							const pages: Page[] = [];
 							function walk(node: TreeNode) {
 								if (node.page) pages.push(node.page);
+								if (node.modals) pages.push(...node.modals);
 								node.children.forEach(walk);
 							}
 							walk(tree);
@@ -579,22 +952,233 @@
 									onclick={() => selectPage(pg)}
 								>
 									<span class="h-[7px] w-[7px] shrink-0 rounded-full {getHealthDot(pg.healthStatus)}"></span>
-									<FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-									<span class="truncate {selectedPage?.id === pg.id ? 'font-medium text-primary' : 'text-foreground'}">{pg.title}</span>
+									{#if pg.thumbnailPath}
+										<img
+											src="/api/pages/{pg.id}/screenshot"
+											alt=""
+											class="h-6 w-10 shrink-0 rounded-[3px] border border-border object-cover object-top"
+											loading="lazy"
+										/>
+									{:else if pg.pageType === 'modal'}
+										<Layers class="h-3.5 w-3.5 shrink-0 text-violet-500" />
+									{:else if pg.pageType === 'spa_state'}
+										<Fingerprint class="h-3.5 w-3.5 shrink-0 text-amber-500" />
+									{:else}
+										<FileText class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+									{/if}
+									<span class="flex-1 truncate {selectedPage?.id === pg.id ? 'font-medium text-primary' : 'text-foreground'}">{pg.title}</span>
+									<span class="text-[10px] text-muted-foreground tabular-nums">{formatFileSize(pg.fileSize)}</span>
 								</button>
 							{/each}
 						{/if}
 					{/if}
 				</div>
 			{:else if treeTab === 'map'}
-				<div class="flex flex-col items-center justify-center py-12 px-4 text-center">
-					<div class="flex h-12 w-12 items-center justify-center rounded-full bg-accent">
-						<Globe class="h-6 w-6 text-muted" />
-					</div>
-					<p class="mt-3 text-sm font-medium text-foreground">Carte du site</p>
-					<p class="mt-1 text-xs text-muted-foreground">
-						La visualisation interactive du graphe de navigation sera bientôt disponible.
-					</p>
+				<!-- Map view selector -->
+				<div class="flex items-center gap-1 border-b border-border px-3 py-2">
+					<button
+						class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors {mapView === 'navigation' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}"
+						onclick={() => { mapView = 'navigation'; }}
+					>
+						<Network class="h-3 w-3" />
+						Navigation
+					</button>
+					<button
+						class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors {mapView === 'hierarchy' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}"
+						onclick={() => { mapView = 'hierarchy'; }}
+					>
+						<GitFork class="h-3 w-3" />
+						Hiérarchie
+					</button>
+					<button
+						class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors {mapView === 'star' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}"
+						onclick={() => { mapView = 'star'; starCenterPageId = selectedPage?.id || null; }}
+					>
+						<Circle class="h-3 w-3" />
+						Étoile
+					</button>
+				</div>
+
+				<!-- Graph area -->
+				<div class="relative flex-1 overflow-hidden">
+					{#if mapLoading}
+						<div class="flex h-full items-center justify-center">
+							<div class="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary"></div>
+						</div>
+					{:else if graphNodes().length === 0}
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<Globe class="h-8 w-8 text-muted" />
+							<p class="mt-3 text-sm text-muted-foreground">Aucune page capturée</p>
+							<p class="mt-1 text-xs text-muted">Les pages apparaîtront ici après capture.</p>
+						</div>
+					{:else}
+						<!-- Zoom controls -->
+						<div class="absolute right-3 top-3 z-10 flex flex-col gap-1">
+							<button class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card shadow-sm hover:bg-accent" onclick={mapZoomIn}>
+								<ZoomIn class="h-3.5 w-3.5" />
+							</button>
+							<button class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card shadow-sm hover:bg-accent" onclick={mapZoomOut}>
+								<ZoomOut class="h-3.5 w-3.5" />
+							</button>
+							<button class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card shadow-sm hover:bg-accent" onclick={mapResetView}>
+								<RotateCcw class="h-3.5 w-3.5" />
+							</button>
+						</div>
+
+						<!-- SVG graph -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<svg
+							class="h-full w-full cursor-grab active:cursor-grabbing"
+							viewBox={svgViewBox()}
+							onmousedown={mapStartPan}
+							onmousemove={mapOnPan}
+							onmouseup={mapEndPan}
+							onmouseleave={mapEndPan}
+							onwheel={mapOnWheel}
+						>
+							<defs>
+								<marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+									<polygon points="0 0, 8 3, 0 6" fill="#D1D5DB" />
+								</marker>
+								{#each ['click', 'pushState', 'replaceState', 'popstate', 'hashchange', 'manual'] as tt}
+									<marker id="arrow-{tt}" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+										<polygon points="0 0, 8 3, 0 6" fill={getTriggerColor(tt)} />
+									</marker>
+								{/each}
+							</defs>
+
+							<!-- Edges -->
+							{#if mapView === 'hierarchy' && tree}
+								<!-- Hierarchy edges: parent→child based on URL tree -->
+								{#each graphNodes() as node}
+									{@const parent = graphNodes().find(n => {
+										const parts = node.page.urlPath.split('/').filter(Boolean);
+										if (parts.length <= 1) return false;
+										const parentPath = parts.slice(0, -1).join('/');
+										return n.page.urlPath === parentPath;
+									})}
+									{#if parent}
+										<line
+											x1={parent.x} y1={parent.y + 20}
+											x2={node.x} y2={node.y - 20}
+											stroke="#E5E7EB" stroke-width="1.5"
+											marker-end="url(#arrowhead)"
+										/>
+									{/if}
+								{/each}
+							{:else if mapView === 'star'}
+								<!-- Star edges: center to connected -->
+								{@const center = graphNodesById().get(starCenterPageId || selectedPage?.id || '')}
+								{#if center}
+									{#each allTransitions as t}
+										{#if t.sourcePageId === center.page.id || t.targetPageId === center.page.id}
+											{@const other = graphNodesById().get(t.sourcePageId === center.page.id ? t.targetPageId : t.sourcePageId)}
+											{#if other}
+												<path
+													d={computeEdgePath(center.x, center.y, other.x, other.y)}
+													stroke={getTriggerColor(t.triggerType)}
+													stroke-width="1.5"
+													fill="none"
+													marker-end="url(#arrow-{t.triggerType})"
+													opacity="0.6"
+												/>
+											{/if}
+										{/if}
+									{/each}
+								{/if}
+							{:else}
+								<!-- Navigation edges: transitions -->
+								{#each allTransitions as t}
+									{@const source = graphNodesById().get(t.sourcePageId)}
+									{@const target = graphNodesById().get(t.targetPageId)}
+									{#if source && target}
+										<path
+											d={computeEdgePath(source.x, source.y, target.x, target.y)}
+											stroke={getTriggerColor(t.triggerType)}
+											stroke-width="1.5"
+											fill="none"
+											marker-end="url(#arrow-{t.triggerType})"
+											opacity="0.6"
+										/>
+									{/if}
+								{/each}
+							{/if}
+
+							<!-- Nodes -->
+							{#each graphNodes() as node}
+								{@const isSelected = selectedPage?.id === node.page.id}
+								{@const isStarCenter = mapView === 'star' && node.page.id === (starCenterPageId || selectedPage?.id)}
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+								<g
+									transform="translate({node.x - 70}, {node.y - 20})"
+									class="cursor-pointer"
+									onclick={() => selectPage(node.page)}
+									ondblclick={() => { if (mapView === 'star') { starCenterPageId = node.page.id; } }}
+								>
+									<rect
+										width="140" height="40" rx="6"
+										fill="white"
+										stroke={isSelected ? '#3B82F6' : isStarCenter ? '#8B5CF6' : '#E5E7EB'}
+										stroke-width={isSelected || isStarCenter ? 2 : 1}
+									/>
+									{#if node.page.thumbnailPath}
+										<image
+											href="/api/pages/{node.page.id}/screenshot"
+											x="4" y="4" width="28" height="32"
+											preserveAspectRatio="xMidYMin slice"
+											clip-path="inset(0 round 3px)"
+										/>
+										<text
+											x="36" y="16"
+											font-size="10" fill="#111827"
+											dominant-baseline="middle"
+										>
+											{node.page.title.length > 11 ? node.page.title.slice(0, 11) + '…' : node.page.title}
+										</text>
+									{:else}
+										<text
+											x="8" y="16"
+											font-size="10" fill="#111827"
+											dominant-baseline="middle"
+										>
+											{node.page.title.length > 16 ? node.page.title.slice(0, 16) + '…' : node.page.title}
+										</text>
+									{/if}
+									<text
+										x={node.page.thumbnailPath ? 36 : 8} y="30"
+										font-size="8" fill="#9CA3AF"
+										dominant-baseline="middle"
+									>
+										/{node.page.urlPath.length > 16 ? '…' + node.page.urlPath.slice(-14) : node.page.urlPath}
+									</text>
+									<circle
+										cx="130" cy="20" r="4"
+										fill={getHealthFill(node.page.healthStatus)}
+									/>
+									{#if node.page.pageType === 'modal'}
+										<rect x="90" y="2" width="32" height="12" rx="3" fill="#EDE9FE" />
+										<text x="106" y="10" font-size="7" fill="#7C3AED" text-anchor="middle" dominant-baseline="middle">modal</text>
+									{/if}
+								</g>
+							{/each}
+						</svg>
+
+						<!-- Legend -->
+						{#if mapView === 'navigation' && allTransitions.length > 0}
+							<div class="absolute bottom-3 left-3 flex items-center gap-3 rounded-md border border-border bg-card/90 px-3 py-1.5 text-[10px] text-muted-foreground backdrop-blur-sm">
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #9CA3AF"></span> clic</span>
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #3B82F6"></span> pushState</span>
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #8B5CF6"></span> replaceState</span>
+								<span class="flex items-center gap-1"><span class="inline-block h-0.5 w-3 rounded" style="background: #F59E0B"></span> retour</span>
+							</div>
+						{/if}
+						{#if mapView === 'star'}
+							<div class="absolute bottom-3 left-3 rounded-md border border-border bg-card/90 px-3 py-1.5 text-[10px] text-muted-foreground backdrop-blur-sm">
+								Double-clic sur un nœud pour le centrer
+							</div>
+						{/if}
+					{/if}
 				</div>
 			{:else if loading || treeLoading}
 				<div class="space-y-1 px-2">
@@ -673,15 +1257,46 @@
 							style="padding-left: {depth * 16 + 12}px; padding-right: 12px"
 							onclick={() => selectPage(node.page!)}
 						>
-							<FileText class="h-[15px] w-[15px] shrink-0 text-muted-foreground/50" />
+							{#if node.page.thumbnailPath}
+								<img
+									src="/api/pages/{node.page.id}/screenshot"
+									alt=""
+									class="h-6 w-10 shrink-0 rounded-[3px] border border-border object-cover object-top"
+									loading="lazy"
+								/>
+							{:else if node.page.pageType === 'spa_state'}
+								<Fingerprint class="h-[15px] w-[15px] shrink-0 text-amber-500" />
+							{:else}
+								<FileText class="h-[15px] w-[15px] shrink-0 text-muted-foreground/50" />
+							{/if}
 							<span class="flex-1 truncate {selectedPage?.id === node.page.id ? 'font-medium text-primary' : 'text-muted-foreground'}">
 								{node.page.title || node.name}
 							</span>
+							{#if node.page.captureMode === 'auto'}
+								<span class="rounded bg-blue-50 px-1 py-0.5 text-[9px] font-medium text-blue-600">auto</span>
+							{:else if node.page.captureMode === 'guided'}
+								<span class="rounded bg-teal-50 px-1 py-0.5 text-[9px] font-medium text-teal-600">guidé</span>
+							{/if}
 							<span class="h-[7px] w-[7px] shrink-0 rounded-full {getHealthDot(node.page.healthStatus)}"></span>
 						</button>
 						{#if node.children.length > 0}
 							{#each node.children as child}
 								{@render treeNodeSnippet(child, depth + 1, color, bgColor)}
+							{/each}
+						{/if}
+						{#if node.modals?.length}
+							{#each node.modals as modal}
+								<button
+									class="group flex w-full items-center gap-2 py-[5px] text-left text-[13px] transition-colors hover:bg-accent/50 {selectedPage?.id === modal.id ? 'bg-primary/10' : ''}"
+									style="padding-left: {(depth + 1) * 16 + 12}px; padding-right: 12px"
+									onclick={() => selectPage(modal)}
+								>
+									<Layers class="h-[15px] w-[15px] shrink-0 text-violet-500" />
+									<span class="flex-1 truncate italic {selectedPage?.id === modal.id ? 'font-medium text-primary' : 'text-muted-foreground'}">
+										{modal.title || 'Modale'}
+									</span>
+									<span class="rounded bg-violet-100 px-1 py-0.5 text-[9px] font-medium text-violet-600">modale</span>
+								</button>
 							{/each}
 						{/if}
 					{:else}
@@ -915,14 +1530,137 @@
 					</div>
 				</div>
 			{:else if detailSubTab === 'links'}
-				<div class="flex flex-1 items-center justify-center bg-accent/20">
-					<div class="text-center text-muted-foreground">
-						<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
-							<Link2 class="h-7 w-7" />
+				<div class="flex-1 overflow-y-auto p-5 space-y-6">
+					{#if transitionsLoading}
+						<div class="space-y-2">
+							{#each Array(3) as _}
+								<div class="skeleton h-12 w-full rounded-lg"></div>
+							{/each}
 						</div>
-						<h3 class="text-[15px] font-semibold text-foreground/70">Liens & Navigation</h3>
-						<p class="mt-1 max-w-xs text-xs">Cette vue est détaillée dans la maquette Éditeur de Pages</p>
-					</div>
+					{:else if pageTransitionsData}
+						<!-- Transitions sortantes -->
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+								<ArrowRight class="h-4 w-4 text-muted-foreground" />
+								Transitions sortantes
+								<span class="text-xs font-normal text-muted-foreground">({pageTransitionsData.outgoing.length})</span>
+							</h3>
+							{#if pageTransitionsData.outgoing.length === 0}
+								<p class="text-xs text-muted-foreground pl-6">Aucune transition sortante enregistrée.</p>
+							{:else}
+								<div class="space-y-1.5">
+									{#each pageTransitionsData.outgoing as t}
+										{@const targetPage = pagesById().get(t.targetPageId)}
+										<button
+											class="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50"
+											onclick={() => { if (targetPage) selectPage(targetPage); }}
+										>
+											<ArrowRight class="h-4 w-4 shrink-0 text-primary" />
+											<div class="flex-1 min-w-0">
+												<span class="text-sm font-medium text-foreground truncate block">
+													{targetPage?.title || t.targetPageId}
+												</span>
+												<span class="text-[11px] text-muted-foreground">
+													{getTriggerTypeLabel(t.triggerType)}{t.triggerText ? ` — "${t.triggerText}"` : ''}
+												</span>
+											</div>
+											{#if t.loadingTimeMs !== null}
+												<span class="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+													<Clock class="h-3 w-3" />
+													{formatLoadingTime(t.loadingTimeMs)}
+												</span>
+											{/if}
+											{#if t.hadLoadingIndicator}
+												<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">loader</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+
+						<!-- Transitions entrantes -->
+						<div class="space-y-3">
+							<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+								<ArrowLeft class="h-4 w-4 text-muted-foreground" />
+								Transitions entrantes
+								<span class="text-xs font-normal text-muted-foreground">({pageTransitionsData.incoming.length})</span>
+							</h3>
+							{#if pageTransitionsData.incoming.length === 0}
+								<p class="text-xs text-muted-foreground pl-6">Aucune transition entrante enregistrée.</p>
+							{:else}
+								<div class="space-y-1.5">
+									{#each pageTransitionsData.incoming as t}
+										{@const sourcePage = pagesById().get(t.sourcePageId)}
+										<button
+											class="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50"
+											onclick={() => { if (sourcePage) selectPage(sourcePage); }}
+										>
+											<ArrowLeft class="h-4 w-4 shrink-0 text-muted-foreground" />
+											<div class="flex-1 min-w-0">
+												<span class="text-sm font-medium text-foreground truncate block">
+													{sourcePage?.title || t.sourcePageId}
+												</span>
+												<span class="text-[11px] text-muted-foreground">
+													{getTriggerTypeLabel(t.triggerType)}{t.triggerText ? ` — "${t.triggerText}"` : ''}
+												</span>
+											</div>
+											{#if t.loadingTimeMs !== null}
+												<span class="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+													<Clock class="h-3 w-3" />
+													{formatLoadingTime(t.loadingTimeMs)}
+												</span>
+											{/if}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+
+						<!-- Modales attachées -->
+						{#if selectedPage}
+							{@const pageModals = (() => {
+								const modals: Page[] = [];
+								function walk(node: TreeNode) {
+									if (node.page?.id === selectedPage!.id && node.modals) {
+										modals.push(...node.modals);
+									}
+									node.children.forEach(walk);
+								}
+								if (tree) walk(tree);
+								return modals;
+							})()}
+							{#if pageModals.length > 0}
+								<div class="space-y-3">
+									<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+										<Layers class="h-4 w-4 text-violet-500" />
+										Modales attachées
+										<span class="text-xs font-normal text-muted-foreground">({pageModals.length})</span>
+									</h3>
+									<div class="space-y-1.5">
+										{#each pageModals as modal}
+											<button
+												class="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50"
+												onclick={() => selectPage(modal)}
+											>
+												<Layers class="h-4 w-4 shrink-0 text-violet-500" />
+												<span class="text-sm font-medium text-foreground">{modal.title || 'Modale'}</span>
+												<span class="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-600">modale</span>
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
+						{/if}
+					{:else}
+						<div class="flex flex-col items-center justify-center py-12 text-center">
+							<div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-card shadow-sm">
+								<Link2 class="h-7 w-7 text-muted" />
+							</div>
+							<h3 class="text-[15px] font-semibold text-foreground/70">Liens & Navigation</h3>
+							<p class="mt-1 max-w-xs text-xs text-muted-foreground">Les transitions de navigation seront affichées ici après capture.</p>
+						</div>
+					{/if}
 				</div>
 			{:else if detailSubTab === 'javascript'}
 				<div class="flex flex-1 items-center justify-center bg-accent/20">
@@ -1006,6 +1744,42 @@
 									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Capturée le</dt>
 									<dd class="mt-0.5 text-foreground">{formatDate(selectedPage.createdAt)}</dd>
 								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Type de page</dt>
+									<dd class="mt-0.5 flex items-center gap-1.5">
+										{#if selectedPage.pageType === 'modal'}
+											<Layers class="h-3.5 w-3.5 text-violet-500" />
+											<span class="text-violet-600 font-medium">Modale</span>
+										{:else if selectedPage.pageType === 'spa_state'}
+											<Fingerprint class="h-3.5 w-3.5 text-amber-500" />
+											<span class="text-amber-600 font-medium">État SPA</span>
+										{:else}
+											<FileText class="h-3.5 w-3.5 text-muted-foreground" />
+											<span>Page</span>
+										{/if}
+									</dd>
+								</div>
+								{#if selectedPage.captureTimingMs}
+									<div>
+										<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Temps de chargement</dt>
+										<dd class="mt-0.5 flex items-center gap-1.5 text-foreground">
+											<Clock class="h-3.5 w-3.5 text-muted-foreground" />
+											{formatLoadingTime(selectedPage.captureTimingMs)}
+										</dd>
+									</div>
+								{/if}
+								{#if selectedPage.syntheticUrl}
+									<div class="col-span-2">
+										<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">URL synthétique</dt>
+										<dd class="mt-0.5 text-foreground font-mono text-xs break-all">/{selectedPage.syntheticUrl}</dd>
+									</div>
+								{/if}
+								{#if selectedPage.domFingerprint}
+									<div>
+										<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Fingerprint DOM</dt>
+										<dd class="mt-0.5 text-foreground font-mono text-xs">{selectedPage.domFingerprint}</dd>
+									</div>
+								{/if}
 							</dl>
 						</div>
 					</div>

@@ -1,6 +1,7 @@
 import { STORAGE_KEYS, PAGE_STATUS, type CapturedPage } from '$lib/constants';
 import {
 	captureCurrentPage,
+	captureModalAsPage,
 	uploadCapturedPage,
 	getCaptureState,
 	updateCaptureState,
@@ -20,7 +21,7 @@ import {
 } from '$lib/auto-capture';
 import { v4 as uuidv4 } from '$lib/uuid';
 import { verifyToken } from '$lib/auth';
-import api from '$lib/api';
+import api, { uploadPage } from '$lib/api';
 
 // ---------------------------------------------------------------------------
 // Message handler
@@ -165,6 +166,9 @@ async function handleMessage(
 			]);
 			return { success: true };
 		}
+
+		case 'CAPTURE_PAGE_WITH_MODALS':
+			return handleCapturePageWithModals(message.tabId as number);
 
 		default:
 			throw new Error(`Unknown message type: ${message.type}`);
@@ -318,6 +322,102 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 }
 
 // ---------------------------------------------------------------------------
+// Capture page + detect and capture modals
+// ---------------------------------------------------------------------------
+
+async function handleCapturePageWithModals(tabId: number): Promise<{
+	page: CapturedPage;
+	modalCount: number;
+}> {
+	const LOG = '[ES Capture+Modals]';
+
+	// Step 1: Capture the main page normally
+	const mainPage = await handleCapturePage(tabId);
+	const mainPageBackendId = mainPage.id;
+	console.log(`${LOG} Main page captured: ${mainPageBackendId}`);
+
+	// Step 2: Detect modals in the tab
+	let modals: Array<{
+		selector: string;
+		detectionMethod: string;
+		title: string;
+	}> = [];
+
+	try {
+		const detectResult = await chrome.tabs.sendMessage(tabId, { type: 'DETECT_MODALS' });
+		modals = detectResult?.modals || [];
+		console.log(`${LOG} Detected ${modals.length} modal(s)`);
+	} catch (e) {
+		console.warn(`${LOG} Modal detection failed:`, e instanceof Error ? e.message : e);
+	}
+
+	if (modals.length === 0) {
+		return { page: mainPage, modalCount: 0 };
+	}
+
+	// Get active version for modal uploads
+	const versionResult = await chrome.storage.local.get(STORAGE_KEYS.ACTIVE_VERSION);
+	const version = versionResult[STORAGE_KEYS.ACTIVE_VERSION];
+	if (!version?.id) {
+		console.warn(`${LOG} No active version — skipping modal capture`);
+		return { page: mainPage, modalCount: 0 };
+	}
+
+	// Step 3: Capture each detected modal
+	let capturedModalCount = 0;
+	for (const modal of modals) {
+		try {
+			console.log(`${LOG} Capturing modal: "${modal.title}" (${modal.selector})`);
+
+			// Capture the modal subtree via content script
+			const modalData = await captureModalAsPage(tabId, modal.selector);
+
+			// Build self-contained HTML for the modal
+			const selfContainedModalHtml = await buildSelfContainedPage(
+				modalData.html,
+				modalData.resources,
+				modalData.url
+			);
+
+			// Generate a slug from the modal title for URL path
+			const titleSlug = modal.title
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-|-$/g, '')
+				.substring(0, 50) || 'modal';
+
+			// Derive parent URL path
+			let parentUrlPath = 'index';
+			try {
+				const parsedUrl = new URL(modalData.url);
+				parentUrlPath = parsedUrl.pathname.replace(/^\/+|\/+$/g, '') || 'index';
+			} catch { /* keep default */ }
+
+			const modalUrlPath = `${parentUrlPath}/__modal/${titleSlug}`;
+
+			// Upload modal as a page with pageType: 'modal'
+			const blob = new Blob([selfContainedModalHtml], { type: 'text/html' });
+			const result = await uploadPage(version.id, blob, {
+				urlSource: modalData.url,
+				urlPath: modalUrlPath,
+				title: modal.title,
+				captureMode: 'free',
+				pageType: 'modal',
+				parentPageId: mainPageBackendId,
+			});
+
+			capturedModalCount++;
+			console.log(`${LOG} Modal uploaded: ${result.data.id} (${modal.title})`);
+		} catch (e) {
+			console.warn(`${LOG} Modal capture failed for "${modal.title}":`, e instanceof Error ? e.message : e);
+		}
+	}
+
+	console.log(`${LOG} === Done: ${capturedModalCount}/${modals.length} modals captured ===`);
+	return { page: mainPage, modalCount: capturedModalCount };
+}
+
+// ---------------------------------------------------------------------------
 // Token refresh on alarm
 // ---------------------------------------------------------------------------
 
@@ -333,7 +433,7 @@ chrome.alarms?.onAlarm.addListener(async (alarm) => {
 // ---------------------------------------------------------------------------
 
 chrome.runtime.onInstalled.addListener(() => {
-	console.log('[Env. Simulés] Extension installed');
+	console.log('[Lab] Extension installed');
 });
 
 // ---------------------------------------------------------------------------

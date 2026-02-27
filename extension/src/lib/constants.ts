@@ -65,6 +65,11 @@ export interface CapturedPage {
 	status: PageStatus;
 	error?: string;
 	capturedAt: string;
+	pageType?: 'page' | 'modal' | 'spa_state';
+	parentPageLocalId?: string;
+	domFingerprint?: string;
+	syntheticUrl?: string;
+	captureTimingMs?: number;
 }
 
 export interface LLGuide {
@@ -91,4 +96,26 @@ export interface CaptureState {
 	jobId?: string;
 	pages: CapturedPage[];
 	targetPageCount: number;
+	captureStrategy?: 'url_based' | 'fingerprint_based';
+	transitions: TransitionRecord[];
+	lastCapturedPageLocalId?: string;
 }
+
+export interface TransitionRecord {
+	id: string;
+	sourcePageLocalId: string;
+	targetPageLocalId: string;
+	triggerType: 'click' | 'pushState' | 'replaceState' | 'popstate' | 'hashchange' | 'manual';
+	triggerSelector?: string;
+	triggerText?: string;
+	loadingTimeMs?: number;
+	hadLoadingIndicator: boolean;
+	loadingIndicatorType?: string;
+}
+
+export const CAPTURE_STRATEGIES = {
+	URL_BASED: 'url_based',
+	FINGERPRINT_BASED: 'fingerprint_based'
+} as const;
+
+export type CaptureStrategy = (typeof CAPTURE_STRATEGIES)[keyof typeof CAPTURE_STRATEGIES];

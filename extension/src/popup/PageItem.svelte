@@ -15,6 +15,12 @@
 		chrome.tabs.create({ url: previewUrl });
 	}
 
+	function openInBackOffice() {
+		if (!page.id) return;
+		const editorUrl = `http://localhost:5173/admin/editor/${page.id}`;
+		chrome.tabs.create({ url: editorUrl });
+	}
+
 	let showActions = $state(false);
 
 	const statusConfig = {
@@ -55,8 +61,13 @@
 
 	<!-- Page info -->
 	<div class="flex-1 min-w-0">
-		<p class="text-xs font-medium text-gray-800 truncate leading-tight">
+		<p class="text-xs font-medium text-gray-800 truncate leading-tight flex items-center gap-1">
 			{page.title || 'Sans titre'}
+			{#if page.pageType === 'modal'}
+				<span class="shrink-0 rounded bg-violet-100 px-1 py-px text-[9px] font-medium text-violet-600">modale</span>
+			{:else if page.pageType === 'spa_state'}
+				<span class="shrink-0 rounded bg-amber-100 px-1 py-px text-[9px] font-medium text-amber-600">SPA</span>
+			{/if}
 		</p>
 		<p class="text-[10px] text-gray-400 truncate mt-0.5">
 			{page.url || 'URL inconnue'}
@@ -69,11 +80,22 @@
 	<!-- Right side: size or actions -->
 	<div class="shrink-0 flex items-center gap-1">
 		{#if showActions}
+			{#if page.status === PAGE_STATUS.DONE && page.id}
+				<button
+					onclick={openInBackOffice}
+					class="p-1 text-gray-400 hover:text-primary rounded transition"
+					title="Ouvrir dans l'éditeur"
+				>
+					<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+					</svg>
+				</button>
+			{/if}
 			{#if page.status === PAGE_STATUS.DONE && subdomain && page.urlPath}
 				<button
 					onclick={openPreview}
 					class="p-1 text-gray-400 hover:text-primary rounded transition"
-					title="Prévisualiser"
+					title="Prévisualiser en démo"
 				>
 					<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />

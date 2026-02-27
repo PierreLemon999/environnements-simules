@@ -8,7 +8,8 @@
 		type Version,
 		type CapturedPage,
 		type CaptureMode,
-		type CaptureState
+		type CaptureState,
+		type CaptureStrategy
 	} from '$lib/constants';
 	import PageItem from './PageItem.svelte';
 	import AutoCapturePanel from './AutoCapturePanel.svelte';
@@ -188,6 +189,12 @@
 		await chrome.runtime.sendMessage({ type: 'SET_CAPTURE_MODE', mode });
 	}
 
+	let captureStrategy = $derived<CaptureStrategy>(captureState.captureStrategy || 'url_based');
+
+	async function setCaptureStrategy(strategy: CaptureStrategy) {
+		await chrome.runtime.sendMessage({ type: 'SET_CAPTURE_STRATEGY', strategy });
+	}
+
 	async function captureCurrentPage() {
 		if (!activeVersion) {
 			error = 'Sélectionnez un projet et une version';
@@ -343,34 +350,14 @@
 </script>
 
 <div class="flex flex-col h-full">
-	<!-- Header -->
-	<div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
-		<div class="flex items-center gap-2.5">
-			<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-sm">
-				ES
-			</div>
-			<div>
-				<h1 class="text-sm font-semibold text-gray-900 leading-tight">Env. Simulés</h1>
-				<div class="flex items-center gap-1">
-					{#if captureState.isRunning}
-						<div class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></div>
-						<span class="text-[10px] text-warning font-medium">Capture en cours</span>
-					{:else if isCapturing}
-						<div class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></div>
-						<span class="text-[10px] text-warning font-medium">Capture...</span>
-					{:else}
-						<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
-						<span class="text-[10px] text-success font-medium">Connecté</span>
-					{/if}
-				</div>
-			</div>
-		</div>
+	<!-- Top bar -->
+	<div class="flex items-center justify-end px-3 py-1.5 border-b border-gray-100 bg-white">
 		<button
 			onclick={onLogout}
-			class="text-gray-400 hover:text-gray-600 transition p-1"
+			class="text-gray-300 hover:text-gray-500 transition p-1 rounded"
 			title="Se déconnecter"
 		>
-			<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 				<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
 			</svg>
 		</button>
@@ -489,6 +476,29 @@
 			</button>
 		</div>
 	</div>
+
+	<!-- SPA mode toggle -->
+	{#if captureMode !== 'guided'}
+		<div class="px-4 py-2 border-b border-gray-100">
+			<label class="flex items-center justify-between gap-3 cursor-pointer">
+				<div class="flex-1 min-w-0">
+					<span class="text-xs font-medium text-gray-700">Mode SPA (sans URL)</span>
+					<p class="text-[10px] text-gray-400 leading-tight mt-0.5">Identifier les pages par leur contenu</p>
+				</div>
+				<button
+					type="button"
+					role="switch"
+					aria-checked={captureStrategy === 'fingerprint_based'}
+					onclick={() => setCaptureStrategy(captureStrategy === 'fingerprint_based' ? 'url_based' : 'fingerprint_based')}
+					class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors {captureStrategy === 'fingerprint_based' ? 'bg-primary' : 'bg-gray-200'}"
+				>
+					<span
+						class="inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform {captureStrategy === 'fingerprint_based' ? 'translate-x-[18px]' : 'translate-x-[3px]'}"
+					></span>
+				</button>
+			</label>
+		</div>
+	{/if}
 
 	<!-- Auto capture panel -->
 	{#if captureMode === 'auto' && (showAutoPanel || !captureState.isRunning)}

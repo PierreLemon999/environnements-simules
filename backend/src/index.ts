@@ -18,6 +18,7 @@ import assignmentRoutes from './routes/assignments.js';
 import analyticsRoutes from './routes/analytics.js';
 import updateRequestRoutes from './routes/update-requests.js';
 import captureJobRoutes from './routes/capture-jobs.js';
+import transitionRoutes from './routes/transitions.js';
 import userRoutes from './routes/users.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -78,6 +79,7 @@ app.use('/api', assignmentRoutes); // Handles /api/versions/:versionId/assignmen
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api', updateRequestRoutes); // Handles /api/pages/:pageId/update-request and /api/update-requests
 app.use('/api', captureJobRoutes); // Handles /api/versions/:versionId/capture-jobs and /api/capture-jobs/:id
+app.use('/api', transitionRoutes); // Handles /api/versions/:versionId/transitions, /api/pages/:pageId/transitions, /api/transitions/:id
 app.use('/api/users', userRoutes);
 
 // ── Demo Serving Route ───────────────────────────────────────────────────────
