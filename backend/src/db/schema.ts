@@ -48,7 +48,6 @@ export const pages = sqliteTable('pages', {
   fileSize: integer('file_size'),
   captureMode: text('capture_mode', { enum: ['free', 'guided', 'auto'] }).notNull().default('free'),
   thumbnailPath: text('thumbnail_path'),
-  mhtmlPath: text('mhtml_path'),
   healthStatus: text('health_status', { enum: ['ok', 'warning', 'error'] }).notNull().default('ok'),
   createdAt: text('created_at').notNull(),
 });

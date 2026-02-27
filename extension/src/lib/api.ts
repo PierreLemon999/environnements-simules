@@ -103,15 +103,11 @@ export async function uploadPage(
 		title: string;
 		captureMode: string;
 	},
-	mhtmlBlob?: Blob | null,
 	screenshotBlob?: Blob | null
 ): Promise<{ data: { id: string; fileSize: number } }> {
 	const token = await getToken();
 	const formData = new FormData();
 	formData.append('file', file, 'page.html');
-	if (mhtmlBlob) {
-		formData.append('mhtml', mhtmlBlob, 'page.mhtml');
-	}
 	if (screenshotBlob) {
 		formData.append('screenshot', screenshotBlob, 'screenshot.png');
 	}

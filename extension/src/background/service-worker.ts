@@ -230,27 +230,18 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			url: collected.url
 		});
 
-		// Step 2: Fetch all resources and build self-contained HTML
-		// Optionally capture MHTML in parallel (debug mode)
-		const mhtmlPref = await chrome.storage.local.get(STORAGE_KEYS.MHTML_DEBUG);
-		const shouldCaptureMhtml = !!mhtmlPref[STORAGE_KEYS.MHTML_DEBUG];
-		console.log(`${LOG} Step 2: Building self-contained HTML (MHTML: ${shouldCaptureMhtml})`);
+		// Step 2: Fetch all resources and build self-contained HTML + screenshot
+		console.log(`${LOG} Step 2: Building self-contained HTML`);
 
 		const buildStart = Date.now();
-		const [selfContainedHtml, mhtmlBlob, screenshotDataUrl] = await Promise.all([
+		const [selfContainedHtml, screenshotDataUrl] = await Promise.all([
 			buildSelfContainedPage(collected.html, collected.resources, collected.url),
-			shouldCaptureMhtml
-				? chrome.pageCapture.saveAsMHTML({ tabId }).catch((e) => {
-					console.warn(`${LOG} MHTML capture failed:`, e instanceof Error ? e.message : e);
-					return null;
-				})
-				: Promise.resolve(null),
 			chrome.tabs.captureVisibleTab({ format: 'png' }).catch((e) => {
 				console.warn(`${LOG} Screenshot capture failed:`, e instanceof Error ? e.message : e);
 				return null;
 			})
 		]);
-		console.log(`${LOG} Build complete in ${Date.now() - buildStart}ms — HTML: ${(selfContainedHtml.length / 1024).toFixed(0)}KB, MHTML: ${mhtmlBlob ? 'yes' : 'no'}, Screenshot: ${screenshotDataUrl ? 'yes' : 'no'}`);
+		console.log(`${LOG} Build complete in ${Date.now() - buildStart}ms — HTML: ${(selfContainedHtml.length / 1024).toFixed(0)}KB, Screenshot: ${screenshotDataUrl ? 'yes' : 'no'}`);
 
 		// Convert screenshot data URL to Blob
 		let screenshotBlob: Blob | null = null;
@@ -271,7 +262,6 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			version.id,
 			{ html: selfContainedHtml, title: collected.title, url: collected.url },
 			state.mode,
-			mhtmlBlob,
 			screenshotBlob
 		);
 		console.log(`${LOG} Upload complete in ${Date.now() - uploadStart}ms — page ID: ${result.id}, size: ${result.fileSize}`);

@@ -98,7 +98,6 @@ async function main() {
       file_size INTEGER,
       capture_mode TEXT NOT NULL DEFAULT 'free',
       thumbnail_path TEXT,
-      mhtml_path TEXT,
       health_status TEXT NOT NULL DEFAULT 'ok',
       created_at TEXT NOT NULL
     );

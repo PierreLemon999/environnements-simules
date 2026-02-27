@@ -10,8 +10,7 @@
     "tabs",
     "scripting",
     "alarms",
-    "sidePanel",
-    "pageCapture"
+    "sidePanel"
   ],
   "host_permissions": [
     "<all_urls>"

@@ -43,7 +43,6 @@
 	let newVersionName = $state('');
 	let detectedProject = $state<Project | null>(null);
 	let pageFilter = $state<'all' | 'done' | 'error'>('all');
-	let mhtmlDebug = $state(false);
 	let autoConfig = $state<AutoCaptureConfig>({
 		targetPageCount: 20,
 		maxDepth: 3,
@@ -84,8 +83,7 @@
 			const stored = await chrome.storage.local.get([
 				STORAGE_KEYS.ACTIVE_PROJECT,
 				STORAGE_KEYS.ACTIVE_VERSION,
-				STORAGE_KEYS.CAPTURE_MODE,
-				STORAGE_KEYS.MHTML_DEBUG
+				STORAGE_KEYS.CAPTURE_MODE
 			]);
 
 			if (stored[STORAGE_KEYS.ACTIVE_PROJECT]) {
@@ -98,10 +96,6 @@
 			if (stored[STORAGE_KEYS.CAPTURE_MODE]) {
 				captureMode = stored[STORAGE_KEYS.CAPTURE_MODE];
 			}
-			if (stored[STORAGE_KEYS.MHTML_DEBUG]) {
-				mhtmlDebug = true;
-			}
-
 			// Detect project from current tab URL
 			try {
 				const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -183,11 +177,6 @@
 		captureMode = mode;
 		await chrome.storage.local.set({ [STORAGE_KEYS.CAPTURE_MODE]: mode });
 		await chrome.runtime.sendMessage({ type: 'SET_CAPTURE_MODE', mode });
-	}
-
-	async function toggleMhtmlDebug() {
-		mhtmlDebug = !mhtmlDebug;
-		await chrome.storage.local.set({ [STORAGE_KEYS.MHTML_DEBUG]: mhtmlDebug });
 	}
 
 	async function captureCurrentPage() {
@@ -637,17 +626,6 @@
 				{/if}
 			</button>
 		{/if}
-
-		<!-- MHTML debug toggle -->
-		<label class="flex items-center gap-2 text-[11px] text-gray-400 cursor-pointer select-none px-0.5">
-			<input
-				type="checkbox"
-				checked={mhtmlDebug}
-				onchange={toggleMhtmlDebug}
-				class="w-3.5 h-3.5 rounded border-gray-300 accent-blue-500"
-			/>
-			Capture MHTML (debug)
-		</label>
 
 		{#if captureMode !== 'auto' || !captureState.isRunning}
 			<button

@@ -531,7 +531,6 @@ export async function uploadCapturedPage(
 	versionId: string,
 	page: { html: string; title: string; url: string },
 	captureMode: string,
-	mhtmlBlob?: Blob | null,
 	screenshotBlob?: Blob | null
 ): Promise<{ id: string; fileSize: number }> {
 	const LOG = '[ES Capture]';
@@ -542,7 +541,6 @@ export async function uploadCapturedPage(
 	const urlPath = urlObj.pathname.replace(/^\/+|\/+$/g, '') || 'index';
 
 	const parts = ['HTML'];
-	if (mhtmlBlob) parts.push(`MHTML(${(mhtmlBlob.size / 1024).toFixed(0)}KB)`);
 	if (screenshotBlob) parts.push(`Screenshot(${(screenshotBlob.size / 1024).toFixed(0)}KB)`);
 	console.log(`${LOG} Uploading: ${parts.join(' + ')} → /versions/${versionId}/pages`);
 
@@ -552,7 +550,7 @@ export async function uploadCapturedPage(
 			urlPath,
 			title: page.title,
 			captureMode
-		}, mhtmlBlob, screenshotBlob);
+		}, screenshotBlob);
 		return response.data;
 	} catch (err) {
 		console.error(`${LOG} Upload failed:`, err instanceof Error ? err.message : err);

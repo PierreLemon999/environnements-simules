@@ -46,7 +46,6 @@
 		fileSize: number | null;
 		captureMode: 'free' | 'guided' | 'auto';
 		thumbnailPath: string | null;
-		mhtmlPath: string | null;
 		healthStatus: 'ok' | 'warning' | 'error';
 		createdAt: string;
 	}
@@ -968,47 +967,6 @@
 								<Camera class="h-8 w-8 text-muted" />
 								<p class="mt-2 text-sm text-muted-foreground">Aucune capture d'écran disponible</p>
 								<p class="mt-0.5 text-xs text-muted">La capture d'écran est générée automatiquement lors de la capture de page.</p>
-							</div>
-						{/if}
-					</div>
-
-					<!-- MHTML section -->
-					<div class="space-y-3">
-						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
-							<Code class="h-4 w-4 text-muted-foreground" />
-							MHTML (debug)
-						</h3>
-						{#if selectedPage.mhtmlPath}
-							<div class="rounded-lg border border-border bg-card p-4 space-y-3">
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
-											<FileText class="h-4 w-4 text-blue-600" />
-										</div>
-										<div>
-											<p class="text-sm font-medium text-foreground">{selectedPage.title}.mhtml</p>
-											<p class="text-xs text-muted-foreground">Capture MHTML complète avec ressources intégrées</p>
-										</div>
-									</div>
-									<a
-										href="/api/pages/{selectedPage.id}/mhtml"
-										download
-										class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-accent"
-									>
-										<Download class="h-3.5 w-3.5" />
-										Télécharger
-									</a>
-								</div>
-								<p class="text-xs text-muted-foreground leading-relaxed">
-									Le fichier MHTML contient la page et toutes ses ressources (CSS, images, polices) dans un seul fichier.
-									Ouvrez-le dans Chrome pour une visualisation fidèle de la capture.
-								</p>
-							</div>
-						{:else}
-							<div class="flex flex-col items-center justify-center py-8 rounded-lg border border-dashed border-border bg-accent/20">
-								<Code class="h-8 w-8 text-muted" />
-								<p class="mt-2 text-sm text-muted-foreground">Aucun fichier MHTML disponible</p>
-								<p class="mt-0.5 text-xs text-muted">Activez l'option «Capture MHTML (debug)» dans l'extension pour capturer le MHTML.</p>
 							</div>
 						{/if}
 					</div>
