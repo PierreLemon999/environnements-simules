@@ -11,7 +11,8 @@ COPY backend/ ./backend/
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm ci
 COPY frontend/ ./frontend/
-RUN cd frontend && PUBLIC_API_BASE_URL=/api npm run build
+ARG PUBLIC_GOOGLE_CLIENT_ID
+RUN cd frontend && PUBLIC_API_BASE_URL=/api PUBLIC_GOOGLE_CLIENT_ID=${PUBLIC_GOOGLE_CLIENT_ID} npm run build
 
 # Seed database with initial data
 RUN cd backend && npx tsx src/db/seed.ts
