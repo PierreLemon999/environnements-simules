@@ -1,4 +1,4 @@
-# Environnements Simulés
+# Lemon Lab
 
 Plateforme Lemon Learning : extension Chrome capture des pages SaaS → backend les stocke/sert avec obfuscation → admins gèrent tout → prospects voient les démos.
 
@@ -37,11 +37,17 @@ cd frontend && npm run build             # Build prod
 - Svelte 5 : `$state()`, `$derived()`, `$effect()`, `let { x } = $props()`
 - Ne jamais `npm install` Playwright/deps à la racine (casse backend node_modules)
 
-## Design System
+## Design System (Lemon Learning)
 
-- Bg: #FFFFFF / #F9FAFB | Primary: #3B82F6 | Text: #111827 / #6B7280 / #9CA3AF
-- Success: #10B981 | Error: #EF4444 | Warning: #F59E0B
-- Cards: white, border #E5E7EB, rounded-lg | Sidebar: 220px / 48px collapsed
+Source : `DESIGN SYSTEM Lemon Learning/` (PDFs couleurs, typographie, icônes)
+
+- Font: Albert Sans (Google Fonts)
+- Primary: #2B72EE (hover #245FC6) | Yellow accent: #FAE100
+- Text: #242F42 / #6D7481 / #9197A0 (bluish grays)
+- Bg: #FFFFFF / #F7F7F8 | Border: #E2E3E6 | Input: #F0F1F2
+- Success: #10B981 | Warning: #F18E2A | Error: #F1362A
+- Cards: white, border #E2E3E6, rounded-lg | Sidebar: 260px / 48px collapsed
+- Favicon : "Capture Dot Citron" (coins bleus + citron jaune)
 - Style : Linear/Notion-inspired, minimal
 
 ## Rôles
@@ -49,7 +55,18 @@ cd frontend && npm run build             # Build prod
 - **admin** : employés Lemon Learning, Google SSO, accès total
 - **client** : prospects, email+password, accès viewer uniquement
 
-## Domaines (voir .claude/rules/)
+## Hébergement & Domaines
+
+| Domaine | Usage |
+|---------|-------|
+| **getlemonlab.com** | Back-office / admin (gestion projets, users, obfuscation, analytics) |
+| **env-ll.com** | Lecteur de démos publiques (URL clean pour prospects/clients) |
+
+- Hébergement : Railway (single service, Dockerfile)
+- DNS/CDN/SSL : Cloudflare (proxy activé, Always HTTPS, www→apex redirect)
+- Production : single-process (`production-server.ts`) — Express API + SvelteKit sur port 8080
+
+## Domaines fonctionnels (voir .claude/rules/)
 
 Le projet est découpé en 3 domaines fonctionnels documentés dans `.claude/rules/` :
 - **capture** : extension Chrome + upload/gestion des pages capturées

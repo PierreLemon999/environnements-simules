@@ -20,6 +20,7 @@ import updateRequestRoutes from './routes/update-requests.js';
 import captureJobRoutes from './routes/capture-jobs.js';
 import transitionRoutes from './routes/transitions.js';
 import userRoutes from './routes/users.js';
+import settingsRoutes from './routes/settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ app.use(
       if (!origin) return callback(null, true);
       const allowed = [
         'https://env-ll.com',
+        'https://getlemonlab.com',
         process.env.FRONTEND_URL || '',
       ].filter(Boolean);
       if (allowed.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin) || /^chrome-extension:\/\//.test(origin)) {
@@ -81,6 +83,7 @@ app.use('/api', updateRequestRoutes); // Handles /api/pages/:pageId/update-reque
 app.use('/api', captureJobRoutes); // Handles /api/versions/:versionId/capture-jobs and /api/capture-jobs/:id
 app.use('/api', transitionRoutes); // Handles /api/versions/:versionId/transitions, /api/pages/:pageId/transitions, /api/transitions/:id
 app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // ── Demo Serving Route ───────────────────────────────────────────────────────
 

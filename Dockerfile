@@ -17,7 +17,8 @@ RUN cd frontend && PUBLIC_API_BASE_URL=/api npm run build
 RUN cd backend && npx tsx src/db/seed.ts
 
 ENV NODE_ENV=production
-ENV ORIGIN=https://env-ll.com
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=host
 ENV BODY_SIZE_LIMIT=52428800
 WORKDIR /app/backend
 
