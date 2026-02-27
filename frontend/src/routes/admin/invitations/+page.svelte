@@ -15,6 +15,7 @@
 		DialogDescription,
 		DialogFooter,
 	} from '$components/ui/dialog';
+	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
 		Send,
 		Plus,
@@ -648,24 +649,28 @@
 							class="h-8 pl-8 text-sm"
 						/>
 					</div>
-					<select
+					<SearchableSelect
 						bind:value={statusFilter}
-						class="flex h-8 rounded-md border border-border bg-transparent px-2.5 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<option value="all">Tous les statuts</option>
-						<option value="connected">Connecté</option>
-						<option value="pending">En attente</option>
-						<option value="expired">Expiré</option>
-					</select>
-					<select
+						options={[
+							{ value: 'all', label: 'Tous les statuts' },
+							{ value: 'connected', label: 'Connecté' },
+							{ value: 'pending', label: 'En attente' },
+							{ value: 'expired', label: 'Expiré' },
+						]}
+						placeholder="Tous les statuts"
+						class="w-40"
+					/>
+					<SearchableSelect
 						bind:value={projectFilter}
-						class="flex h-8 rounded-md border border-border bg-transparent px-2.5 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-					>
-						<option value="all">Tous les projets</option>
-						{#each projects as project}
-							<option value={project.id}>{project.name}</option>
-						{/each}
-					</select>
+						options={[
+							{ value: 'all', label: 'Tous les projets' },
+							...projects.map(p => ({ value: p.id, label: p.name }))
+						]}
+						placeholder="Tous les projets"
+						searchable={true}
+						searchPlaceholder="Rechercher..."
+						class="w-44"
+					/>
 				</div>
 			</CardHeader>
 			<CardContent>
@@ -1009,46 +1014,40 @@
 									<Input id="invite-company" bind:value={formCompany} placeholder="Acme Corp" class="h-8 text-sm" />
 								</div>
 								<div class="space-y-1.5">
-									<label for="invite-project" class="text-xs font-medium text-foreground">Projet</label>
-									<select
-										id="invite-project"
-										bind:value={formProjectId}
-										onchange={() => { formVersionId = ''; }}
-										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<option value="" disabled>Sélectionner un projet</option>
-										{#each projects as project}
-											<option value={project.id}>{project.name}</option>
-										{/each}
-									</select>
+									<label class="text-xs font-medium text-foreground">Projet</label>
+									<SearchableSelect
+										value={formProjectId}
+										options={projects.map(p => ({ value: p.id, label: p.name }))}
+										placeholder="Sélectionner un projet"
+										searchable={true}
+										searchPlaceholder="Rechercher un projet..."
+										onchange={(val) => { formProjectId = val; formVersionId = ''; }}
+									/>
 								</div>
 								<div class="space-y-1.5">
-									<label for="invite-version" class="text-xs font-medium text-foreground">Version</label>
-									<select
-										id="invite-version"
-										bind:value={formVersionId}
-										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									<label class="text-xs font-medium text-foreground">Version</label>
+									<SearchableSelect
+										value={formVersionId}
+										options={availableVersions().map(v => ({ value: v.id, label: `${v.name} (${v.status})` }))}
+										placeholder="Sélectionner une version"
 										disabled={!formProjectId}
-									>
-										<option value="" disabled>Sélectionner une version</option>
-										{#each availableVersions() as version}
-											<option value={version.id}>{version.name} ({version.status})</option>
-										{/each}
-									</select>
+										onchange={(val) => { formVersionId = val; }}
+									/>
 								</div>
 								<div class="space-y-1.5">
-									<label for="invite-expiry" class="text-xs font-medium text-foreground">Expiration</label>
-									<select
-										id="invite-expiry"
-										bind:value={formExpiryDays}
-										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<option value={30}>1 mois</option>
-										<option value={90}>3 mois (recommandé)</option>
-										<option value={180}>6 mois</option>
-										<option value={365}>1 an</option>
-										<option value={730}>2 ans</option>
-									</select>
+									<label class="text-xs font-medium text-foreground">Expiration</label>
+									<SearchableSelect
+										value={String(formExpiryDays)}
+										options={[
+											{ value: '30', label: '1 mois' },
+											{ value: '90', label: '3 mois (recommandé)' },
+											{ value: '180', label: '6 mois' },
+											{ value: '365', label: '1 an' },
+											{ value: '730', label: '2 ans' },
+										]}
+										placeholder="Durée d'expiration"
+										onchange={(val) => { formExpiryDays = Number(val); }}
+									/>
 								</div>
 
 								<div class="flex items-center gap-3 rounded-lg border border-border p-3">
@@ -1123,26 +1122,27 @@
 						{:else}
 							<form class="space-y-3" onsubmit={(e) => { e.preventDefault(); handleGenerateLink(); }}>
 								<div class="space-y-1.5">
-									<label for="link-company" class="text-xs font-medium text-foreground">Entreprise</label>
+									<label class="text-xs font-medium text-foreground">Entreprise</label>
 									{#if linkCompanyMode === 'select'}
-										<select
-											id="link-company"
-											bind:value={linkCompany}
-											onchange={(e) => {
-												if ((e.target as HTMLSelectElement).value === '__create__') {
+										<SearchableSelect
+											value={linkCompany}
+											options={[
+												...existingCompanies().map(c => ({ value: c, label: c })),
+												{ value: '__create__', label: '+ Créer une entreprise' },
+											]}
+											placeholder="Sélectionner une entreprise"
+											searchable={true}
+											searchPlaceholder="Rechercher..."
+											onchange={(val) => {
+												if (val === '__create__') {
 													linkCompanyMode = 'create';
 													linkCompany = '';
 													linkCompanyCustom = '';
+												} else {
+													linkCompany = val;
 												}
 											}}
-											class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<option value="" disabled>Sélectionner une entreprise</option>
-											{#each existingCompanies() as company}
-												<option value={company}>{company}</option>
-											{/each}
-											<option value="__create__">+ Créer une entreprise</option>
-										</select>
+										/>
 									{:else}
 										<div class="flex items-center gap-2">
 											<Input
@@ -1164,46 +1164,40 @@
 									{/if}
 								</div>
 								<div class="space-y-1.5">
-									<label for="link-project" class="text-xs font-medium text-foreground">Projet</label>
-									<select
-										id="link-project"
-										bind:value={linkProjectId}
-										onchange={() => { linkVersionId = ''; }}
-										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<option value="" disabled>Sélectionner un projet</option>
-										{#each projects as project}
-											<option value={project.id}>{project.name}</option>
-										{/each}
-									</select>
+									<label class="text-xs font-medium text-foreground">Projet</label>
+									<SearchableSelect
+										value={linkProjectId}
+										options={projects.map(p => ({ value: p.id, label: p.name }))}
+										placeholder="Sélectionner un projet"
+										searchable={true}
+										searchPlaceholder="Rechercher un projet..."
+										onchange={(val) => { linkProjectId = val; linkVersionId = ''; }}
+									/>
 								</div>
 								<div class="space-y-1.5">
-									<label for="link-version" class="text-xs font-medium text-foreground">Version</label>
-									<select
-										id="link-version"
-										bind:value={linkVersionId}
-										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									<label class="text-xs font-medium text-foreground">Version</label>
+									<SearchableSelect
+										value={linkVersionId}
+										options={linkAvailableVersions().map(v => ({ value: v.id, label: `${v.name} (${v.status})` }))}
+										placeholder="Sélectionner une version"
 										disabled={!linkProjectId}
-									>
-										<option value="" disabled>Sélectionner une version</option>
-										{#each linkAvailableVersions() as version}
-											<option value={version.id}>{version.name} ({version.status})</option>
-										{/each}
-									</select>
+										onchange={(val) => { linkVersionId = val; }}
+									/>
 								</div>
 								<div class="space-y-1.5">
-									<label for="link-expiry" class="text-xs font-medium text-foreground">Expiration</label>
-									<select
-										id="link-expiry"
-										bind:value={linkExpiryDays}
-										class="flex h-8 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-									>
-										<option value={30}>1 mois</option>
-										<option value={90}>3 mois (recommandé)</option>
-										<option value={180}>6 mois</option>
-										<option value={365}>1 an</option>
-										<option value={730}>2 ans</option>
-									</select>
+									<label class="text-xs font-medium text-foreground">Expiration</label>
+									<SearchableSelect
+										value={String(linkExpiryDays)}
+										options={[
+											{ value: '30', label: '1 mois' },
+											{ value: '90', label: '3 mois (recommandé)' },
+											{ value: '180', label: '6 mois' },
+											{ value: '365', label: '1 an' },
+											{ value: '730', label: '2 ans' },
+										]}
+										placeholder="Durée d'expiration"
+										onchange={(val) => { linkExpiryDays = Number(val); }}
+									/>
 								</div>
 								<div class="space-y-1.5">
 									<label for="link-password" class="text-xs font-medium text-foreground">

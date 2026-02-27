@@ -13,6 +13,7 @@
 	import PageItem from './PageItem.svelte';
 	import AutoCapturePanel from './AutoCapturePanel.svelte';
 	import ProjectDropdown from './ProjectDropdown.svelte';
+	import VersionDropdown from './VersionDropdown.svelte';
 	import CreateProjectModal from './CreateProjectModal.svelte';
 	import GuidedCapturePanel from './GuidedCapturePanel.svelte';
 	import type { AutoCaptureConfig } from '$lib/auto-capture';
@@ -38,12 +39,15 @@
 	let error = $state('');
 	let showAutoPanel = $state(false);
 	let showCreateProject = $state(false);
+	let showCreateVersion = $state(false);
+	let newVersionName = $state('');
 	let detectedProject = $state<Project | null>(null);
 	let pageFilter = $state<'all' | 'done' | 'error'>('all');
+	let mhtmlDebug = $state(false);
 	let autoConfig = $state<AutoCaptureConfig>({
 		targetPageCount: 20,
 		maxDepth: 3,
-		delayBetweenPages: 800,
+		delayBetweenPages: 500,
 		interestZones: [],
 		blacklist: ['Supprimer', 'Delete', 'Remove', 'Déconnexion', 'Logout', 'Sign out']
 	});
@@ -80,7 +84,8 @@
 			const stored = await chrome.storage.local.get([
 				STORAGE_KEYS.ACTIVE_PROJECT,
 				STORAGE_KEYS.ACTIVE_VERSION,
-				STORAGE_KEYS.CAPTURE_MODE
+				STORAGE_KEYS.CAPTURE_MODE,
+				STORAGE_KEYS.MHTML_DEBUG
 			]);
 
 			if (stored[STORAGE_KEYS.ACTIVE_PROJECT]) {
@@ -92,6 +97,9 @@
 			}
 			if (stored[STORAGE_KEYS.CAPTURE_MODE]) {
 				captureMode = stored[STORAGE_KEYS.CAPTURE_MODE];
+			}
+			if (stored[STORAGE_KEYS.MHTML_DEBUG]) {
+				mhtmlDebug = true;
 			}
 
 			// Detect project from current tab URL
@@ -156,17 +164,30 @@
 		await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_PROJECT]: project });
 		await chrome.storage.local.remove(STORAGE_KEYS.ACTIVE_VERSION);
 		await loadVersions(project.id);
+		// No version selected → empty capture state
+		captureState = { mode: captureMode, isRunning: false, isPaused: false, pages: [], targetPageCount: 0 };
 	}
 
 	async function selectVersion(version: Version) {
 		activeVersion = version;
 		await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_VERSION]: version });
+		// Reload capture state scoped to this version
+		const stateRes = await chrome.runtime.sendMessage({ type: 'GET_CAPTURE_STATE' });
+		if (stateRes) {
+			captureState = stateRes;
+			captureMode = stateRes.mode || 'free';
+		}
 	}
 
 	async function setMode(mode: CaptureMode) {
 		captureMode = mode;
 		await chrome.storage.local.set({ [STORAGE_KEYS.CAPTURE_MODE]: mode });
 		await chrome.runtime.sendMessage({ type: 'SET_CAPTURE_MODE', mode });
+	}
+
+	async function toggleMhtmlDebug() {
+		mhtmlDebug = !mhtmlDebug;
+		await chrome.storage.local.set({ [STORAGE_KEYS.MHTML_DEBUG]: mhtmlDebug });
 	}
 
 	async function captureCurrentPage() {
@@ -286,11 +307,25 @@
 		}
 	}
 
-	function handleFooterClick(panel: 'config' | 'zones' | 'blacklist') {
-		if (captureMode !== 'auto') {
-			setMode('auto');
+	async function createVersion() {
+		if (!activeProject || !newVersionName.trim()) return;
+		try {
+			const res = await chrome.runtime.sendMessage({
+				type: 'CREATE_VERSION',
+				projectId: activeProject.id,
+				name: newVersionName.trim()
+			});
+			if (res?.data) {
+				await loadVersions(activeProject.id);
+				const created = versions.find((v) => v.id === res.data.id);
+				if (created) await selectVersion(created);
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Erreur de création';
+		} finally {
+			newVersionName = '';
+			showCreateVersion = false;
 		}
-		showAutoPanel = true;
 	}
 
 	function formatSize(bytes: number): string {
@@ -345,21 +380,54 @@
 			onCreateNew={() => (showCreateProject = true)}
 		/>
 
-		{#if activeProject && versions.length > 0}
-			<select
-				class="w-full mt-2 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition appearance-none"
-				value={activeVersion?.id || ''}
-				onchange={(e: Event) => {
-					const id = (e.target as HTMLSelectElement).value;
-					const version = versions.find((v) => v.id === id);
-					if (version) selectVersion(version);
-				}}
-			>
-				<option value="" disabled>Sélectionner une version</option>
-				{#each versions as version}
-					<option value={version.id}>{version.name} ({version.status})</option>
-				{/each}
-			</select>
+		{#if activeProject}
+			{#if showCreateVersion}
+				<div class="flex items-center gap-1.5 mt-2">
+					<input
+						type="text"
+						bind:value={newVersionName}
+						placeholder="Nom de la version"
+						class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+						onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') createVersion(); if (e.key === 'Escape') { showCreateVersion = false; newVersionName = ''; } }}
+					/>
+					<button
+						onclick={createVersion}
+						disabled={!newVersionName.trim()}
+						class="p-1.5 rounded-lg bg-primary text-white hover:bg-blue-600 transition disabled:opacity-50"
+						title="Créer"
+					>
+						<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+					</button>
+					<button
+						onclick={() => { showCreateVersion = false; newVersionName = ''; }}
+						class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+						title="Annuler"
+					>
+						<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
+				</div>
+			{:else}
+				<div class="mt-2">
+					<VersionDropdown
+						{versions}
+						{activeVersion}
+						onSelect={selectVersion}
+						onCreateNew={() => (showCreateVersion = true)}
+					/>
+				</div>
+			{/if}
+		{:else}
+			<div class="mt-2">
+				<button
+					onclick={() => (showCreateProject = true)}
+					class="w-full flex items-center gap-2 px-3 py-1.5 border border-dashed border-gray-300 rounded-lg text-left hover:border-primary hover:text-primary transition"
+				>
+					<svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+					</svg>
+					<span class="text-sm text-gray-400">Créer une version</span>
+				</button>
+			</div>
 		{/if}
 	</div>
 
@@ -570,10 +638,22 @@
 			</button>
 		{/if}
 
+		<!-- MHTML debug toggle -->
+		<label class="flex items-center gap-2 text-[11px] text-gray-400 cursor-pointer select-none px-0.5">
+			<input
+				type="checkbox"
+				checked={mhtmlDebug}
+				onchange={toggleMhtmlDebug}
+				class="w-3.5 h-3.5 rounded border-gray-300 accent-blue-500"
+			/>
+			Capture MHTML (debug)
+		</label>
+
 		{#if captureMode !== 'auto' || !captureState.isRunning}
 			<button
 				onclick={captureCurrentPage}
 				disabled={isCapturing || !activeVersion || captureMode === 'auto'}
+				title={!activeProject ? 'Sélectionnez un projet' : !activeVersion ? 'Sélectionnez une version' : ''}
 				class="w-full flex items-center justify-center gap-2 py-2 px-4 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
 			>
 				{#if isCapturing}
@@ -589,12 +669,4 @@
 		{/if}
 	</div>
 
-	<!-- Footer links -->
-	<div class="flex items-center justify-center gap-3 px-4 py-2 border-t border-gray-50 bg-gray-50/50">
-		<button onclick={() => handleFooterClick('config')} class="text-[10px] text-gray-400 hover:text-primary transition">Paramètres</button>
-		<span class="text-gray-200">—</span>
-		<button onclick={() => handleFooterClick('zones')} class="text-[10px] text-gray-400 hover:text-primary transition">Zones d'intérêt</button>
-		<span class="text-gray-200">—</span>
-		<button onclick={() => handleFooterClick('blacklist')} class="text-[10px] text-gray-400 hover:text-primary transition">Liste noire</button>
-	</div>
 </div>
