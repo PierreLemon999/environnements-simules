@@ -4,6 +4,7 @@
 	let { config = $bindable(), onStart }: { config: AutoCaptureConfig; onStart: (config: AutoCaptureConfig) => void } = $props();
 
 	let activeTab = $state<'config' | 'zones' | 'blacklist'>('config');
+	let showDelay = $state(false);
 
 	// Interest zone form
 	let newZonePattern = $state('');
@@ -79,42 +80,51 @@
 	{#if activeTab === 'config'}
 		<!-- Configuration panel -->
 		<div class="space-y-3">
-			<div>
-				<label class="block text-[11px] font-medium text-gray-600 mb-1">Pages à ajouter</label>
-				<input
-					type="number"
-					min="1"
-					max="500"
-					bind:value={config.targetPageCount}
-					class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-				/>
-				<p class="text-[10px] text-gray-400 mt-0.5">Nombre de pages supplémentaires à capturer</p>
+			<div class="grid grid-cols-2 gap-2">
+				<div>
+					<label class="block text-[11px] font-medium text-gray-600 mb-1">Pages à ajouter</label>
+					<input
+						type="number"
+						min="1"
+						max="500"
+						bind:value={config.targetPageCount}
+						class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+					/>
+				</div>
+				<div>
+					<label class="block text-[11px] font-medium text-gray-600 mb-1">Profondeur max</label>
+					<input
+						type="number"
+						min="1"
+						max="10"
+						bind:value={config.maxDepth}
+						class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+					/>
+				</div>
 			</div>
 
-			<div>
-				<label class="block text-[11px] font-medium text-gray-600 mb-1">Profondeur max</label>
-				<input
-					type="number"
-					min="1"
-					max="10"
-					bind:value={config.maxDepth}
-					class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-				/>
-				<p class="text-[10px] text-gray-400 mt-0.5">Profondeur de navigation depuis la page initiale</p>
-			</div>
-
-			<div>
-				<label class="block text-[11px] font-medium text-gray-600 mb-1">Délai entre pages (ms)</label>
-				<input
-					type="number"
-					min="200"
-					max="10000"
-					step="100"
-					bind:value={config.delayBetweenPages}
-					class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-				/>
-				<p class="text-[10px] text-gray-400 mt-0.5">Temps d'attente entre chaque capture</p>
-			</div>
+			<button
+				type="button"
+				onclick={() => (showDelay = !showDelay)}
+				class="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition"
+			>
+				<svg class="w-3 h-3 transition-transform {showDelay ? 'rotate-90' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+				Délai entre pages
+				<span class="text-[10px] text-gray-300">{config.delayBetweenPages}ms</span>
+			</button>
+			{#if showDelay}
+				<div>
+					<input
+						type="number"
+						min="200"
+						max="10000"
+						step="100"
+						bind:value={config.delayBetweenPages}
+						class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+					/>
+					<p class="text-[10px] text-gray-400 mt-0.5">Temps d'attente entre chaque capture (ms)</p>
+				</div>
+			{/if}
 		</div>
 	{:else if activeTab === 'zones'}
 		<!-- Interest zones -->

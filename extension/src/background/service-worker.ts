@@ -8,6 +8,7 @@ import {
 	updatePageStatus,
 	removePageFromState
 } from '$lib/capture';
+import { buildSelfContainedPage } from '$lib/resource-fetcher';
 import {
 	startAutoCrawl,
 	stopAutoCrawl,
@@ -115,22 +116,21 @@ async function handleMessage(
 
 		case 'DETECT_LL_PLAYER': {
 			const tabId = message.tabId as number;
-			try {
-				const result = await chrome.tabs.sendMessage(tabId, { type: 'DETECT_LL_PLAYER' });
-				return result;
-			} catch {
-				return { detected: false, error: 'Content script not available' };
-			}
+			return detectLLPlayer(tabId);
 		}
 
 		case 'SCAN_LL_GUIDES': {
 			const tabId = message.tabId as number;
-			try {
-				const result = await chrome.tabs.sendMessage(tabId, { type: 'SCAN_LL_GUIDES' });
-				return result;
-			} catch {
-				return { guides: [], error: 'Content script not available' };
-			}
+			return scanLLGuides(tabId);
+		}
+
+		case 'CREATE_VERSION': {
+			const projectId = message.projectId as string;
+			const versionName = message.name as string;
+			return api.post(`/projects/${projectId}/versions`, {
+				name: versionName,
+				language: 'fr'
+			});
 		}
 
 		case 'CREATE_PROJECT': {
@@ -152,12 +152,16 @@ async function handleMessage(
 			return verifyToken();
 
 		case 'LOGOUT': {
+			// Remove auth + preferences, then clear all per-version capture states
+			const allKeys = Object.keys(await chrome.storage.local.get(null));
+			const captureKeys = allKeys.filter((k) => k.startsWith(`${STORAGE_KEYS.CAPTURE_STATE}:`));
 			await chrome.storage.local.remove([
 				STORAGE_KEYS.AUTH_TOKEN,
 				STORAGE_KEYS.USER,
 				STORAGE_KEYS.ACTIVE_PROJECT,
 				STORAGE_KEYS.ACTIVE_VERSION,
-				STORAGE_KEYS.CAPTURE_STATE
+				STORAGE_KEYS.CAPTURE_MODE,
+				...captureKeys
 			]);
 			return { success: true };
 		}
@@ -197,24 +201,56 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 	await addCapturedPageToState(page);
 
 	try {
-		// Step 1: Capture DOM
-		const captured = await captureCurrentPage(tabId);
+		// Step 0: Scroll page to trigger lazy loading, then wait for DOM stabilization
+		try {
+			await chrome.tabs.sendMessage(tabId, { type: 'SCROLL_PAGE' });
+		} catch { /* content script might not be ready */ }
+		try {
+			await chrome.tabs.sendMessage(tabId, { type: 'WAIT_FOR_STABLE_DOM', timeout: 8000 });
+		} catch { /* fallback: content script not available */ }
+
+		// Step 1: Collect DOM + resource manifest
+		const collected = await captureCurrentPage(tabId);
 		await updatePageStatus(localId, PAGE_STATUS.UPLOADING, {
-			title: captured.title,
-			url: captured.url
+			title: collected.title,
+			url: collected.url
 		});
 
-		// Step 2: Upload to backend
+		// Step 2: Fetch all resources and build self-contained HTML
+		// Optionally capture MHTML in parallel (debug mode)
+		const mhtmlPref = await chrome.storage.local.get(STORAGE_KEYS.MHTML_DEBUG);
+		const shouldCaptureMhtml = !!mhtmlPref[STORAGE_KEYS.MHTML_DEBUG];
+
+		const [selfContainedHtml, mhtmlBlob, screenshotDataUrl] = await Promise.all([
+			buildSelfContainedPage(collected.html, collected.resources, collected.url),
+			shouldCaptureMhtml
+				? chrome.pageCapture.saveAsMHTML({ tabId }).catch(() => null)
+				: Promise.resolve(null),
+			chrome.tabs.captureVisibleTab(undefined as unknown as number, { format: 'png' }).catch(() => null)
+		]);
+
+		// Convert screenshot data URL to Blob
+		let screenshotBlob: Blob | null = null;
+		if (screenshotDataUrl) {
+			try {
+				const resp = await fetch(screenshotDataUrl);
+				screenshotBlob = await resp.blob();
+			} catch { /* ignore */ }
+		}
+
+		// Step 3: Upload to backend
 		const result = await uploadCapturedPage(
 			version.id,
-			captured,
-			state.mode
+			{ html: selfContainedHtml, title: collected.title, url: collected.url },
+			state.mode,
+			mhtmlBlob,
+			screenshotBlob
 		);
 
-		// Step 3: Mark as done (derive urlPath from captured URL)
+		// Step 4: Mark as done (derive urlPath from captured URL)
 		let urlPath: string | undefined;
 		try {
-			const parsedUrl = new URL(captured.url);
+			const parsedUrl = new URL(collected.url);
 			urlPath = parsedUrl.pathname + parsedUrl.search;
 		} catch {
 			// Keep undefined
@@ -280,11 +316,85 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Side Panel — open on action click
+// Side Panel — toggle on action click (modern + legacy)
 // ---------------------------------------------------------------------------
 
-chrome.action.onClicked.addListener(async (tab) => {
-	await chrome.sidePanel.open({ tabId: tab.id });
+const SIDE_PANEL_PATH = 'src/sidepanel/index.html';
+
+const sidePanelApi = chrome.sidePanel as typeof chrome.sidePanel & {
+	close?: (options: { tabId?: number; windowId?: number }) => Promise<void>;
+	onOpened?: chrome.events.Event<(info: { tabId?: number }) => void>;
+	onClosed?: chrome.events.Event<(info: { tabId?: number }) => void>;
+};
+const hasClose = typeof sidePanelApi.close === 'function';
+const hasEvents = Boolean(sidePanelApi.onOpened && sidePanelApi.onClosed);
+const isModern = hasClose && hasEvents;
+
+const openTabs = new Set<number>();
+
+// Disable default behavior — we control toggle manually
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
+chrome.sidePanel.setOptions({ enabled: false, path: SIDE_PANEL_PATH }).catch(() => {});
+
+// Pre-configure new tabs (modern flow)
+if (isModern) {
+	chrome.tabs.onCreated.addListener((tab) => {
+		if (tab.id) {
+			chrome.sidePanel.setOptions({
+				tabId: tab.id, enabled: true, path: SIDE_PANEL_PATH
+			}).catch(() => {});
+		}
+	});
+}
+
+// Track panel state via native events (modern API)
+if (isModern) {
+	sidePanelApi.onOpened!.addListener((info) => {
+		if (typeof info.tabId === 'number') openTabs.add(info.tabId);
+	});
+	sidePanelApi.onClosed!.addListener((info) => {
+		if (typeof info.tabId === 'number') openTabs.delete(info.tabId);
+	});
+}
+
+// Cleanup on tab close
+chrome.tabs.onRemoved.addListener((tabId) => {
+	openTabs.delete(tabId);
+});
+
+// Toggle on action click / keyboard shortcut
+chrome.action.onClicked.addListener((tab) => {
+	if (!tab.id) return;
+	const tabId = tab.id;
+	const windowId = tab.windowId;
+
+	if (openTabs.has(tabId)) {
+		// CLOSE
+		if (isModern) {
+			sidePanelApi.close!({ tabId, windowId }).catch(() => {
+				// Fallback legacy: disable = close
+				chrome.sidePanel.setOptions({ tabId, enabled: false, path: SIDE_PANEL_PATH }).catch(() => {});
+				openTabs.delete(tabId);
+			});
+		} else {
+			chrome.sidePanel.setOptions({ tabId, enabled: false, path: SIDE_PANEL_PATH }).catch(() => {});
+			openTabs.delete(tabId);
+		}
+	} else {
+		// OPEN — setOptions then open, with immediate attempt in user gesture
+		chrome.sidePanel.setOptions(
+			{ tabId, enabled: true, path: SIDE_PANEL_PATH },
+			() => {
+				chrome.sidePanel.open({ tabId, windowId }).then(() => {
+					openTabs.add(tabId);
+				}).catch(() => {});
+			}
+		);
+		// Immediate attempt (must be in user gesture context)
+		chrome.sidePanel.open({ tabId, windowId }).then(() => {
+			openTabs.add(tabId);
+		}).catch(() => {});
+	}
 });
 
 // ---------------------------------------------------------------------------
@@ -296,8 +406,9 @@ if (import.meta.env?.MODE === 'development' || !import.meta.env?.PROD) {
 
 	const checkForReload = async () => {
 		try {
-			const url = chrome.runtime.getURL('hot-reload.json');
-			const res = await fetch(url, { cache: 'no-store' });
+			// Cache-buster required: chrome-extension:// URLs are aggressively cached
+			const url = chrome.runtime.getURL('hot-reload.json') + '?t=' + Date.now();
+			const res = await fetch(url);
 			const { ts } = await res.json();
 			if (lastReloadTs && ts !== lastReloadTs) {
 				console.log('[Dev] Rebuild detected, reloading extension…');
@@ -310,8 +421,8 @@ if (import.meta.env?.MODE === 'development' || !import.meta.env?.PROD) {
 		}
 	};
 
-	// Check every second
-	setInterval(checkForReload, 1000);
+	// Check every 1.5s
+	setInterval(checkForReload, 1500);
 	checkForReload();
 }
 
@@ -325,5 +436,185 @@ async function updateBadge(count: number): Promise<void> {
 		await chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
 	} else {
 		await chrome.action.setBadgeText({ text: '' });
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Lemon Learning Player detection & guide scanning
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect the LL Player by executing a script in the page's MAIN world,
+ * which gives us access to window.LemonPlayer and other page globals.
+ */
+async function detectLLPlayer(tabId: number): Promise<{ detected: boolean; method?: string; error?: string }> {
+	try {
+		const [result] = await chrome.scripting.executeScript({
+			target: { tabId },
+			world: 'MAIN',
+			func: () => {
+				// 1. Check the embed script tag (most reliable)
+				if (document.getElementById('lemonlearning-player-embed')) {
+					return { detected: true, method: 'script-tag' };
+				}
+				// 2. Check the global LemonPlayer instance
+				if ((window as unknown as Record<string, unknown>).LemonPlayer) {
+					return { detected: true, method: 'LemonPlayer' };
+				}
+				// 3. Check shadow DOM host element
+				if (document.getElementById('lemon-learning-player')) {
+					return { detected: true, method: 'shadow-dom-host' };
+				}
+				// 4. Check script src attributes
+				const scripts = document.querySelectorAll('script[src]');
+				for (const script of Array.from(scripts)) {
+					const src = (script as HTMLScriptElement).src;
+					if (src.includes('lemonlearning') || src.includes('lemon-learning')) {
+						return { detected: true, method: 'script-src' };
+					}
+				}
+				return { detected: false };
+			}
+		});
+		return result?.result as { detected: boolean; method?: string } || { detected: false };
+	} catch (err) {
+		return { detected: false, error: err instanceof Error ? err.message : 'Cannot access tab' };
+	}
+}
+
+/**
+ * Scan for LL guides by reading the React Query persisted cache from
+ * localStorage (key: REACT_QUERY_OFFLINE_CACHE). The player stores
+ * sections containing guides in this cache after initialization.
+ *
+ * Falls back to traversing the player's shadow DOM for guide elements.
+ */
+async function scanLLGuides(tabId: number): Promise<{
+	guides: Array<{ id: string; name: string; stepCount: number; sectionName?: string }>;
+	error?: string;
+}> {
+	try {
+		const [result] = await chrome.scripting.executeScript({
+			target: { tabId },
+			world: 'MAIN',
+			func: () => {
+				type ScannedGuide = { id: string; name: string; stepCount: number; sectionName?: string };
+				const guides: ScannedGuide[] = [];
+				const seenIds = new Set<string>();
+
+				// Helper: recursively extract guides from sections (supports children)
+				function extractFromSections(sections: unknown[]): void {
+					for (const section of sections) {
+						const s = section as Record<string, unknown>;
+						const sectionTitle = (s.title as string) || '';
+						const sectionGuides = s.guides as Array<Record<string, unknown>> | undefined;
+						if (Array.isArray(sectionGuides)) {
+							for (const g of sectionGuides) {
+								const gId = String(g.id);
+								if (!seenIds.has(gId)) {
+									seenIds.add(gId);
+									guides.push({
+										id: gId,
+										name: (g.title as string) || 'Guide sans nom',
+										stepCount: 0,
+										sectionName: sectionTitle
+									});
+								}
+							}
+						}
+						const children = s.children as unknown[] | undefined;
+						if (Array.isArray(children) && children.length > 0) {
+							extractFromSections(children);
+						}
+					}
+				}
+
+				// Strategy 1: React Query persisted cache in localStorage
+				try {
+					const cacheStr = localStorage.getItem('REACT_QUERY_OFFLINE_CACHE');
+					if (cacheStr) {
+						const cache = JSON.parse(cacheStr);
+						const queries = cache?.clientState?.queries;
+						if (Array.isArray(queries)) {
+							for (const query of queries) {
+								const key = query.queryKey;
+								// Section queries have key ["sections", userId, lang, contentTargetIds]
+								if (Array.isArray(key) && key[0] === 'sections' && query.state?.data) {
+									const data = query.state.data;
+									if (Array.isArray(data)) {
+										extractFromSections(data);
+									}
+								}
+							}
+						}
+					}
+				} catch {
+					// Cache not available or malformed
+				}
+
+				// Strategy 2: Traverse the player's shadow DOM for guide elements
+				if (guides.length === 0) {
+					try {
+						const shadowHost = document.getElementById('lemon-learning-player');
+						const root = shadowHost?.shadowRoot;
+						if (root) {
+							// Look for elements that look like guide items
+							// The player renders guides as clickable elements with guide names
+							const allElements = root.querySelectorAll('[class*="guide"], [data-guide-id], [role="button"], [role="listitem"]');
+							let idx = 0;
+							for (const el of Array.from(allElements)) {
+								const text = el.textContent?.trim();
+								if (text && text.length > 2 && text.length < 200) {
+									const existing = guides.find((g) => g.name === text);
+									if (!existing) {
+										guides.push({
+											id: `dom-${idx}`,
+											name: text,
+											stepCount: 0
+										});
+										idx++;
+									}
+								}
+							}
+						}
+					} catch {
+						// Shadow DOM not accessible
+					}
+				}
+
+				// Strategy 3: Check if LemonPlayer exposes any data
+				if (guides.length === 0) {
+					try {
+						const win = window as unknown as Record<string, unknown>;
+						const player = win.LemonPlayer as Record<string, unknown> | undefined;
+						if (player && typeof player === 'object') {
+							// Try to access config for debugging
+							const config = player.config as Record<string, unknown> | undefined;
+							if (config) {
+								return {
+									guides,
+									debug: {
+										playerFound: true,
+										configKeys: Object.keys(config),
+										projectKey: config.projectKey,
+										companyKey: config.companyKey
+									}
+								};
+							}
+						}
+					} catch {
+						// Player not accessible
+					}
+				}
+
+				return { guides };
+			}
+		});
+		return result?.result as {
+			guides: Array<{ id: string; name: string; stepCount: number; sectionName?: string }>;
+			error?: string;
+		} || { guides: [] };
+	} catch (err) {
+		return { guides: [], error: err instanceof Error ? err.message : 'Cannot access tab' };
 	}
 }

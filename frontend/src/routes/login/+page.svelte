@@ -10,6 +10,7 @@
 	let loading = $state(false);
 	let googleLoading = $state(false);
 	let devLoading = $state(false);
+	let devClientLoading = $state(false);
 	let showPassword = $state(false);
 	let success = $state(false);
 	let redirectTarget = $state('');
@@ -110,6 +111,26 @@
 			devLoading = false;
 		}
 	}
+
+	async function handleDevClientLogin() {
+		devClientLoading = true;
+		error = '';
+
+		try {
+			const user = await login('sophie.martin@acme-corp.fr', 'client123');
+			success = true;
+			redirectTarget = '/view';
+			setTimeout(() => goto(redirectTarget), 1000);
+		} catch (err: unknown) {
+			if (err && typeof err === 'object' && 'message' in err) {
+				error = (err as Error).message;
+			} else {
+				error = 'Erreur lors du dev login client.';
+			}
+		} finally {
+			devClientLoading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -137,7 +158,17 @@
 			<div class="login-card fade-up" style="animation-delay: 100ms">
 				<!-- Brand -->
 				<div class="brand">
-					<div class="brand-logo">ES</div>
+					<div class="brand-logo">
+						<svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+							<path d="M4 10 L4 5 Q4 4 5 4 L10 4" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+							<path d="M22 4 L27 4 Q28 4 28 5 L28 10" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+							<path d="M28 22 L28 27 Q28 28 27 28 L22 28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+							<path d="M10 28 L5 28 Q4 28 4 27 L4 22" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+							<circle cx="16" cy="16" r="6.5" fill="#FACC15"/>
+							<circle cx="16" cy="16" r="5" fill="#FDE68A"/>
+							<circle cx="16" cy="16" r="1" fill="#F59E0B"/>
+						</svg>
+					</div>
 					<h1 class="brand-title">Environnements Simulés</h1>
 					<p class="brand-subtitle">Lemon Learning</p>
 				</div>
@@ -263,21 +294,36 @@
 		{/if}
 	</div>
 
-	<!-- Magic door — dev only -->
+	<!-- Magic doors — dev only -->
 	{#if isDev}
-		<button
-			class="magic-door"
-			onclick={handleDevLogin}
-			disabled={loading || googleLoading || devLoading}
-			title="Connexion rapide en tant qu'admin (dev uniquement)"
-		>
-			{#if devLoading}
-				<Loader2 size={14} class="animate-spin" />
-			{:else}
-				<KeyRound size={14} />
-			{/if}
-			Connexion locale
-		</button>
+		<div class="magic-doors">
+			<button
+				class="magic-door magic-door-admin"
+				onclick={handleDevLogin}
+				disabled={loading || googleLoading || devLoading || devClientLoading}
+				title="Connexion rapide en tant qu'admin (dev uniquement)"
+			>
+				{#if devLoading}
+					<Loader2 size={14} class="animate-spin" />
+				{:else}
+					<KeyRound size={14} />
+				{/if}
+				Admin
+			</button>
+			<button
+				class="magic-door magic-door-client"
+				onclick={handleDevClientLogin}
+				disabled={loading || googleLoading || devLoading || devClientLoading}
+				title="Connexion rapide en tant que client (dev uniquement)"
+			>
+				{#if devClientLoading}
+					<Loader2 size={14} class="animate-spin" />
+				{:else}
+					<Eye size={14} />
+				{/if}
+				Client
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -702,12 +748,19 @@
 		color: var(--color-muted-foreground);
 	}
 
-	/* Magic door — dev only, centered between card right edge and screen right edge */
-	.magic-door {
+	/* Magic doors — dev only, centered between card right edge and screen right edge */
+	.magic-doors {
 		position: fixed;
 		top: 50%;
 		right: calc((100vw - 440px) / 4);
 		transform: translate(50%, -50%);
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		z-index: 100;
+	}
+
+	.magic-door {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -722,14 +775,20 @@
 		font-family: inherit;
 		cursor: pointer;
 		transition: all 0.2s;
-		z-index: 100;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+		white-space: nowrap;
 	}
 
-	.magic-door:hover:not(:disabled) {
+	.magic-door-admin:hover:not(:disabled) {
 		color: #3b82f6;
 		border-color: #3b82f6;
 		box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+	}
+
+	.magic-door-client:hover:not(:disabled) {
+		color: #f59e0b;
+		border-color: #f59e0b;
+		box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
 	}
 
 	.magic-door:disabled {

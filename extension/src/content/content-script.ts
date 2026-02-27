@@ -51,6 +51,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 			sendResponse(scanLLGuides());
 			return false;
 
+		case 'WAIT_FOR_STABLE_DOM':
+			waitForStableDOM(message.timeout as number | undefined)
+				.then((result) => sendResponse(result))
+				.catch((err) => sendResponse({ stable: false, error: err.message }));
+			return true;
+
 		case 'PING':
 			sendResponse({ pong: true });
 			return false;
@@ -79,6 +85,74 @@ async function scrollEntirePage(): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ---------------------------------------------------------------------------
+// Smart DOM stabilization (MutationObserver + image load tracking)
+// ---------------------------------------------------------------------------
+
+async function waitForStableDOM(timeoutMs: number = 8000): Promise<{ stable: boolean; pendingImages: number }> {
+	const startTime = Date.now();
+	const IDLE_THRESHOLD_MS = 500; // Consider stable after 500ms of no mutations
+
+	return new Promise((resolve) => {
+		let lastMutationTime = Date.now();
+		let checkInterval: ReturnType<typeof setInterval>;
+
+		// Watch for DOM mutations
+		const observer = new MutationObserver(() => {
+			lastMutationTime = Date.now();
+		});
+
+		observer.observe(document.documentElement, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['src', 'srcset', 'style', 'class']
+		});
+
+		// Query pending images from the hooks script (MAIN world)
+		function getPendingImageCount(): number {
+			let count = 0;
+			const handler = (e: Event) => {
+				count = (e as CustomEvent).detail?.count ?? 0;
+			};
+			window.addEventListener('__ES_PENDING_IMAGES_RESULT__', handler, { once: true });
+			window.dispatchEvent(new Event('__ES_GET_PENDING_IMAGES__'));
+			window.removeEventListener('__ES_PENDING_IMAGES_RESULT__', handler);
+			return count;
+		}
+
+		// Also count images directly (fallback if hooks not loaded)
+		function countLoadingImages(): number {
+			const imgs = document.querySelectorAll('img');
+			let loading = 0;
+			imgs.forEach((img) => {
+				if (!img.complete && img.src && !img.src.startsWith('data:')) {
+					loading++;
+				}
+			});
+			return loading;
+		}
+
+		checkInterval = setInterval(() => {
+			const elapsed = Date.now() - startTime;
+			const timeSinceLastMutation = Date.now() - lastMutationTime;
+			const pendingFromHooks = getPendingImageCount();
+			const pendingDirect = countLoadingImages();
+			const pendingImages = Math.max(pendingFromHooks, pendingDirect);
+
+			// Stable if: no mutations for IDLE_THRESHOLD_MS and no pending images
+			const isIdle = timeSinceLastMutation >= IDLE_THRESHOLD_MS;
+			const imagesReady = pendingImages === 0;
+
+			if ((isIdle && imagesReady) || elapsed >= timeoutMs) {
+				observer.disconnect();
+				clearInterval(checkInterval);
+				resolve({ stable: isIdle && imagesReady, pendingImages });
+			}
+		}, 200);
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -165,89 +239,34 @@ function extractInternalLinks(blacklist: string[]): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Lemon Learning Player detection
+// Lemon Learning Player detection (DOM-only fallback, isolated world)
+// Note: Main detection runs via chrome.scripting.executeScript in MAIN world
+// from the service worker. This is a fallback for DOM-based checks only.
 // ---------------------------------------------------------------------------
 
 function detectLLPlayer(): { detected: boolean; method?: string } {
-	// Check known selectors
-	const selectors = [
-		'[class*="lemon-learning"]',
-		'[class*="lemonlearning"]',
-		'[class*="ll-player"]',
-		'#ll-player',
-		'#lemon-learning',
-		'iframe[src*="lemonlearning"]',
-		'iframe[src*="lemon-learning"]',
-		'[data-ll-guide]',
-		'[data-lemon-learning]'
-	];
-
-	for (const selector of selectors) {
-		if (document.querySelector(selector)) {
-			return { detected: true, method: `selector:${selector}` };
-		}
+	// Check the embed script tag (works from isolated world since DOM is shared)
+	if (document.getElementById('lemonlearning-player-embed')) {
+		return { detected: true, method: 'script-tag' };
 	}
-
-	// Check global variables
-	const win = window as Record<string, unknown>;
-	if (win.__LEMON_LEARNING__ || win.LemonLearning || win.ll) {
-		return { detected: true, method: 'global_variable' };
+	// Check shadow DOM host
+	if (document.getElementById('lemon-learning-player')) {
+		return { detected: true, method: 'shadow-dom-host' };
 	}
-
-	// Check for LL-related scripts
+	// Check script src
 	const scripts = document.querySelectorAll('script[src]');
 	for (const script of Array.from(scripts)) {
 		const src = (script as HTMLScriptElement).src;
 		if (src.includes('lemonlearning') || src.includes('lemon-learning')) {
-			return { detected: true, method: `script:${src}` };
+			return { detected: true, method: `script-src` };
 		}
 	}
-
 	return { detected: false };
 }
 
 function scanLLGuides(): { guides: Array<{ id: string; name: string; stepCount: number }> } {
-	const guides: Array<{ id: string; name: string; stepCount: number }> = [];
-
-	// Strategy 1: LL Player internal state
-	const win = window as Record<string, unknown>;
-	const llState = win.__LEMON_LEARNING__ as Record<string, unknown> | undefined;
-	if (llState && typeof llState === 'object') {
-		const llGuides = (llState.guides || llState.walkthroughs || llState.flows) as Array<Record<string, unknown>> | undefined;
-		if (Array.isArray(llGuides)) {
-			for (const g of llGuides) {
-				guides.push({
-					id: String(g.id || g.guideId || Math.random().toString(36).slice(2)),
-					name: String(g.name || g.title || 'Guide sans nom'),
-					stepCount: Array.isArray(g.steps) ? g.steps.length : 0
-				});
-			}
-		}
-	}
-
-	// Strategy 2: Scan DOM for guide-related elements
-	if (guides.length === 0) {
-		const guideElements = document.querySelectorAll(
-			'[data-ll-guide], [data-guide-id], [class*="ll-guide-item"], [class*="guide-list"] li'
-		);
-		let idx = 0;
-		guideElements.forEach((el) => {
-			const name = el.getAttribute('data-guide-name') ||
-				el.getAttribute('title') ||
-				el.textContent?.trim().slice(0, 100) || `Guide ${idx + 1}`;
-			const id = el.getAttribute('data-ll-guide') ||
-				el.getAttribute('data-guide-id') || `dom-guide-${idx}`;
-			const stepCountAttr = el.getAttribute('data-step-count');
-			guides.push({
-				id,
-				name,
-				stepCount: stepCountAttr ? parseInt(stepCountAttr, 10) : 0
-			});
-			idx++;
-		});
-	}
-
-	return { guides };
+	// DOM-only fallback — real scanning happens in MAIN world from service worker
+	return { guides: [] };
 }
 
 // ---------------------------------------------------------------------------

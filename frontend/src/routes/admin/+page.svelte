@@ -99,7 +99,7 @@
 		return testSessions.length > 0 ? 1 : 0;
 	});
 
-	// Sessions ce mois — count sessions started in the current calendar month
+	// Sessions this month — count sessions started in the current calendar month
 	let sessionsThisMonth = $derived(() => {
 		const now = new Date();
 		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();

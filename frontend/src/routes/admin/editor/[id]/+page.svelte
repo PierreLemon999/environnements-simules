@@ -144,6 +144,7 @@
 	// Breadcrumb info
 	let breadcrumbProject = $derived(projects.find((p) => p.id === selectedProjectId));
 	let breadcrumbVersion = $derived(breadcrumbProject?.versions?.find((v) => v.id === selectedVersionId));
+	let selectedProjectVersions = $derived(breadcrumbProject?.versions ?? []);
 
 	let filteredPages = $derived(
 		pages.filter((p) => {
@@ -367,6 +368,19 @@
 				{/each}
 			</select>
 
+			{#if selectedProjectVersions.length > 0}
+				<select
+					bind:value={selectedVersionId}
+					class="flex h-8 w-full rounded-md border border-border bg-transparent px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				>
+					{#each selectedProjectVersions as version}
+						<option value={version.id}>
+							{version.name}{version.status === 'active' ? ' ●' : ''}
+						</option>
+					{/each}
+				</select>
+			{/if}
+
 			<div class="relative">
 				<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
 				<Input
@@ -430,6 +444,7 @@
 			<!-- Editor toolbar -->
 			<div class="flex items-center justify-between border-b border-border bg-card px-4 py-2">
 				<div class="flex items-center gap-3 min-w-0">
+					<img src="/favicon.svg" alt="Environnements Simulés" class="h-5 w-5 shrink-0" />
 					<a href="/admin/tree" class="shrink-0 text-xs text-primary hover:underline flex items-center gap-1">
 						<ArrowLeft class="h-3 w-3" />
 						Retour

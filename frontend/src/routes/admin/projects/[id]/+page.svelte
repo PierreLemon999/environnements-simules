@@ -25,6 +25,7 @@
 		DropdownMenuSeparator,
 	} from '$components/ui/dropdown-menu';
 	import { Tooltip, TooltipTrigger, TooltipContent } from '$components/ui/tooltip';
+	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
 		ArrowLeft,
 		Plus,
@@ -52,6 +53,7 @@
 		Eye,
 		Mail,
 		AlertCircle,
+		ImagePlus,
 	} from 'lucide-svelte';
 
 	// -----------------------------------------------------------------------
@@ -76,6 +78,7 @@
 		toolName: string;
 		subdomain: string;
 		description: string | null;
+		logoUrl: string | null;
 		createdAt: string;
 		updatedAt: string;
 		versions: Version[];
@@ -148,6 +151,17 @@
 	// Clipboard feedback
 	let copiedId = $state<string | null>(null);
 
+	// Edit project dialog state
+	let editProjectOpen = $state(false);
+	let editName = $state('');
+	let editToolName = $state('');
+	let editSubdomain = $state('');
+	let editDescription = $state('');
+	let editLogoUrl = $state('');
+	let editSubmitting = $state(false);
+	let editError = $state('');
+	let editLogoInput: HTMLInputElement | undefined = $state();
+
 	let projectId = $derived($page.params.id);
 
 	// -----------------------------------------------------------------------
@@ -219,6 +233,57 @@
 			return (words[0][0] + words[1][0]).toUpperCase();
 		}
 		return toolName.slice(0, 2).toUpperCase();
+	}
+
+	function openEditProject() {
+		if (!project) return;
+		editName = project.name;
+		editToolName = project.toolName;
+		editSubdomain = project.subdomain;
+		editDescription = project.description ?? '';
+		editLogoUrl = project.logoUrl ?? '';
+		editError = '';
+		editProjectOpen = true;
+	}
+
+	async function handleEditProject() {
+		if (!project || !editName.trim() || !editToolName.trim()) {
+			editError = 'Le nom et l\'outil sont requis.';
+			return;
+		}
+		editSubmitting = true;
+		editError = '';
+		try {
+			const body = {
+				name: editName.trim(),
+				toolName: editToolName.trim(),
+				subdomain: editSubdomain.trim() || project.subdomain,
+				description: editDescription.trim() || null,
+				logoUrl: editLogoUrl || null,
+			};
+			const res = await put<{ data: ProjectDetail }>(`/projects/${project.id}`, body);
+			project = { ...project, ...res.data };
+			editProjectOpen = false;
+			toast.success('Projet modifié avec succès');
+		} catch (err: any) {
+			editError = err.message || 'Erreur lors de la modification.';
+		} finally {
+			editSubmitting = false;
+		}
+	}
+
+	async function handleEditLogoChange(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			const { optimizeLogoImage } = await import('$lib/utils');
+			editLogoUrl = await optimizeLogoImage(file);
+		} catch {
+			const reader = new FileReader();
+			reader.onload = () => { editLogoUrl = reader.result as string; };
+			reader.readAsDataURL(file);
+		}
 	}
 
 	function getStatusBorderColor(status: string): string {
@@ -337,7 +402,7 @@
 
 	function getDemoUrl(assignment: Assignment): string {
 		if (!project) return '';
-		return `${project.subdomain}.demo.lemonlearning.com/?token=${assignment.accessToken}`;
+		return `${project.subdomain}.en-ll.com/?token=${assignment.accessToken}`;
 	}
 
 	async function copyToClipboard(text: string, id?: string) {
@@ -612,32 +677,47 @@
 				<div class="flex items-start justify-between gap-6">
 					<!-- Left: Logo + Info -->
 					<div class="flex items-start gap-4 min-w-0 flex-1">
-						<!-- Project logo with branded gradient -->
-						<div
-							class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-white text-sm font-bold shadow-sm"
-							style="background: linear-gradient(135deg, {getToolColor(project.toolName)}, {getToolColor(project.toolName)}dd);"
-						>
-							{getToolInitials(project.toolName)}
-						</div>
+						<!-- Project logo -->
+						{#if project.logoUrl}
+							<img
+								src={project.logoUrl}
+								alt={project.toolName}
+								class="h-12 w-12 flex-shrink-0 rounded-xl object-cover shadow-sm"
+							/>
+						{:else}
+							<div
+								class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl text-white text-sm font-bold shadow-sm"
+								style="background: linear-gradient(135deg, {getToolColor(project.toolName)}, {getToolColor(project.toolName)}dd);"
+							>
+								{getToolInitials(project.toolName)}
+							</div>
+						{/if}
 
 						<div class="min-w-0 flex-1">
-							<!-- Project name + tool badge -->
+							<!-- Project name + tool badge + edit button -->
 							<div class="flex items-center gap-2.5 flex-wrap">
 								<h1 class="text-lg font-semibold text-foreground truncate">{project.name}</h1>
 								<Badge variant="outline" class="text-[11px] font-medium shrink-0">
 									{project.toolName}
 								</Badge>
+								<button
+									class="rounded-md p-1 text-muted transition-colors hover:bg-accent hover:text-foreground"
+									onclick={openEditProject}
+									title="Modifier le projet"
+								>
+									<Pencil class="h-3.5 w-3.5" />
+								</button>
 							</div>
 
 							<!-- Subdomain (copyable monospace chip) -->
 							<div class="mt-1.5 flex items-center gap-3 text-sm text-muted-foreground">
 								<button
 									class="inline-flex items-center gap-1.5 rounded-md bg-accent/60 px-2 py-0.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-									onclick={() => copyToClipboard(`${project?.subdomain}.demo.lemonlearning.com`, 'subdomain')}
+									onclick={() => copyToClipboard(`${project?.subdomain}.en-ll.com`, 'subdomain')}
 									title="Copier le sous-domaine"
 								>
 									<Globe class="h-3 w-3" />
-									{project.subdomain}.demo.lemonlearning.com
+									{project.subdomain}.en-ll.com
 									{#if copiedId === 'subdomain'}
 										<Check class="h-3 w-3 text-emerald-500" />
 									{:else}
@@ -1126,9 +1206,9 @@
 							<dd class="mt-0.5">
 								<button
 									class="inline-flex items-center gap-1.5 rounded-md bg-accent/60 px-2 py-0.5 font-mono text-xs text-foreground transition-colors hover:bg-accent"
-									onclick={() => copyToClipboard(`${project?.subdomain}.demo.lemonlearning.com`, 'config-subdomain')}
+									onclick={() => copyToClipboard(`${project?.subdomain}.en-ll.com`, 'config-subdomain')}
 								>
-									{project.subdomain}.demo.lemonlearning.com
+									{project.subdomain}.en-ll.com
 									{#if copiedId === 'config-subdomain'}
 										<Check class="h-3 w-3 text-emerald-500" />
 									{:else}
@@ -1245,32 +1325,32 @@
 			</div>
 
 			<div class="space-y-2">
-				<label for="version-status" class="text-sm font-medium text-foreground">Statut</label>
-				<select
-					id="version-status"
+				<label class="text-sm font-medium text-foreground">Statut</label>
+				<SearchableSelect
 					bind:value={versionStatus}
-					class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<option value="test">Test</option>
-					<option value="active">Actif</option>
-					<option value="deprecated">Obsolete</option>
-				</select>
+					options={[
+						{ value: 'test', label: 'Test' },
+						{ value: 'active', label: 'Actif' },
+						{ value: 'deprecated', label: 'Obsolète' },
+					]}
+					placeholder="Sélectionner un statut"
+				/>
 			</div>
 
 			<div class="space-y-2">
-				<label for="version-language" class="text-sm font-medium text-foreground">Langue</label>
-				<select
-					id="version-language"
+				<label class="text-sm font-medium text-foreground">Langue</label>
+				<SearchableSelect
 					bind:value={versionLanguage}
-					class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					<option value="fr">Francais</option>
-					<option value="en">English</option>
-					<option value="de">Deutsch</option>
-					<option value="es">Espanol</option>
-					<option value="it">Italiano</option>
-					<option value="pt">Portugues</option>
-				</select>
+					options={[
+						{ value: 'fr', label: 'Français' },
+						{ value: 'en', label: 'English' },
+						{ value: 'de', label: 'Deutsch' },
+						{ value: 'es', label: 'Español' },
+						{ value: 'it', label: 'Italiano' },
+						{ value: 'pt', label: 'Português' },
+					]}
+					placeholder="Sélectionner une langue"
+				/>
 			</div>
 
 			{#if versionError}
@@ -1310,5 +1390,68 @@
 				{deleteVersionSubmitting ? 'Suppression...' : 'Supprimer'}
 			</Button>
 		</DialogFooter>
+	</DialogContent>
+</Dialog>
+
+<!-- Edit Project Dialog -->
+<Dialog bind:open={editProjectOpen}>
+	<DialogContent>
+		<DialogHeader>
+			<DialogTitle>Modifier le projet</DialogTitle>
+			<DialogDescription>Modifiez les informations du projet.</DialogDescription>
+		</DialogHeader>
+		<form class="space-y-4" onsubmit={(e) => { e.preventDefault(); handleEditProject(); }}>
+			<div class="flex items-start gap-4">
+				<!-- Logo -->
+				<div class="shrink-0">
+					<input type="file" accept="image/*" class="hidden" bind:this={editLogoInput} onchange={handleEditLogoChange} />
+					{#if editLogoUrl}
+						<div class="group relative">
+							<button type="button" class="h-16 w-16 overflow-hidden rounded-lg border border-border" onclick={() => editLogoInput?.click()}>
+								<img src={editLogoUrl} alt="Logo" class="h-full w-full object-cover" />
+							</button>
+							<button type="button" class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100" onclick={() => { editLogoUrl = ''; }}>
+								<svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+							</button>
+						</div>
+					{:else}
+						<button type="button" class="flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-muted transition-colors hover:border-primary hover:text-primary" onclick={() => editLogoInput?.click()}>
+							<ImagePlus class="h-5 w-5" />
+							<span class="text-[9px] font-medium">Logo</span>
+						</button>
+					{/if}
+				</div>
+				<div class="flex-1 space-y-3">
+					<div class="space-y-1.5">
+						<label for="edit-project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
+						<Input id="edit-project-name" bind:value={editName} placeholder="Nom du projet" />
+					</div>
+					<div class="space-y-1.5">
+						<label for="edit-project-tool" class="text-sm font-medium text-foreground">Outil simulé</label>
+						<Input id="edit-project-tool" bind:value={editToolName} placeholder="Nom de l'outil" />
+					</div>
+				</div>
+			</div>
+			<div class="space-y-1.5">
+				<label for="edit-project-subdomain" class="text-sm font-medium text-foreground">Sous-domaine des démos</label>
+				<div class="flex items-center gap-2">
+					<Input id="edit-project-subdomain" bind:value={editSubdomain} placeholder="salesforce-crm" class="flex-1" />
+					<span class="text-xs text-muted-foreground shrink-0">.en-ll.com</span>
+				</div>
+			</div>
+			<div class="space-y-1.5">
+				<label for="edit-project-desc" class="text-sm font-medium text-foreground">Description <span class="text-muted-foreground">(optionnel)</span></label>
+				<textarea id="edit-project-desc" bind:value={editDescription} placeholder="Description du projet..." rows="2" class="flex w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"></textarea>
+			</div>
+			{#if editError}
+				<p class="text-sm text-destructive">{editError}</p>
+			{/if}
+			<DialogFooter>
+				<Button variant="outline" type="button" onclick={() => { editProjectOpen = false; }}>Annuler</Button>
+				<Button type="submit" disabled={editSubmitting}>
+					{editSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+				</Button>
+			</DialogFooter>
+		</form>
 	</DialogContent>
 </Dialog>

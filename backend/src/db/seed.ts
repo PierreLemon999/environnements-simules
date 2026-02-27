@@ -73,6 +73,7 @@ async function main() {
       tool_name TEXT NOT NULL,
       subdomain TEXT NOT NULL UNIQUE,
       description TEXT,
+      logo_url TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -97,6 +98,7 @@ async function main() {
       file_size INTEGER,
       capture_mode TEXT NOT NULL DEFAULT 'free',
       thumbnail_path TEXT,
+      mhtml_path TEXT,
       health_status TEXT NOT NULL DEFAULT 'ok',
       created_at TEXT NOT NULL
     );

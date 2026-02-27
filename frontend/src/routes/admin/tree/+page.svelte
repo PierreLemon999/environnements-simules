@@ -8,6 +8,7 @@
 	import { Input } from '$components/ui/input';
 	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
 	import { Separator } from '$components/ui/separator';
+	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
 		ChevronRight,
 		ChevronLeft,
@@ -30,6 +31,8 @@
 		GripVertical,
 		GitCompare,
 		Code,
+		Download,
+		Image,
 	} from 'lucide-svelte';
 
 	// Types
@@ -43,6 +46,7 @@
 		fileSize: number | null;
 		captureMode: 'free' | 'guided' | 'auto';
 		thumbnailPath: string | null;
+		mhtmlPath: string | null;
 		healthStatus: 'ok' | 'warning' | 'error';
 		createdAt: string;
 	}
@@ -440,18 +444,14 @@
 		<!-- Project selector + Tabs + Search -->
 		<div class="space-y-2 border-b border-border px-3 py-2">
 			<!-- Project selector -->
-			<select
+			<SearchableSelect
 				bind:value={selectedProjectId}
-				class="flex h-8 w-full rounded-md border border-border bg-transparent px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				{#if projects.length === 0}
-					<option value="">Chargement...</option>
-				{:else}
-					{#each projects as project}
-						<option value={project.id}>{project.name}</option>
-					{/each}
-				{/if}
-			</select>
+				options={projects.map(p => ({ value: p.id, label: p.name }))}
+				placeholder="Chargement..."
+				searchable={true}
+				searchPlaceholder="Rechercher un projet..."
+				class="w-full"
+			/>
 
 			<!-- Tabs: Arborescence / Liste / Carte du site -->
 			<div class="flex gap-1 text-xs">
@@ -829,6 +829,13 @@
 						<FileText class="h-[15px] w-[15px]" />
 						JavaScript
 					</button>
+					<button
+						class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium transition-colors border-b-2 {detailSubTab === 'debug' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}"
+						onclick={() => { detailSubTab = 'debug'; }}
+					>
+						<Image class="h-[15px] w-[15px]" />
+						Debug
+					</button>
 				</div>
 
 				<!-- Action buttons -->
@@ -865,7 +872,7 @@
 									<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
 								</svg>
 								<span>
-									<span class="text-success">https://</span><span class="font-medium text-foreground">{selectedProject?.subdomain ?? ''}.demo.lemonlearning.com</span>/{selectedPage.urlPath}
+									<span class="text-success">https://</span><span class="font-medium text-foreground">{selectedProject?.subdomain ?? ''}.en-ll.com</span>/{selectedPage.urlPath}
 								</span>
 							</div>
 						</div>
@@ -926,6 +933,123 @@
 						</div>
 						<h3 class="text-[15px] font-semibold text-foreground/70">JavaScript</h3>
 						<p class="mt-1 max-w-xs text-xs">Cette vue est détaillée dans la maquette Éditeur de Pages</p>
+					</div>
+				</div>
+			{:else if detailSubTab === 'debug'}
+				<div class="flex-1 overflow-y-auto p-5 space-y-6">
+					<!-- Screenshot section -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<Camera class="h-4 w-4 text-muted-foreground" />
+							Capture d'écran
+						</h3>
+						{#if selectedPage.thumbnailPath}
+							<div class="rounded-lg border border-border overflow-hidden bg-white shadow-sm">
+								<img
+									src="/api/pages/{selectedPage.id}/screenshot"
+									alt="Capture d'écran de {selectedPage.title}"
+									class="w-full h-auto"
+									loading="lazy"
+								/>
+							</div>
+							<div class="flex items-center gap-3 text-xs text-muted-foreground">
+								<span>Capturée le {formatDate(selectedPage.createdAt)}</span>
+								<a
+									href="/api/pages/{selectedPage.id}/screenshot"
+									download="{selectedPage.title}.png"
+									class="inline-flex items-center gap-1 text-primary hover:underline"
+								>
+									<Download class="h-3 w-3" />
+									Télécharger PNG
+								</a>
+							</div>
+						{:else}
+							<div class="flex flex-col items-center justify-center py-8 rounded-lg border border-dashed border-border bg-accent/20">
+								<Camera class="h-8 w-8 text-muted" />
+								<p class="mt-2 text-sm text-muted-foreground">Aucune capture d'écran disponible</p>
+								<p class="mt-0.5 text-xs text-muted">La capture d'écran est générée automatiquement lors de la capture de page.</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- MHTML section -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<Code class="h-4 w-4 text-muted-foreground" />
+							MHTML (debug)
+						</h3>
+						{#if selectedPage.mhtmlPath}
+							<div class="rounded-lg border border-border bg-card p-4 space-y-3">
+								<div class="flex items-center justify-between">
+									<div class="flex items-center gap-2">
+										<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50">
+											<FileText class="h-4 w-4 text-blue-600" />
+										</div>
+										<div>
+											<p class="text-sm font-medium text-foreground">{selectedPage.title}.mhtml</p>
+											<p class="text-xs text-muted-foreground">Capture MHTML complète avec ressources intégrées</p>
+										</div>
+									</div>
+									<a
+										href="/api/pages/{selectedPage.id}/mhtml"
+										download
+										class="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition-colors hover:bg-accent"
+									>
+										<Download class="h-3.5 w-3.5" />
+										Télécharger
+									</a>
+								</div>
+								<p class="text-xs text-muted-foreground leading-relaxed">
+									Le fichier MHTML contient la page et toutes ses ressources (CSS, images, polices) dans un seul fichier.
+									Ouvrez-le dans Chrome pour une visualisation fidèle de la capture.
+								</p>
+							</div>
+						{:else}
+							<div class="flex flex-col items-center justify-center py-8 rounded-lg border border-dashed border-border bg-accent/20">
+								<Code class="h-8 w-8 text-muted" />
+								<p class="mt-2 text-sm text-muted-foreground">Aucun fichier MHTML disponible</p>
+								<p class="mt-0.5 text-xs text-muted">Activez l'option «Capture MHTML (debug)» dans l'extension pour capturer le MHTML.</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Page metadata -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<FileText class="h-4 w-4 text-muted-foreground" />
+							Métadonnées
+						</h3>
+						<div class="rounded-lg border border-border bg-card p-4">
+							<dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">URL source</dt>
+									<dd class="mt-0.5 text-foreground font-mono text-xs break-all">{selectedPage.urlSource}</dd>
+								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Chemin URL</dt>
+									<dd class="mt-0.5 text-foreground font-mono text-xs">/{selectedPage.urlPath}</dd>
+								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Mode de capture</dt>
+									<dd class="mt-0.5 text-foreground">{getCaptureLabel(selectedPage.captureMode)}</dd>
+								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Taille du fichier</dt>
+									<dd class="mt-0.5 text-foreground">{formatFileSize(selectedPage.fileSize)}</dd>
+								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Statut</dt>
+									<dd class="mt-0.5 flex items-center gap-1.5">
+										<span class="h-2 w-2 rounded-full {getHealthDot(selectedPage.healthStatus)}"></span>
+										{getHealthLabel(selectedPage.healthStatus)}
+									</dd>
+								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Capturée le</dt>
+									<dd class="mt-0.5 text-foreground">{formatDate(selectedPage.createdAt)}</dd>
+								</div>
+							</dl>
+						</div>
 					</div>
 				</div>
 			{/if}

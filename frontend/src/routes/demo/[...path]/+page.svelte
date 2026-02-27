@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import { get } from '$lib/api';
 	import {
 		Share2,
@@ -50,6 +50,7 @@
 	// State
 	let currentProject: Project | null = $state(null);
 	let currentPages: PageInfo[] = $state([]);
+	let allProjects: Array<{ id: string; name: string; toolName: string; subdomain: string }> = $state([]);
 	let selectedVersionId = $state('');
 	let loading = $state(true);
 	let iframeUrl = $state('');
@@ -163,6 +164,23 @@
 		window.location.href = `/demo/${subdomain}/${pageUrlPath}`;
 	}
 
+	function changeProject(projectId: string) {
+		const project = allProjects.find(p => p.id === projectId);
+		if (project) {
+			window.location.href = `/demo/${project.subdomain}/`;
+		}
+	}
+
+	async function changeVersion(versionId: string) {
+		selectedVersionId = versionId;
+		try {
+			const pagesRes = await get<{ data: PageInfo[] }>(`/versions/${versionId}/pages`);
+			currentPages = pagesRes.data;
+		} catch {
+			currentPages = [];
+		}
+	}
+
 	function handleIframeLoad() {
 		iframeLoaded = true;
 		iframeError = false;
@@ -174,7 +192,16 @@
 		loading = false;
 	}
 
+	// Listen for navigation messages from the demo iframe
+	function handleDemoMessage(e: MessageEvent) {
+		if (e.data?.type === 'DEMO_NAVIGATE' && e.data.href) {
+			// Navigate the top-level page to the new demo URL
+			window.location.href = e.data.href;
+		}
+	}
+
 	onMount(async () => {
+		window.addEventListener('message', handleDemoMessage);
 		try {
 			if (demoApiUrl) {
 				try {
@@ -202,6 +229,7 @@
 				}>;
 			}>('/projects');
 
+			allProjects = res.data;
 			const match = res.data.find((p) => p.subdomain === subdomain);
 			if (match) {
 				const detail = await get<{ data: Project }>(
@@ -227,6 +255,10 @@
 		} finally {
 			loading = false;
 		}
+	});
+
+	onDestroy(() => {
+		window.removeEventListener('message', handleDemoMessage);
 	});
 </script>
 
@@ -408,79 +440,82 @@
 					</div>
 				</div>
 
-				<!-- Search bar -->
-				<div class="card-search-bar">
+				<!-- Selectors row -->
+				<div class="card-selectors">
+					<div class="card-selector">
+						<label class="selector-label">Projet</label>
+						<select
+							class="selector-select"
+							value={currentProject?.id ?? ''}
+							onchange={(e) => changeProject(e.currentTarget.value)}
+						>
+							{#each allProjects as project}
+								<option value={project.id}>{project.toolName}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="card-selector">
+						<label class="selector-label">Version</label>
+						<select
+							class="selector-select"
+							bind:value={selectedVersionId}
+							onchange={(e) => changeVersion(e.currentTarget.value)}
+						>
+							{#each currentProject?.versions ?? [] as version}
+								<option value={version.id}>
+									{version.name}{version.status === 'active' ? ' (active)' : ''}
+								</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+
+				<!-- Page list -->
+				<div class="card-pages-section">
 					<div class="card-search-wrap">
 						<Search class="card-search-icon" />
 						<input
 							class="card-search-input"
 							type="text"
 							bind:value={searchQuery}
-							placeholder="Rechercher une page, un guide, une action..."
+							placeholder="Rechercher une page..."
 						/>
 					</div>
-					{#if searchQuery.trim() && filteredPages().length > 0}
-						<div class="mt-2 max-h-40 overflow-y-auto rounded-md border border-white/10 bg-white/5">
-							{#each filteredPages() as pg}
-								<button
-									class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-white/70 transition-colors hover:bg-white/10"
-									onclick={() => navigateToPage(pg.urlPath)}
-								>
-									<span class="truncate">{pg.title}</span>
-									<span class="ml-auto shrink-0 text-[10px] text-white/30">/{pg.urlPath}</span>
-								</button>
-							{/each}
-						</div>
-					{:else if searchQuery.trim()}
-						<p class="mt-2 text-center text-xs text-white/30">Aucun résultat</p>
-					{/if}
+					<div class="card-page-list">
+						{#each filteredPages() as pg}
+							<button
+								class="card-page-item"
+								class:active={pg.urlPath === pagePath || `/${pg.urlPath}` === `/${pagePath}`}
+								onclick={() => navigateToPage(pg.urlPath)}
+							>
+								<span class="page-item-title">{pg.title}</span>
+								<span class="page-item-path">/{pg.urlPath}</span>
+							</button>
+						{:else}
+							<p class="card-page-empty">
+								{searchQuery.trim() ? 'Aucune page trouvée' : 'Aucune page disponible'}
+							</p>
+						{/each}
+					</div>
 				</div>
 
-				<!-- Action grid: 2 rows x 3 columns -->
-				<div class="card-actions-grid">
-					<!-- Row 1 -->
-					<button class="card-action-tile primary" onclick={openShareView}>
-						<div class="tile-icon">
-							<Share2 class="h-3.5 w-3.5" />
-						</div>
-						<span class="tile-label">Partager</span>
+				<!-- Action bar -->
+				<div class="card-action-bar">
+					<button class="action-bar-btn primary" onclick={openShareView} title="Partager">
+						<Share2 class="h-3.5 w-3.5" />
+						<span>Partager</span>
 					</button>
-					<button class="card-action-tile" onclick={copyUrl}>
-						<div class="tile-icon">
-							{#if copiedUrl}
-								<Check class="h-3.5 w-3.5" />
-							{:else}
-								<Copy class="h-3.5 w-3.5" />
-							{/if}
-						</div>
-						<span class="tile-label">{copiedUrl ? 'Copié !' : "Copier l'URL"}</span>
+					<button class="action-bar-btn" onclick={copyUrl} title="Copier l'URL">
+						{#if copiedUrl}
+							<Check class="h-3.5 w-3.5" />
+						{:else}
+							<Copy class="h-3.5 w-3.5" />
+						{/if}
+						<span>{copiedUrl ? 'Copié !' : 'Copier'}</span>
 					</button>
-					<button class="card-action-tile" onclick={openAsClient}>
-						<div class="tile-icon">
-							<ExternalLink class="h-3.5 w-3.5" />
-						</div>
-						<span class="tile-label">Vue client</span>
-					</button>
-
-					<!-- Row 2 -->
-					<button class="card-action-tile">
-						<div class="tile-icon">
-							<Settings class="h-3.5 w-3.5" />
-						</div>
-						<span class="tile-label">Paramètres</span>
-					</button>
-					<button class="card-action-tile">
-						<div class="tile-icon">
-							<Users class="h-3.5 w-3.5" />
-						</div>
-						<span class="tile-label">3 en ligne</span>
-						<span class="tile-live-dot"></span>
-					</button>
-					<button class="card-action-tile">
-						<div class="tile-icon">
-							<Search class="h-3.5 w-3.5" />
-						</div>
-						<span class="tile-label">Rechercher</span>
+					<button class="action-bar-btn" onclick={openAsClient} title="Vue client">
+						<ExternalLink class="h-3.5 w-3.5" />
+						<span>Vue client</span>
 					</button>
 				</div>
 			</div>
@@ -606,7 +641,7 @@
 		width: 60px;
 		height: 14px;
 		background: rgba(12, 10, 9, 0.7);
-		border-left: 2px solid #fbbf24;
+		border-bottom: 2px solid #fbbf24;
 		border-radius: 0 0 8px 8px;
 		display: flex;
 		align-items: center;
@@ -650,7 +685,7 @@
 		z-index: 10000;
 		width: 600px;
 		max-width: 90vw;
-		max-height: 360px;
+		max-height: 480px;
 		background: rgba(12, 10, 9, 0.95);
 		backdrop-filter: blur(24px);
 		-webkit-backdrop-filter: blur(24px);
@@ -801,13 +836,178 @@
 	}
 
 	/* ============================== */
-	/*  CARD — SEARCH BAR             */
+	/*  CARD — SELECTORS ROW          */
 	/* ============================== */
-	.card-search-bar {
+	.card-selectors {
+		display: flex;
+		gap: 8px;
 		padding: 8px 16px;
 		border-bottom: 1px solid rgba(255,255,255,.08);
-		flex-shrink: 0;
 	}
+	.card-selector {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+	.selector-label {
+		font-size: 10px;
+		font-weight: 600;
+		color: rgba(255,255,255,.4);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.selector-select {
+		appearance: none;
+		height: 32px;
+		background: rgba(255,255,255,.06);
+		border: 1px solid rgba(255,255,255,.1);
+		border-radius: 7px;
+		padding: 0 28px 0 10px;
+		color: #fff;
+		font-size: 12px;
+		font-family: inherit;
+		font-weight: 500;
+		cursor: pointer;
+		outline: none;
+		transition: background .15s, border-color .15s;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 8px center;
+	}
+	.selector-select:focus {
+		border-color: rgba(251,191,36,.35);
+		background-color: rgba(255,255,255,.1);
+	}
+	.selector-select option {
+		background: #1a1a1a;
+		color: #fff;
+	}
+
+	/* ============================== */
+	/*  CARD — PAGE LIST               */
+	/* ============================== */
+	.card-pages-section {
+		padding: 8px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+	}
+	.card-page-list {
+		max-height: 180px;
+		overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		margin-top: 4px;
+	}
+	.card-page-list::-webkit-scrollbar {
+		width: 4px;
+	}
+	.card-page-list::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.card-page-list::-webkit-scrollbar-thumb {
+		background: rgba(255,255,255,.15);
+		border-radius: 2px;
+	}
+	.card-page-item {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 7px 10px;
+		border-radius: 6px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
+		color: rgba(255,255,255,.65);
+		transition: background .12s, color .12s;
+		text-align: left;
+		width: 100%;
+	}
+	.card-page-item:hover {
+		background: rgba(255,255,255,.08);
+		color: #fff;
+	}
+	.card-page-item.active {
+		background: rgba(251,191,36,.1);
+		color: #fbbf24;
+	}
+	.page-item-title {
+		font-size: 12px;
+		font-weight: 500;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		flex: 1;
+		min-width: 0;
+	}
+	.page-item-path {
+		font-size: 10px;
+		color: rgba(255,255,255,.25);
+		white-space: nowrap;
+		flex-shrink: 0;
+		font-family: ui-monospace, monospace;
+	}
+	.card-page-item.active .page-item-path {
+		color: rgba(251,191,36,.5);
+	}
+	.card-page-empty {
+		padding: 16px 0;
+		text-align: center;
+		font-size: 12px;
+		color: rgba(255,255,255,.3);
+	}
+
+	/* ============================== */
+	/*  CARD — ACTION BAR              */
+	/* ============================== */
+	.card-action-bar {
+		display: flex;
+		gap: 6px;
+		padding: 8px 16px 12px;
+		border-top: 1px solid rgba(255,255,255,.08);
+	}
+	.action-bar-btn {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		height: 34px;
+		border-radius: 7px;
+		background: rgba(255,255,255,.06);
+		border: 1px solid rgba(255,255,255,.08);
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 11.5px;
+		font-weight: 500;
+		color: rgba(255,255,255,.65);
+		transition: background .15s, border-color .15s, color .15s;
+	}
+	.action-bar-btn:hover {
+		background: rgba(255,255,255,.12);
+		border-color: rgba(255,255,255,.15);
+		color: #fff;
+	}
+	.action-bar-btn.primary {
+		background: rgba(251,191,36,.1);
+		border-color: rgba(251,191,36,.18);
+		color: #fbbf24;
+		font-weight: 600;
+	}
+	.action-bar-btn.primary:hover {
+		background: rgba(251,191,36,.18);
+		border-color: rgba(251,191,36,.3);
+	}
+
+	/* ============================== */
+	/*  CARD — SEARCH (reused)         */
+	/* ============================== */
 	.card-search-wrap {
 		position: relative;
 		display: flex;
@@ -840,80 +1040,6 @@
 	}
 	.card-search-input::placeholder {
 		color: rgba(255,255,255,.35);
-	}
-
-	/* ============================== */
-	/*  CARD — ACTION GRID            */
-	/* ============================== */
-	.card-actions-grid {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 6px;
-		padding: 10px 16px 14px;
-	}
-
-	.card-action-tile {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 12px;
-		border-radius: 8px;
-		background: rgba(255,255,255,.04);
-		border: 1px solid rgba(255,255,255,.06);
-		cursor: pointer;
-		transition: background .15s, border-color .15s;
-		font-family: inherit;
-		color: #fff;
-	}
-	.card-action-tile:hover {
-		background: rgba(255,255,255,.1);
-		border-color: rgba(255,255,255,.14);
-	}
-	.card-action-tile.primary {
-		background: rgba(251,191,36,.1);
-		border-color: rgba(251,191,36,.18);
-	}
-	.card-action-tile.primary:hover {
-		background: rgba(251,191,36,.18);
-		border-color: rgba(251,191,36,.3);
-	}
-
-	.tile-icon {
-		width: 28px;
-		height: 28px;
-		border-radius: 6px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		background: rgba(255,255,255,.06);
-		color: rgba(255,255,255,.6);
-	}
-	.card-action-tile.primary .tile-icon {
-		background: rgba(251,191,36,.15);
-		color: #fbbf24;
-	}
-
-	.tile-label {
-		font-size: 12px;
-		font-weight: 500;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.card-action-tile.primary .tile-label {
-		color: #fbbf24;
-		font-weight: 600;
-	}
-
-	.tile-live-dot {
-		width: 6px;
-		height: 6px;
-		background: #22c55e;
-		border-radius: 50%;
-		flex-shrink: 0;
-		animation: pulseDot 2s ease-in-out infinite;
-		margin-left: -4px;
 	}
 
 	/* ============================== */

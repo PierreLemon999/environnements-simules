@@ -26,7 +26,11 @@ router.post(
   '/versions/:versionId/pages',
   authenticate,
   requireRole('admin'),
-  upload.single('file'),
+  upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'mhtml', maxCount: 1 },
+    { name: 'screenshot', maxCount: 1 }
+  ]),
   async (req: Request, res: Response) => {
     try {
       const version = await db
@@ -40,7 +44,12 @@ router.post(
         return;
       }
 
-      if (!req.file) {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+      const htmlFile = files?.file?.[0];
+      const mhtmlFile = files?.mhtml?.[0];
+      const screenshotFile = files?.screenshot?.[0];
+
+      if (!htmlFile) {
         res.status(400).json({ error: 'HTML file is required', code: 400 });
         return;
       }
@@ -77,7 +86,7 @@ router.post(
         return;
       }
 
-      // Generate URL path from source URL if not provided
+      // Generate URL path from source URL if not provided, always normalize
       let urlPath = metadata.urlPath;
       if (!urlPath) {
         try {
@@ -86,6 +95,14 @@ router.post(
         } catch {
           urlPath = 'index';
         }
+      } else {
+        // Normalize: strip leading/trailing slashes and query string
+        try {
+          // If it looks like a full URL path with query, strip query
+          const qIdx = urlPath.indexOf('?');
+          if (qIdx !== -1) urlPath = urlPath.substring(0, qIdx);
+        } catch { /* ignore */ }
+        urlPath = urlPath.replace(/^\/+|\/+$/g, '') || 'index';
       }
 
       const pageId = uuidv4();
@@ -99,7 +116,21 @@ router.post(
       }
 
       // Write the HTML file
-      fs.writeFileSync(fullPath, req.file.buffer);
+      fs.writeFileSync(fullPath, htmlFile.buffer);
+
+      // Write MHTML file if provided
+      let mhtmlRelativePath: string | null = null;
+      if (mhtmlFile) {
+        mhtmlRelativePath = `uploads/${req.params.versionId}/${pageId}.mhtml`;
+        fs.writeFileSync(path.join(dataDir, mhtmlRelativePath), mhtmlFile.buffer);
+      }
+
+      // Write screenshot if provided
+      let screenshotRelativePath: string | null = null;
+      if (screenshotFile) {
+        screenshotRelativePath = `uploads/${req.params.versionId}/${pageId}.png`;
+        fs.writeFileSync(path.join(dataDir, screenshotRelativePath), screenshotFile.buffer);
+      }
 
       const page = {
         id: pageId,
@@ -108,9 +139,10 @@ router.post(
         urlPath,
         title: metadata.title,
         filePath: relativeFilePath,
-        fileSize: req.file.size,
+        fileSize: htmlFile.size,
         captureMode: (metadata.captureMode as 'free' | 'guided' | 'auto') || 'free',
-        thumbnailPath: null,
+        thumbnailPath: screenshotRelativePath,
+        mhtmlPath: mhtmlRelativePath,
         healthStatus: 'ok' as const,
         createdAt: new Date().toISOString(),
       };
@@ -370,6 +402,90 @@ router.patch(
 );
 
 /**
+ * GET /pages/:id/mhtml
+ * Download the MHTML file for a page (if available).
+ */
+router.get(
+  '/pages/:id/mhtml',
+  authenticate,
+  requireRole('admin'),
+  async (req: Request, res: Response) => {
+    try {
+      const page = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.id, req.params.id))
+        .get();
+
+      if (!page) {
+        res.status(404).json({ error: 'Page not found', code: 404 });
+        return;
+      }
+
+      if (!page.mhtmlPath) {
+        res.status(404).json({ error: 'No MHTML file for this page', code: 404 });
+        return;
+      }
+
+      const fullPath = path.join(dataDir, page.mhtmlPath);
+      if (!fs.existsSync(fullPath)) {
+        res.status(404).json({ error: 'MHTML file not found on disk', code: 404 });
+        return;
+      }
+
+      const filename = `${page.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.mhtml`;
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Type', 'message/rfc822');
+      fs.createReadStream(fullPath).pipe(res);
+    } catch (error) {
+      console.error('Error downloading MHTML:', error);
+      res.status(500).json({ error: 'Internal server error', code: 500 });
+    }
+  }
+);
+
+/**
+ * GET /pages/:id/screenshot
+ * Serve the screenshot image for a page (if available).
+ */
+router.get(
+  '/pages/:id/screenshot',
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const page = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.id, req.params.id))
+        .get();
+
+      if (!page) {
+        res.status(404).json({ error: 'Page not found', code: 404 });
+        return;
+      }
+
+      if (!page.thumbnailPath) {
+        res.status(404).json({ error: 'No screenshot for this page', code: 404 });
+        return;
+      }
+
+      const fullPath = path.join(dataDir, page.thumbnailPath);
+      if (!fs.existsSync(fullPath)) {
+        res.status(404).json({ error: 'Screenshot file not found on disk', code: 404 });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      fs.createReadStream(fullPath).pipe(res);
+    } catch (error) {
+      console.error('Error serving screenshot:', error);
+      res.status(500).json({ error: 'Internal server error', code: 500 });
+    }
+  }
+);
+
+/**
  * DELETE /pages/:id
  * Delete a page and its HTML file.
  */
@@ -390,10 +506,26 @@ router.delete(
         return;
       }
 
-      // Delete the file
+      // Delete the HTML file
       const fullPath = path.join(dataDir, page.filePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
+      }
+
+      // Delete the MHTML file if present
+      if (page.mhtmlPath) {
+        const mhtmlFullPath = path.join(dataDir, page.mhtmlPath);
+        if (fs.existsSync(mhtmlFullPath)) {
+          fs.unlinkSync(mhtmlFullPath);
+        }
+      }
+
+      // Delete the screenshot if present
+      if (page.thumbnailPath) {
+        const screenshotFullPath = path.join(dataDir, page.thumbnailPath);
+        if (fs.existsSync(screenshotFullPath)) {
+          fs.unlinkSync(screenshotFullPath);
+        }
       }
 
       await db.delete(pages).where(eq(pages.id, req.params.id));

@@ -14,6 +14,7 @@
 		DialogDescription,
 		DialogFooter,
 	} from '$components/ui/dialog';
+	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
 		EyeOff,
 		Plus,
@@ -374,26 +375,15 @@
 			<h1 class="text-lg font-semibold text-foreground">Obfuscation</h1>
 
 			<!-- Project selector (inline in header) -->
-			<div class="relative inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-medium shadow-xs">
-				<span class="h-2 w-2 rounded-full bg-success"></span>
-				<select
-					id="project-select"
-					value={selectedProjectId}
-					onchange={handleProjectChange}
-					class="appearance-none bg-transparent pr-4 text-sm font-medium text-foreground focus:outline-none"
-				>
-					{#if loading}
-						<option>Chargement...</option>
-					{:else}
-						{#each projects as project}
-							<option value={project.id}>{project.name} — {project.toolName}</option>
-						{/each}
-					{/if}
-				</select>
-				<svg class="pointer-events-none absolute right-3 h-3 w-3 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-				</svg>
-			</div>
+			<SearchableSelect
+				value={selectedProjectId}
+				options={projects.map(p => ({ value: p.id, label: `${p.name} — ${p.toolName}` }))}
+				placeholder="Chargement..."
+				searchable={true}
+				searchPlaceholder="Rechercher un projet..."
+				class="w-64"
+				onchange={(val) => { selectedProjectId = val; loadRules(val); previewObfuscated = ''; previewOriginal = ''; previewChangesCount = 0; }}
+			/>
 
 			<!-- Tab pills (inline in header) -->
 			<div class="flex items-center gap-2">
@@ -554,13 +544,15 @@
 								<div class="flex items-end gap-3">
 									<div class="space-y-1">
 										<label class="text-xs font-medium text-foreground">Type</label>
-										<select
-											bind:value={addIsRegex}
-											class="flex h-9 rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-										>
-											<option value={false}>Texte exact</option>
-											<option value={true}>Regex</option>
-										</select>
+										<SearchableSelect
+											value={addIsRegex ? 'true' : 'false'}
+											options={[
+												{ value: 'false', label: 'Texte exact' },
+												{ value: 'true', label: 'Regex' },
+											]}
+											placeholder="Type"
+											onchange={(val) => { addIsRegex = val === 'true'; }}
+										/>
 									</div>
 									<div class="flex-1 space-y-1">
 										<label class="text-xs font-medium text-foreground">Texte à masquer</label>
