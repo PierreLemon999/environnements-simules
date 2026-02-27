@@ -125,10 +125,10 @@ app.use(
 
 // ── Start Server ─────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-  console.log(`API available at http://localhost:${PORT}/api`);
-  console.log(`Demo serving at http://localhost:${PORT}/demo/:subdomain/*`);
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Backend server running on http://127.0.0.1:${PORT}`);
+  console.log(`API available at http://127.0.0.1:${PORT}/api`);
+  console.log(`Demo serving at http://127.0.0.1:${PORT}/demo/:subdomain/*`);
 });
 
 export default app;

@@ -85,6 +85,7 @@ async function main() {
       status TEXT NOT NULL DEFAULT 'active',
       language TEXT NOT NULL DEFAULT 'fr',
       author_id TEXT NOT NULL REFERENCES users(id),
+      capture_strategy TEXT NOT NULL DEFAULT 'url_based',
       created_at TEXT NOT NULL
     );
 
@@ -99,6 +100,12 @@ async function main() {
       capture_mode TEXT NOT NULL DEFAULT 'free',
       thumbnail_path TEXT,
       health_status TEXT NOT NULL DEFAULT 'ok',
+      page_type TEXT NOT NULL DEFAULT 'page',
+      parent_page_id TEXT,
+      dom_fingerprint TEXT,
+      synthetic_url TEXT,
+      capture_timing_ms INTEGER,
+      state_index INTEGER,
       created_at TEXT NOT NULL
     );
 
@@ -202,11 +209,27 @@ async function main() {
       config_json TEXT,
       is_active INTEGER NOT NULL DEFAULT 1
     );
+
+    CREATE TABLE IF NOT EXISTS page_transitions (
+      id TEXT PRIMARY KEY,
+      version_id TEXT NOT NULL REFERENCES versions(id) ON DELETE CASCADE,
+      source_page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+      target_page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+      trigger_type TEXT NOT NULL,
+      trigger_selector TEXT,
+      trigger_text TEXT,
+      loading_time_ms INTEGER,
+      had_loading_indicator INTEGER NOT NULL DEFAULT 0,
+      loading_indicator_type TEXT,
+      capture_mode TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
 
   // Clear existing data
   console.log('Clearing existing data...');
   sqlite.exec(`
+    DELETE FROM page_transitions;
     DELETE FROM session_events;
     DELETE FROM sessions;
     DELETE FROM demo_assignments;
