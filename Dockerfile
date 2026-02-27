@@ -11,15 +11,14 @@ COPY backend/ ./backend/
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm ci
 COPY frontend/ ./frontend/
-RUN cd frontend && npm run build
+RUN cd frontend && PUBLIC_API_BASE_URL=/api npm run build
 
 # Seed database with initial data
 RUN cd backend && npx tsx src/db/seed.ts
 
-# Start script
-COPY start.sh ./start.sh
-RUN chmod +x start.sh
-
 ENV NODE_ENV=production
+ENV ORIGIN=https://env-ll.com
+ENV BODY_SIZE_LIMIT=52428800
+WORKDIR /app/backend
 
-CMD ["./start.sh"]
+CMD ["npx", "tsx", "src/production-server.ts"]
