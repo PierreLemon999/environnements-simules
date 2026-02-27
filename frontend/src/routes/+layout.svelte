@@ -5,21 +5,23 @@
 	import ToastContainer from '$lib/components/ui/toast/ToastContainer.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
-	let { children } = $props();
+	let { children, data } = $props();
 	let ready = $state(false);
 
 	onMount(async () => {
-		await loadFromStorage();
+		if (!data.isLandingDomain) {
+			await loadFromStorage();
+		}
 		ready = true;
 	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<meta name="description" content="Environnements Simulés - Lemon Learning" />
+	<meta name="description" content="Lemon Lab - Lemon Learning" />
 </svelte:head>
 
-{#if ready}
+{#if ready || data.isLandingDomain}
 	{@render children()}
 {:else}
 	<div class="flex min-h-screen items-center justify-center bg-background">
