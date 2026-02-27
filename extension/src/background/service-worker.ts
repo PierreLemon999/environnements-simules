@@ -24,6 +24,20 @@ import { verifyToken } from '$lib/auth';
 import api, { uploadPage } from '$lib/api';
 
 // ---------------------------------------------------------------------------
+// Register MAIN world content script programmatically
+// (static manifest declaration of world: "MAIN" is unreliable)
+// ---------------------------------------------------------------------------
+chrome.scripting.registerContentScripts([{
+	id: 'capture-hooks-main',
+	matches: ['<all_urls>'],
+	js: ['content/capture-hooks.js'],
+	runAt: 'document_start',
+	world: 'MAIN' as chrome.scripting.ExecutionWorld,
+}]).catch(() => {
+	// Already registered — ignore
+});
+
+// ---------------------------------------------------------------------------
 // Message handler
 // ---------------------------------------------------------------------------
 
@@ -433,7 +447,7 @@ chrome.alarms?.onAlarm.addListener(async (alarm) => {
 // ---------------------------------------------------------------------------
 
 chrome.runtime.onInstalled.addListener(() => {
-	console.log('[Lab] Extension installed');
+	console.log('[Lemon Lab] Extension installed');
 });
 
 // ---------------------------------------------------------------------------
