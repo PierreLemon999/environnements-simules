@@ -39,14 +39,14 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<div class="min-h-screen bg-background">
+<div class="min-h-screen bg-background" style="--sidebar-current-width: {collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'}">
 	<Sidebar bind:collapsed onToggle={handleToggle} />
 	<Header {collapsed} onOpenCommandPalette={() => commandPalette?.toggle()} />
 	<CommandPalette bind:this={commandPalette} />
 
 	<main
 		class="min-h-[calc(100vh-var(--header-height))] p-6 transition-all duration-300"
-		style="margin-left: {collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'}"
+		style="margin-left: var(--sidebar-current-width)"
 	>
 		{@render children()}
 	</main>

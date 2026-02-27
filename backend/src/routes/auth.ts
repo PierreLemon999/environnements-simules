@@ -279,7 +279,7 @@ router.post('/demo-access', async (req: Request, res: Response) => {
  */
 router.post('/verify', async (req: Request, res: Response) => {
   try {
-    const { token } = req.body;
+    const { token, extensionVersion } = req.body;
 
     if (!token) {
       res.status(400).json({ error: 'Token requis', code: 400 });
@@ -288,8 +288,13 @@ router.post('/verify', async (req: Request, res: Response) => {
 
     const decoded = verifyToken(token);
 
-    // Fetch full user from DB to include avatarUrl
+    // Fetch full user from DB to include avatarUrl and extensionVersion
     const fullUser = await db.select().from(users).where(eq(users.id, decoded.userId)).get();
+
+    // Update extension version if reported
+    if (extensionVersion && fullUser && extensionVersion !== fullUser.extensionVersion) {
+      await db.update(users).set({ extensionVersion }).where(eq(users.id, decoded.userId));
+    }
 
     res.json({
       data: {
@@ -297,6 +302,7 @@ router.post('/verify', async (req: Request, res: Response) => {
         user: {
           ...decoded,
           avatarUrl: fullUser?.avatarUrl ?? null,
+          extensionVersion: extensionVersion ?? fullUser?.extensionVersion ?? null,
         },
       },
     });

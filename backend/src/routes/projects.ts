@@ -64,6 +64,12 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       return;
     }
 
+    // Validate subdomain format: only lowercase alphanumeric and hyphens
+    if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(subdomain)) {
+      res.status(400).json({ error: 'Subdomain must contain only lowercase letters, digits, and hyphens (2-63 chars)', code: 400 });
+      return;
+    }
+
     // Check subdomain uniqueness
     const existing = await db
       .select()
@@ -166,6 +172,14 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
     }
 
     const { name, toolName, subdomain, description, logoUrl, iconColor } = req.body;
+
+    // Validate subdomain format if changing
+    if (subdomain && subdomain !== project.subdomain) {
+      if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(subdomain)) {
+        res.status(400).json({ error: 'Subdomain must contain only lowercase letters, digits, and hyphens (2-63 chars)', code: 400 });
+        return;
+      }
+    }
 
     // Check subdomain uniqueness if changing
     if (subdomain && subdomain !== project.subdomain) {

@@ -35,6 +35,7 @@
 		Check,
 		RefreshCw,
 		Send,
+		AlertTriangle,
 	} from 'lucide-svelte';
 	import {
 		DropdownMenu,
@@ -44,6 +45,8 @@
 		DropdownMenuSeparator,
 	} from '$components/ui/dropdown-menu';
 
+	const LATEST_EXTENSION_VERSION = '0.2.1';
+
 	interface UserRecord {
 		id: string;
 		name: string;
@@ -52,6 +55,7 @@
 		company: string | null;
 		avatarUrl: string | null;
 		googleId: string | null;
+		extensionVersion: string | null;
 		language: string;
 		createdAt: string;
 	}
@@ -431,6 +435,17 @@
 								{/if}
 								{user.role === 'admin' ? 'Administrateur' : 'Client'}
 							</Badge>
+
+							<!-- Extension version (admin only) -->
+							{#if user.role === 'admin' && user.extensionVersion}
+								{@const isOutdated = user.extensionVersion !== LATEST_EXTENSION_VERSION}
+								<span class="inline-flex items-center gap-1 text-[10px] font-medium {isOutdated ? 'text-destructive' : 'text-muted'}">
+									{#if isOutdated}
+										<AlertTriangle class="h-3 w-3" />
+									{/if}
+									v{user.extensionVersion}
+								</span>
+							{/if}
 
 							<!-- Date -->
 							<div class="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">

@@ -10,6 +10,7 @@ export const users = sqliteTable('users', {
   company: text('company'), // nullable — company name for client users
   avatarUrl: text('avatar_url'),
   googleId: text('google_id'),
+  extensionVersion: text('extension_version'),
   language: text('language').notNull().default('fr'),
   createdAt: text('created_at').notNull(),
 });

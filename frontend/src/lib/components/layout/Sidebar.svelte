@@ -4,6 +4,7 @@
 	import { get } from '$lib/api';
 	import { onMount } from 'svelte';
 	import { Avatar, AvatarFallback, AvatarImage } from '$components/ui/avatar';
+	import AvatarEditor from '$components/ui/avatar-editor/AvatarEditor.svelte';
 	import { Badge } from '$components/ui/badge';
 	import { Separator } from '$components/ui/separator';
 	import {
@@ -18,13 +19,15 @@
 		Settings,
 		Blocks,
 		PenSquare,
-		ChevronDown,
+		LogOut,
 		ChevronsLeft,
 		Gauge,
 		FlaskConical,
 	} from 'lucide-svelte';
 
 	let { collapsed = $bindable(false), onToggle }: { collapsed?: boolean; onToggle?: () => void } = $props();
+
+	let avatarEditorOpen = $state(false);
 
 	let projects: Array<{ id: string; name: string; toolName: string; iconColor?: string | null; pageCount: number }> = $state([]);
 	let sessionCount = $state(0);
@@ -255,27 +258,33 @@
 	<div class="border-t border-border px-3 py-3">
 		{#if $user}
 			<div class="flex items-center gap-3">
-				<div class="relative">
+				<button
+					class="relative cursor-pointer rounded-full transition-opacity hover:opacity-80"
+					onclick={() => avatarEditorOpen = true}
+					title="Modifier la photo de profil"
+				>
 					<Avatar class="h-8 w-8">
 						<AvatarImage src={$user.avatarUrl} alt={$user.name} />
 						<AvatarFallback>{getInitials($user.name)}</AvatarFallback>
 					</Avatar>
 					<span class="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full border-2 border-sidebar bg-success"></span>
-				</div>
+				</button>
 				{#if !collapsed}
 					<div class="min-w-0 flex-1">
 						<p class="truncate text-sm font-medium text-foreground">{$user.name}</p>
 						<p class="truncate text-xs text-muted">{$user.role === 'admin' ? 'Administrateur·rice' : 'Client·e'}</p>
 					</div>
 					<button
-						class="rounded-md p-1.5 text-muted transition-colors hover:bg-accent hover:text-foreground"
+						class="rounded-md p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-600"
 						onclick={() => logout()}
-						title="Options"
+						title="Se déconnecter"
 					>
-						<ChevronDown class="h-4 w-4" />
+						<LogOut class="h-4 w-4" />
 					</button>
 				{/if}
 			</div>
 		{/if}
 	</div>
 </aside>
+
+<AvatarEditor bind:open={avatarEditorOpen} />

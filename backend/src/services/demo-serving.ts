@@ -12,6 +12,44 @@ import { eq, and, desc } from 'drizzle-orm';
 import { applyObfuscation } from './obfuscation.js';
 import { rewriteLinks, type PageInfo } from './link-rewriter.js';
 
+// ── Security helpers ─────────────────────────────────────────────────────────
+
+/** HTML-escape a string to prevent XSS when interpolated into HTML */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Safely serialize a value for embedding inside a <script> tag (prevents </script> breakout) */
+function safeJsonForScript(value: unknown): string {
+  return JSON.stringify(value).replace(/<\//g, '<\\/');
+}
+
+/** Validate that a URL is a safe HTTPS script source */
+function isValidScriptUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
+      !url.includes('"') && !url.includes("'") && !url.includes('<') && !url.includes('>');
+  } catch {
+    return false;
+  }
+}
+
+/** HTML-escape a string for safe use inside an HTML attribute */
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/'/g, '&#39;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export interface DemoPageResult {
   html: string;
   page: {
@@ -112,7 +150,7 @@ export async function serveDemoPage(
   // 4. Read the HTML file
   const filePath = path.join(dataDir, page.filePath);
   if (!fs.existsSync(filePath)) {
-    throw new NotFoundError(`HTML file not found on disk: ${page.filePath}`);
+    throw new NotFoundError('Page content not available');
   }
   let html = fs.readFileSync(filePath, 'utf-8');
 
@@ -155,10 +193,11 @@ export async function serveDemoPage(
   // - Captured links (/demo/…) → postMessage DEMO_NAVIGATE to parent
   // - Non-captured links → block click entirely (preventDefault)
   // - Listens for DEMO_HIGHLIGHT_LINKS to outline captured (green) / non-captured (blue)
-  const capturedPaths = JSON.stringify(allPages.map(p => p.urlPath));
+  const capturedPaths = safeJsonForScript(allPages.map(p => p.urlPath));
+  const safeSub = safeJsonForScript(subdomain);
   const navScript = `<script>(function(){
 var captured=${capturedPaths};
-var sub="${subdomain}";
+var sub=${safeSub};
 document.addEventListener("click",function(e){
   var a=e.target;while(a&&a.tagName!=="A")a=a.parentElement;
   if(!a||!a.getAttribute("href"))return;
@@ -199,8 +238,10 @@ window.addEventListener("message",function(e){
     .where(and(eq(tagManagerConfig.projectId, project.id), eq(tagManagerConfig.isActive, 1)))
     .get();
 
-  if (tagConfig) {
-    const scriptTag = `<script src="${tagConfig.scriptUrl}"${tagConfig.configJson ? ` data-config='${tagConfig.configJson}'` : ''}></script>`;
+  if (tagConfig && isValidScriptUrl(tagConfig.scriptUrl)) {
+    const escapedUrl = escapeHtmlAttr(tagConfig.scriptUrl);
+    const configAttr = tagConfig.configJson ? ` data-config="${escapeHtmlAttr(tagConfig.configJson)}"` : '';
+    const scriptTag = `<script src="${escapedUrl}"${configAttr}></script>`;
     // Inject before closing </body> tag, or at the end of the document
     if (html.includes('</body>')) {
       html = html.replace('</body>', `${scriptTag}\n</body>`);

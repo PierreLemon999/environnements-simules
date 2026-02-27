@@ -64,6 +64,7 @@ async function main() {
       company TEXT,
       avatar_url TEXT,
       google_id TEXT,
+      extension_version TEXT,
       language TEXT NOT NULL DEFAULT 'fr',
       created_at TEXT NOT NULL
     );
@@ -264,6 +265,7 @@ async function main() {
     role: 'admin' as const,
     avatarUrl: null,
     googleId: 'google-marie-001',
+    extensionVersion: null,
     language: 'fr',
     createdAt: isoDaysAgo(120),
   };
@@ -276,6 +278,7 @@ async function main() {
     role: 'admin' as const,
     avatarUrl: null,
     googleId: 'google-thomas-002',
+    extensionVersion: null,
     language: 'fr',
     createdAt: isoDaysAgo(90),
   };
@@ -288,6 +291,7 @@ async function main() {
     role: 'admin' as const,
     avatarUrl: null,
     googleId: 'google-pierre-003',
+    extensionVersion: null,
     language: 'fr',
     createdAt: isoDaysAgo(60),
   };
@@ -301,6 +305,7 @@ async function main() {
     company: 'Acme Corp',
     avatarUrl: null,
     googleId: null,
+    extensionVersion: null,
     language: 'fr',
     createdAt: isoDaysAgo(30),
   };
@@ -314,6 +319,7 @@ async function main() {
     company: 'TechVision',
     avatarUrl: null,
     googleId: null,
+    extensionVersion: null,
     language: 'fr',
     createdAt: isoDaysAgo(15),
   };

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { login, loginWithGoogle, loginDevBypass } from '$lib/stores/auth';
+	import { PUBLIC_GOOGLE_CLIENT_ID } from '$env/static/public';
 	import { LogIn, Loader2, Mail, Lock, Eye, EyeOff, CheckCircle, XCircle, KeyRound, ExternalLink } from 'lucide-svelte';
 
 	let email = $state('');
@@ -48,10 +49,10 @@
 		error = '';
 
 		try {
-			const clientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID;
+			const clientId = PUBLIC_GOOGLE_CLIENT_ID;
 
 			if (!clientId) {
-				error = 'Google Client ID non configuré. Utilisez le bouton Dev Login en développement.';
+				error = 'Google Client ID non configuré. Contactez l\'administrateur.';
 				googleLoading = false;
 				return;
 			}

@@ -3,6 +3,15 @@ import { serveDemoPage, NotFoundError } from '../services/demo-serving.js';
 
 const router = Router();
 
+/** HTML-escape for safe interpolation into HTML responses */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 /**
  * GET /demo/:subdomain/*
  * Serve a captured page as a demo.
@@ -23,8 +32,9 @@ async function handleDemoRequest(req: Request, res: Response): Promise<void> {
 
     // Set appropriate headers for serving HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('X-Demo-Project', result.project.name);
-    res.setHeader('X-Demo-Page', result.page.title);
+    // Sanitize header values to prevent header injection (strip newlines/control chars)
+    res.setHeader('X-Demo-Project', result.project.name.replace(/[\r\n\x00-\x1f]/g, ''));
+    res.setHeader('X-Demo-Page', result.page.title.replace(/[\r\n\x00-\x1f]/g, ''));
 
     // Disable caching for demo pages (content may change with obfuscation rules)
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -40,7 +50,7 @@ async function handleDemoRequest(req: Request, res: Response): Promise<void> {
         <head><title>Page non trouvée</title></head>
         <body>
           <h1>404 - Page non trouvée</h1>
-          <p>${error.message}</p>
+          <p>${escapeHtml(error.message)}</p>
         </body>
         </html>
       `);

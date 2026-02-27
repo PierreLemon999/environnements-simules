@@ -118,10 +118,12 @@
 	}
 
 	function highlightMatch(text: string, q: string): string {
-		if (!q.trim()) return text;
+		// HTML-escape the text first to prevent XSS via stored titles
+		const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		if (!q.trim()) return safe;
 		const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 		const regex = new RegExp(`(${escaped})`, 'gi');
-		return text.replace(regex, '<mark>$1</mark>');
+		return safe.replace(regex, '<mark>$1</mark>');
 	}
 
 	function groupResults(items: SearchResult[]): Record<string, SearchResult[]> {

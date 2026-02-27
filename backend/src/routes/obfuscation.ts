@@ -74,6 +74,12 @@ router.post(
         return;
       }
 
+      // Block HTML/script injection in replaceTerm
+      if (/<script/i.test(replaceTerm) || /on\w+\s*=/i.test(replaceTerm)) {
+        res.status(400).json({ error: 'replaceTerm must not contain script tags or event handlers', code: 400 });
+        return;
+      }
+
       // Validate regex if isRegex is true
       if (isRegex) {
         try {
@@ -126,6 +132,12 @@ router.put(
       }
 
       const { searchTerm, replaceTerm, isRegex, isActive } = req.body;
+
+      // Block HTML/script injection in replaceTerm
+      if (replaceTerm !== undefined && (/<script/i.test(replaceTerm) || /on\w+\s*=/i.test(replaceTerm))) {
+        res.status(400).json({ error: 'replaceTerm must not contain script tags or event handlers', code: 400 });
+        return;
+      }
 
       // Validate regex if updating to regex mode
       if (isRegex && searchTerm) {

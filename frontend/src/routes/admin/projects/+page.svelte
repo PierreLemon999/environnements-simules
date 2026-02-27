@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { get, post, put, del } from '$lib/api';
 	import { toast } from '$lib/stores/toast';
@@ -82,6 +83,10 @@
 	let deleteDialogOpen = $state(false);
 	let deletingProject: Project | null = $state(null);
 	let deleteSubmitting = $state(false);
+
+	// FAB visibility — shown when header "Nouveau projet" button is scrolled out of view
+	let headerButtonEl: HTMLElement | undefined = $state();
+	let showFab = $state(false);
 
 	// Tool name options
 	const toolOptions = [
@@ -330,6 +335,8 @@
 		openCreateDialog();
 	}
 
+	let observer: IntersectionObserver | undefined;
+
 	onMount(async () => {
 		window.addEventListener('open-create-project', handleCreateProjectEvent);
 
@@ -343,8 +350,21 @@
 		}
 	});
 
+	// Watch header button visibility for FAB
+	$effect(() => {
+		if (!headerButtonEl) return;
+		observer?.disconnect();
+		observer = new IntersectionObserver(
+			([entry]) => { showFab = !entry.isIntersecting; },
+			{ threshold: 0 }
+		);
+		observer.observe(headerButtonEl);
+		return () => observer?.disconnect();
+	});
+
 	onDestroy(() => {
 		window.removeEventListener('open-create-project', handleCreateProjectEvent);
+		observer?.disconnect();
 	});
 </script>
 
@@ -393,10 +413,12 @@
 					class="pl-9"
 				/>
 			</div>
-			<Button size="sm" class="gap-1.5 shrink-0" onclick={openCreateDialog}>
-				<Plus class="h-3.5 w-3.5" />
-				Nouveau projet
-			</Button>
+			<span bind:this={headerButtonEl}>
+				<Button size="sm" class="gap-1.5 shrink-0" onclick={openCreateDialog}>
+					<Plus class="h-3.5 w-3.5" />
+					Nouveau projet
+				</Button>
+			</span>
 		</div>
 	</div>
 
@@ -523,6 +545,18 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Floating action button — visible when header button is scrolled out of view -->
+{#if showFab}
+	<button
+		class="fixed bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all hover:bg-primary/90 hover:shadow-xl hover:scale-105 active:scale-95"
+		style="left: calc(var(--sidebar-current-width, var(--sidebar-width)) + 24px)"
+		onclick={openCreateDialog}
+		title="Nouveau projet"
+	>
+		<Plus class="h-5 w-5" />
+	</button>
+{/if}
 
 <!-- Create/Edit Project Dialog -->
 <Dialog bind:open={dialogOpen}>

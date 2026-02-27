@@ -108,6 +108,13 @@ export function logout(redirect = true): void {
 }
 
 /**
+ * Update the user's avatar URL in the store (after upload).
+ */
+export function updateAvatarUrl(url: string): void {
+	user.update((u) => (u ? { ...u, avatarUrl: url } : u));
+}
+
+/**
  * Hydrate stores from localStorage on app start.
  * Call this once during layout mount.
  */

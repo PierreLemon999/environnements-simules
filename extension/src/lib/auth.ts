@@ -60,7 +60,7 @@ export async function verifyToken(): Promise<AuthState> {
 	try {
 		const response = await api.post<{
 			data: { valid: boolean; user: { userId: string; email: string; role: string; name: string } | null };
-		}>('/auth/verify', { token });
+		}>('/auth/verify', { token, extensionVersion: chrome.runtime.getManifest().version });
 
 		if (!response.data.valid || !response.data.user) {
 			await logout();

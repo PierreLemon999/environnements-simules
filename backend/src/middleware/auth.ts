@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production'
+  ? (() => { throw new Error('JWT_SECRET must be set in production'); })()
+  : 'dev-secret-change-in-production') as string;
 
 export interface JwtPayload {
   userId: string;
