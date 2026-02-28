@@ -6,6 +6,7 @@ import { users, demoAssignments } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { signToken, verifyToken } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
+import { logRouteError } from '../services/error-logger.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -70,7 +71,7 @@ router.post('/login', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logRouteError(req, error, 'Login error');
     res.status(500).json({ error: 'Erreur interne du serveur', code: 500 });
   }
 });
@@ -129,7 +130,7 @@ router.post('/google', async (req: Request, res: Response) => {
         googleId = payload.sub;
         avatarUrl = payload.picture || null;
       } catch (err) {
-        console.error('Google token verification failed:', err);
+        logRouteError(req, err, 'Google token verification failed');
         res.status(401).json({ error: 'Token Google invalide ou expiré', code: 401 });
         return;
       }
@@ -202,7 +203,7 @@ router.post('/google', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Google auth error:', error);
+    logRouteError(req, error, 'Google auth error');
     res.status(500).json({ error: 'Erreur interne du serveur', code: 500 });
   }
 });
@@ -272,7 +273,7 @@ router.post('/demo-access', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Demo access error:', error);
+    logRouteError(req, error, 'Demo access error');
     res.status(500).json({ error: 'Erreur interne du serveur', code: 500 });
   }
 });

@@ -26,13 +26,15 @@ Tout ce qui concerne la capture de pages web par l'extension Chrome, leur upload
 - `extension/src/lib/dom-fingerprint.ts` — Empreinte DOM pour déduplication
 - `extension/src/lib/context.ts` — Contexte de capture partagé
 - `extension/src/background/service-worker.ts` — Orchestration messages
-- `extension/src/popup/MainView.svelte` + `AutoCapturePanel.svelte` — UI
+- `extension/src/content/capture-hooks.ts` — Hooks injectés dans le MAIN world
+- `extension/src/popup/MainView.svelte` + `AutoCapturePanel.svelte` + `GuidedCapturePanel.svelte` — UI
+- `extension/src/popup/CreateProjectModal.svelte` + `ProjectDropdown.svelte` + `VersionDropdown.svelte` — Composants support
 
 ### Backend (stockage & gestion)
-- `backend/src/routes/pages.ts` (581 LOC) — CRUD pages + upload multipart HTML
-- `backend/src/routes/versions.ts` (365 LOC) — Versions CRUD + duplicate + page tree
-- `backend/src/routes/capture-jobs.ts` (247 LOC) — Jobs de capture auto
-- `backend/src/routes/transitions.ts` (182 LOC) — Transitions entre pages (SPA)
+- `backend/src/routes/pages.ts` (609 LOC) — CRUD pages + upload multipart HTML
+- `backend/src/routes/versions.ts` (371 LOC) — Versions CRUD + duplicate + page tree
+- `backend/src/routes/capture-jobs.ts` (248 LOC) — Jobs de capture auto
+- `backend/src/routes/transitions.ts` (183 LOC) — Transitions entre pages (SPA)
 
 ### Frontend (édition & organisation)
 - `frontend/src/routes/admin/editor/[id]/` — Éditeur HTML

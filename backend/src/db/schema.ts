@@ -189,3 +189,19 @@ export const tagManagerConfig = sqliteTable('tag_manager_config', {
   configJson: text('config_json'), // JSON string
   isActive: integer('is_active').notNull().default(1),
 });
+
+// ── Error Logs ──────────────────────────────────────────────────────────────
+export const errorLogs = sqliteTable('error_logs', {
+  id: text('id').primaryKey(),
+  source: text('source', { enum: ['backend', 'frontend', 'extension'] }).notNull(),
+  level: text('level', { enum: ['error', 'warn', 'info'] }).notNull().default('error'),
+  message: text('message').notNull(),
+  stack: text('stack'),
+  endpoint: text('endpoint'),
+  method: text('method'),
+  statusCode: integer('status_code'),
+  userId: text('user_id'),
+  userAgent: text('user_agent'),
+  metadata: text('metadata'), // JSON string
+  createdAt: text('created_at').notNull(),
+});

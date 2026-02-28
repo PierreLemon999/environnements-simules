@@ -11,7 +11,8 @@ export interface AuthState {
 export async function getAuthState(): Promise<AuthState> {
 	const result = await chrome.storage.local.get([
 		STORAGE_KEYS.AUTH_TOKEN,
-		STORAGE_KEYS.USER
+		STORAGE_KEYS.USER,
+		STORAGE_KEYS.VERSION_OUTDATED
 	]);
 
 	const token = result[STORAGE_KEYS.AUTH_TOKEN] || null;
@@ -21,7 +22,8 @@ export async function getAuthState(): Promise<AuthState> {
 		return { isAuthenticated: false, user: null, token: null };
 	}
 
-	return { isAuthenticated: true, user, token };
+	const outdated = result[STORAGE_KEYS.VERSION_OUTDATED] === true;
+	return { isAuthenticated: true, user, token, outdated };
 }
 
 export async function loginWithGoogle(
@@ -91,11 +93,14 @@ export async function verifyToken(): Promise<AuthState> {
 			role: response.data.user.role as 'admin' | 'client'
 		};
 
-		await chrome.storage.local.set({ [STORAGE_KEYS.USER]: user });
-
 		const minVersion = response.data.minExtensionVersion;
 		const currentVersion = chrome.runtime.getManifest().version;
 		const outdated = minVersion ? isVersionOutdated(currentVersion, minVersion) : false;
+
+		await chrome.storage.local.set({
+			[STORAGE_KEYS.USER]: user,
+			[STORAGE_KEYS.VERSION_OUTDATED]: outdated
+		});
 
 		return { isAuthenticated: true, user, token, outdated };
 	} catch {
@@ -110,6 +115,7 @@ export async function logout(): Promise<void> {
 		STORAGE_KEYS.USER,
 		STORAGE_KEYS.ACTIVE_PROJECT,
 		STORAGE_KEYS.ACTIVE_VERSION,
-		STORAGE_KEYS.CAPTURE_STATE
+		STORAGE_KEYS.CAPTURE_STATE,
+		STORAGE_KEYS.VERSION_OUTDATED
 	]);
 }

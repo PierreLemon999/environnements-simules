@@ -32,6 +32,7 @@ cd frontend && npm run build             # Build prod
 - Frontend proxy : vite.config.ts redirige `/api` vers backend:3001
 - **Versioning extension** : toute modif de l'extension DOIT incrémenter la version (voir `extension/CLAUDE.md` § Versioning). Patch auto au build, minor/major manuellement.
 - **Versioning frontend** : toute modif du frontend DOIT incrémenter la version (`cd frontend && npm run bump`). La version est affichée dans le BO (coin bas-droite) via `__APP_VERSION__`.
+- **Error logging** : toutes les erreurs sont persistées en DB (table `error_logs`). Backend : `logRouteError()` dans chaque catch. Frontend/extension : `reportError()` auto-report 5xx (fire-and-forget). Cleanup lazy > 6 mois.
 
 ## Gotchas
 

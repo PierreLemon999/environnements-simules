@@ -29,6 +29,8 @@ import { v4 as uuidv4 } from '$lib/uuid';
 import { getAuthState, verifyToken } from '$lib/auth';
 import api, { uploadPage } from '$lib/api';
 
+console.log(`[Lemon Lab] Service Worker loaded — v${__APP_VERSION__} (build ${__BUILD_HASH__})`);
+
 // ---------------------------------------------------------------------------
 // Register MAIN world content script programmatically
 // (static manifest declaration of world: "MAIN" is unreliable)
@@ -205,7 +207,7 @@ async function handleMessage(
 			const authState = await getAuthState();
 			// Lazily verify token with backend in background (updates user, reports version)
 			if (authState.isAuthenticated) {
-				verifyToken().catch(() => {});
+				verifyToken().catch((e) => console.warn('[SW] Token refresh failed:', e));
 			}
 			return authState;
 		}
@@ -481,8 +483,8 @@ chrome.alarms?.onAlarm.addListener(async (alarm) => {
 // Extension install handler
 // ---------------------------------------------------------------------------
 
-chrome.runtime.onInstalled.addListener(() => {
-	console.log('[Lemon Lab] Extension installed');
+chrome.runtime.onInstalled.addListener((details) => {
+	console.log(`[Lemon Lab] Extension ${details.reason} — v${__APP_VERSION__} (build ${__BUILD_HASH__})`);
 });
 
 // ---------------------------------------------------------------------------

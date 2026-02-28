@@ -117,10 +117,6 @@
 			padding: 0;
 			overflow: hidden;
 		}
-		@keyframes pulseGlow {
-			0%, 100% { box-shadow: 0 4px 16px rgba(250,225,0,.35), 0 1px 3px rgba(0,0,0,.12); }
-			50% { box-shadow: 0 4px 24px rgba(250,225,0,.5), 0 1px 3px rgba(0,0,0,.12); }
-		}
 	</style>
 </svelte:head>
 
@@ -168,37 +164,5 @@
 		></iframe>
 	{/if}
 
-	<!-- Floating LL badge (bottom-right) — only when loaded successfully -->
-	{#if iframeLoaded && !iframeError}
-		<div class="ll-badge" title="Lemon Learning">LL</div>
-	{/if}
 </div>
 
-<style>
-	.ll-badge {
-		position: fixed;
-		bottom: 20px;
-		right: 20px;
-		z-index: 9990;
-		width: 48px;
-		height: 48px;
-		background: #FAE100;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: #1E2737;
-		font-weight: 800;
-		font-size: 16px;
-		letter-spacing: -0.02em;
-		cursor: pointer;
-		animation: pulseGlow 3s ease-in-out infinite;
-		transition: transform .25s cubic-bezier(.34,1.56,.64,1);
-	}
-	.ll-badge:hover {
-		transform: scale(1.1);
-	}
-	.ll-badge:active {
-		transform: scale(1.04);
-	}
-</style>

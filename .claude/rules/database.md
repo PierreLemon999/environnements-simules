@@ -6,7 +6,7 @@ paths:
 
 # Base de données — SQLite + Drizzle ORM
 
-## Schéma (16 tables)
+## Schéma (17 tables)
 
 ### Core
 ```
@@ -81,6 +81,14 @@ interestZones
 tagManagerConfig
   id (UUID PK), projectId (FK→projects), scriptUrl, configJson (JSON string),
   isActive (0/1)
+```
+
+### Error Logging
+```
+errorLogs
+  id (UUID PK), source (backend|frontend|extension), level (error|warn|info, default error),
+  message, stack, endpoint, method, statusCode, userId, userAgent,
+  metadata (JSON string), createdAt
 ```
 
 ### Auth

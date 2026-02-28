@@ -121,7 +121,7 @@ export async function stopGuidedCapture(): Promise<void> {
 		await api.put(`/capture-jobs/${state.jobId}`, {
 			status: 'done',
 			pagesCaptured: doneCount
-		}).catch(() => {});
+		}).catch((e) => console.warn('[Guided] Failed to finalize capture job:', e));
 	}
 
 	await updateCaptureState({
@@ -281,7 +281,7 @@ async function captureCurrentStep(): Promise<void> {
 			await api.put(`/capture-jobs/${state.jobId}`, {
 				pagesCaptured: doneCount,
 				status: 'running'
-			}).catch(() => {});
+			}).catch((e) => console.warn('[Guided] Failed to update capture job progress:', e));
 		}
 	} catch (err) {
 		const errorMsg = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -292,8 +292,8 @@ async function captureCurrentStep(): Promise<void> {
 	// Restore bubble visibility
 	try {
 		await chrome.tabs.sendMessage(tabId, { type: 'SHOW_LL_BUBBLE' });
-	} catch {
-		// Tab may have navigated
+	} catch (e) {
+		console.warn('[Guided] Failed to send SHOW_LL_BUBBLE:', e);
 	}
 
 	isProcessingStep = false;

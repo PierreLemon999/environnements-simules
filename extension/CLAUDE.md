@@ -4,29 +4,46 @@
 
 ```
 src/
-├── background/service-worker.ts    # Message handler (23 types), orchestration capture
-├── content/content-script.ts       # Capture du DOM dans le contexte de la page
+├── background/service-worker.ts    # Message handler (27 types), orchestration capture
+├── content/
+│   ├── content-script.ts           # Capture du DOM dans le contexte de la page
+│   └── capture-hooks.ts            # Hooks injectés dans le MAIN world
 ├── popup/
 │   ├── App.svelte                  # Router principal
 │   ├── LoginView.svelte            # Auth extension
 │   ├── MainView.svelte             # Interface de capture
 │   ├── AutoCapturePanel.svelte     # Config crawl automatique
+│   ├── GuidedCapturePanel.svelte   # UI capture guidée
+│   ├── CreateProjectModal.svelte   # Création de projet
+│   ├── ProjectDropdown.svelte      # Sélecteur de projet
+│   ├── VersionDropdown.svelte      # Sélecteur de version
 │   └── PageItem.svelte             # Item dans la liste des pages capturées
+├── sidepanel/                      # Side panel Chrome (réutilise popup App.svelte)
 └── lib/
-    ├── api.ts                      # Client HTTP backend
+    ├── api.ts                      # Client HTTP backend + reportError (auto-report 5xx/network)
     ├── auth.ts                     # Token management (chrome.storage.local)
     ├── capture.ts                  # Capture DOM : inline CSS, images base64, nettoyage
     ├── auto-capture.ts             # BFS crawling avec zones d'intérêt
     ├── guided-orchestrator.ts      # Orchestration capture guidée (auto/manual)
+    ├── resource-fetcher.ts         # Téléchargement et inlining de ressources externes
+    ├── modal-detector.ts           # Détection de modales/overlays
+    ├── dom-fingerprint.ts          # Empreinte DOM pour déduplication
+    ├── transition-tracker.ts       # Tracking des transitions SPA
+    ├── context.ts                  # Contexte de capture partagé
     ├── constants.ts                # STORAGE_KEYS, PAGE_STATUS, types
     └── uuid.ts                     # Génération UUID v4
 
 ## Protocole de messages (popup ↔ service worker)
 
-CAPTURE_PAGE, GET_CAPTURE_STATE, SET_CAPTURE_MODE, PAUSE_CAPTURE,
+CAPTURE_PAGE, CAPTURE_PAGE_WITH_MODALS, GET_CAPTURE_STATE,
+SET_CAPTURE_MODE, SET_CAPTURE_STRATEGY, PAUSE_CAPTURE, RESUME_CAPTURE,
 START_AUTO_CRAWL, STOP_AUTO_CRAWL, GET_AUTO_CONFIG, SAVE_AUTO_CONFIG,
-REMOVE_PAGE, RECAPTURE_PAGE, DELETE_BACKEND_PAGE, GET_PROJECTS,
-GET_VERSIONS, CREATE_CAPTURE_JOB, UPDATE_CAPTURE_JOB, CHECK_AUTH, LOGOUT
+START_GUIDED_CAPTURE, STOP_GUIDED_CAPTURE,
+REMOVE_PAGE, RECAPTURE_PAGE, DELETE_BACKEND_PAGE,
+GET_PROJECTS, GET_VERSIONS, CREATE_PROJECT, CREATE_VERSION,
+CREATE_CAPTURE_JOB, UPDATE_CAPTURE_JOB,
+DETECT_LL_PLAYER, SCAN_LL_GUIDES, BUBBLE_CHANGED,
+CHECK_AUTH, LOGOUT
 
 ## Stockage (chrome.storage.local)
 

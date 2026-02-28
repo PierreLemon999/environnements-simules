@@ -18,6 +18,8 @@ export class ApiError extends Error {
 
 const MAX_RETRIES = 3;
 const RETRY_BASE_DELAY = 1000;
+const FETCH_TIMEOUT = 10_000;
+const UPLOAD_TIMEOUT = 60_000;
 
 async function request<T = unknown>(
 	endpoint: string,
@@ -41,11 +43,14 @@ async function request<T = unknown>(
 	}
 
 	for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 		try {
 			const response = await fetch(`${API_BASE_URL}${endpoint}`, {
 				method,
 				headers,
-				body: body !== undefined ? JSON.stringify(body) : undefined
+				body: body !== undefined ? JSON.stringify(body) : undefined,
+				signal: controller.signal
 			});
 
 			if (response.status === 204) {
@@ -68,11 +73,13 @@ async function request<T = unknown>(
 					await sleep(RETRY_BASE_DELAY * Math.pow(2, attempt));
 					continue;
 				}
-				throw new ApiError(
+				const serverError = new ApiError(
 					response.status,
 					data?.code ?? 'UNKNOWN_ERROR',
 					data?.error ?? response.statusText
 				);
+				reportError({ message: serverError.message, endpoint, statusCode: response.status });
+				throw serverError;
 			}
 
 			return data as T;
@@ -83,11 +90,42 @@ async function request<T = unknown>(
 				await sleep(RETRY_BASE_DELAY * Math.pow(2, attempt));
 				continue;
 			}
-			throw new ApiError(0, 'NETWORK_ERROR', err instanceof Error ? err.message : 'Erreur réseau');
+			const networkError = new ApiError(0, 'NETWORK_ERROR', err instanceof Error ? err.message : 'Erreur réseau');
+			reportError({ message: networkError.message, endpoint, statusCode: 0 });
+			throw networkError;
+		} finally {
+			clearTimeout(timeoutId);
 		}
 	}
 
 	throw new ApiError(0, 'NETWORK_ERROR', 'Erreur réseau après plusieurs tentatives');
+}
+
+// ---------------------------------------------------------------------------
+// Error reporting (fire-and-forget)
+// ---------------------------------------------------------------------------
+
+/** Report an error to the backend error backlog. Fire-and-forget. */
+export function reportError(params: {
+	message: string;
+	stack?: string;
+	endpoint?: string;
+	statusCode?: number;
+	metadata?: Record<string, unknown>;
+}): void {
+	request('/error-logs/report', {
+		method: 'POST',
+		body: {
+			source: 'extension',
+			...params,
+			metadata: {
+				...params.metadata,
+				extensionVersion: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'unknown',
+			},
+		},
+	}).catch(() => {
+		// Silently ignore — avoid infinite loops if reporting itself fails
+	});
 }
 
 function sleep(ms: number): Promise<void> {
@@ -125,11 +163,20 @@ export async function uploadPage(
 		headers['Authorization'] = `Bearer ${token}`;
 	}
 
-	const response = await fetch(`${API_BASE_URL}/versions/${versionId}/pages`, {
-		method: 'POST',
-		headers,
-		body: formData
-	});
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT);
+
+	let response: Response;
+	try {
+		response = await fetch(`${API_BASE_URL}/versions/${versionId}/pages`, {
+			method: 'POST',
+			headers,
+			body: formData,
+			signal: controller.signal
+		});
+	} finally {
+		clearTimeout(timeoutId);
+	}
 
 	let data;
 	try {

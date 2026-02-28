@@ -4,15 +4,15 @@
 
 ```
 src/
-├── index.ts              # App Express, registration des 13 routers, middleware global
+├── index.ts              # App Express, registration des 14 routers, middleware global
 ├── db/
-│   ├── schema.ts         # 16 tables Drizzle (source de vérité du schéma)
+│   ├── schema.ts         # 17 tables Drizzle (source de vérité du schéma)
 │   ├── index.ts          # Init Drizzle + dataDir
 │   └── seed.ts           # Données de test complètes
 ├── middleware/
 │   ├── auth.ts           # JWT verify, signToken(), authenticate()
 │   └── roles.ts          # requireRole('admin'|'client')
-├── routes/               # 13 fichiers de routes (voir .claude/rules/ par domaine)
+├── routes/               # 14 fichiers de routes (voir .claude/rules/ par domaine)
 │   ├── auth.ts           # Login, Google SSO, verify JWT, demo-access
 │   ├── projects.ts       # CRUD projets
 │   ├── versions.ts       # CRUD versions + duplicate
@@ -25,9 +25,11 @@ src/
 │   ├── capture-jobs.ts   # Jobs de capture auto
 │   ├── transitions.ts    # Transitions entre pages (SPA)
 │   ├── users.ts          # CRUD utilisateurs (admin only)
-│   └── settings.ts       # Paramètres application
+│   ├── settings.ts       # Paramètres application
+│   └── error-logs.ts     # Backlog d'erreurs : report, list, stats, delete
 └── services/
     ├── demo-serving.ts   # Orchestration : project→version→page→obfuscate→rewrite→inject
+    ├── error-logger.ts   # Logging erreurs en DB + cleanup lazy 6 mois
     ├── link-rewriter.ts  # Réécriture des liens internes vers /demo/:subdomain/
     └── obfuscation.ts    # Moteur search/replace (texte + regex)
 ```
@@ -45,4 +47,4 @@ src/
 - Drizzle ORM pour les queries type-safe
 - Fichier DB : `backend/data/app.db`
 - Cascade deletes configurés dans le schéma
-- 16 tables : voir `.claude/rules/database.md` pour le schéma complet
+- 17 tables : voir `.claude/rules/database.md` pour le schéma complet

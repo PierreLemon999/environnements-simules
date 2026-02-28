@@ -110,14 +110,52 @@ async function request<T = unknown>(
 	const data = await response.json();
 
 	if (!response.ok) {
-		throw new ApiError(
+		const apiError = new ApiError(
 			response.status,
 			data?.code ?? 'UNKNOWN_ERROR',
 			data?.error ?? response.statusText
 		);
+
+		// Auto-report 5xx errors to the error backlog
+		if (response.status >= 500) {
+			reportError({
+				message: apiError.message,
+				endpoint,
+				statusCode: response.status,
+			});
+		}
+
+		throw apiError;
 	}
 
 	return data as T;
+}
+
+// ---------------------------------------------------------------------------
+// Error reporting (fire-and-forget)
+// ---------------------------------------------------------------------------
+
+/** Report an error to the backend error backlog. Fire-and-forget. */
+export function reportError(params: {
+	message: string;
+	stack?: string;
+	endpoint?: string;
+	statusCode?: number;
+	metadata?: Record<string, unknown>;
+}): void {
+	if (!browser) return;
+	const url = `${getBaseUrl()}/error-logs/report`;
+	const token = getToken();
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	if (token) headers['Authorization'] = `Bearer ${token}`;
+
+	fetch(url, {
+		method: 'POST',
+		headers,
+		body: JSON.stringify({ source: 'frontend', ...params }),
+	}).catch(() => {
+		// Silently ignore — avoid infinite loops if reporting itself fails
+	});
 }
 
 // ---------------------------------------------------------------------------

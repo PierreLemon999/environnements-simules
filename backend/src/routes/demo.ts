@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { serveDemoPage, NotFoundError } from '../services/demo-serving.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -57,7 +58,7 @@ async function handleDemoRequest(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    console.error('Error serving demo page:', error);
+    logRouteError(req, error, 'Error serving demo page');
     res.status(500).send(`
       <!DOCTYPE html>
       <html lang="fr">

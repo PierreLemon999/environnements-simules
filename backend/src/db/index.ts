@@ -35,3 +35,20 @@ export default db;
 
 // ── Migrations ──────────────────────────────────────────────────────────────
 try { sqlite.exec(`ALTER TABLE projects ADD COLUMN favicon_url TEXT`); } catch { /* already exists */ }
+
+try {
+  sqlite.exec(`CREATE TABLE IF NOT EXISTS error_logs (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    level TEXT NOT NULL DEFAULT 'error',
+    message TEXT NOT NULL,
+    stack TEXT,
+    endpoint TEXT,
+    method TEXT,
+    status_code INTEGER,
+    user_id TEXT,
+    user_agent TEXT,
+    metadata TEXT,
+    created_at TEXT NOT NULL
+  )`);
+} catch { /* already exists */ }

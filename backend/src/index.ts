@@ -21,6 +21,8 @@ import captureJobRoutes from './routes/capture-jobs.js';
 import transitionRoutes from './routes/transitions.js';
 import userRoutes from './routes/users.js';
 import settingsRoutes from './routes/settings.js';
+import errorLogRoutes from './routes/error-logs.js';
+import { logError } from './services/error-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,6 +86,7 @@ app.use('/api', captureJobRoutes); // Handles /api/versions/:versionId/capture-j
 app.use('/api', transitionRoutes); // Handles /api/versions/:versionId/transitions, /api/pages/:pageId/transitions, /api/transitions/:id
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/error-logs', errorLogRoutes);
 
 // ── Demo Serving Route ───────────────────────────────────────────────────────
 
@@ -112,10 +115,21 @@ app.use((_req, res) => {
 app.use(
   (
     err: Error,
-    _req: express.Request,
+    req: express.Request,
     res: express.Response,
     _next: express.NextFunction
   ) => {
+    logError({
+      source: 'backend',
+      message: err.message || 'Unknown error',
+      stack: err.stack,
+      endpoint: req.originalUrl,
+      method: req.method,
+      statusCode: 500,
+      userId: req.user?.userId ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+
     console.error('Unhandled error:', err);
     res.status(500).json({
       error: process.env.NODE_ENV === 'production'

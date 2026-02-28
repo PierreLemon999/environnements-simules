@@ -98,6 +98,14 @@
 		'#FF7A59', '#C74634', '#6D7481', '#03363D',
 	];
 
+	let colorPickerOpen = $state(false);
+
+	function getNextAvailableColor(): string {
+		const usedColors = new Set(projects.map((p) => p.iconColor?.toUpperCase()).filter(Boolean));
+		const available = colorPalette.find((c) => !usedColors.has(c.toUpperCase()));
+		return available ?? colorPalette[Math.floor(Math.random() * colorPalette.length)];
+	}
+
 	async function handleLogoChange(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -209,10 +217,11 @@
 		formSubdomain = '';
 		formDescription = '';
 		formLogoUrl = '';
-		formIconColor = '';
+		formIconColor = getNextAvailableColor();
 		formVersionName = 'Version 1';
 		formError = '';
 		subdomainStatus = 'idle';
+		colorPickerOpen = false;
 		dialogOpen = true;
 	}
 
@@ -225,6 +234,7 @@
 		formIconColor = project.iconColor ?? getToolColor(project.name);
 		formError = '';
 		subdomainStatus = 'idle';
+		colorPickerOpen = false;
 		dialogOpen = true;
 	}
 
@@ -576,14 +586,19 @@
 			</DialogDescription>
 		</DialogHeader>
 
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<form
 			class="space-y-4"
 			onsubmit={(e) => { e.preventDefault(); handleSubmit(); }}
+			onclick={(e) => {
+				const target = e.target as HTMLElement;
+				if (!target.closest('[data-color-picker]')) colorPickerOpen = false;
+			}}
 		>
 			<!-- Logo + Name row -->
 			<div class="flex items-start gap-4">
-				<!-- Logo upload -->
-				<div class="shrink-0">
+				<!-- Logo upload + color pastille -->
+				<div class="shrink-0 relative">
 					<input
 						type="file"
 						accept="image/*"
@@ -620,32 +635,45 @@
 						</button>
 					{/if}
 
-					<!-- Color palette under logo -->
-					<div class="mt-2 flex flex-wrap gap-1 max-w-[64px] justify-center">
-						{#each colorPalette as color}
-							<button
-								type="button"
-								class="h-4 w-4 rounded-full transition-all {formIconColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'}"
-								style="background-color: {color}"
-								onclick={() => { formIconColor = color; }}
-								title={color}
-							></button>
-						{/each}
-						<label
-							class="relative h-4 w-4 rounded-full cursor-pointer border border-border transition-all hover:scale-110 overflow-hidden"
-							style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)"
-							title="Couleur personnalisée"
-						>
-							<input
-								type="color"
-								bind:value={formIconColor}
-								class="absolute inset-0 cursor-pointer opacity-0"
-							/>
-						</label>
+					<!-- Color pastille (badge-style, bottom-right of logo) -->
+					<div class="absolute -bottom-1 -right-1" data-color-picker>
+						<button
+							type="button"
+							class="h-5 w-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
+							style="background-color: {formIconColor || '#6D7481'}"
+							onclick={() => { colorPickerOpen = !colorPickerOpen; }}
+							title="Couleur du projet"
+						></button>
+
+						<!-- Color picker popover -->
+						{#if colorPickerOpen}
+							<div class="absolute top-7 left-1/2 -translate-x-1/2 z-10 rounded-lg border border-border bg-card p-2.5 shadow-lg">
+								<div class="flex gap-1.5">
+									{#each colorPalette as color}
+										<button
+											type="button"
+											class="h-5 w-5 rounded-full transition-all {formIconColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'}"
+											style="background-color: {color}"
+											onclick={() => { formIconColor = color; colorPickerOpen = false; }}
+											title={color}
+										></button>
+									{/each}
+									<label
+										class="relative h-5 w-5 rounded-full cursor-pointer border border-border transition-all hover:scale-110 overflow-hidden"
+										style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)"
+										title="Couleur personnalisée"
+									>
+										<input
+											type="color"
+											bind:value={formIconColor}
+											class="absolute inset-0 cursor-pointer opacity-0"
+											onchange={() => { colorPickerOpen = false; }}
+										/>
+									</label>
+								</div>
+							</div>
+						{/if}
 					</div>
-					{#if formIconColor}
-						<p class="mt-1 text-center text-[9px] font-mono text-muted-foreground">{formIconColor}</p>
-					{/if}
 				</div>
 
 				<!-- Name -->

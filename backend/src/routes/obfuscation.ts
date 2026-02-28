@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import { previewObfuscation } from '../services/obfuscation.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -37,7 +38,7 @@ router.get(
 
       res.json({ data: rules });
     } catch (error) {
-      console.error('Error listing obfuscation rules:', error);
+      logRouteError(req, error, 'Error listing obfuscation rules');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -104,7 +105,7 @@ router.post(
 
       res.status(201).json({ data: rule });
     } catch (error) {
-      console.error('Error creating obfuscation rule:', error);
+      logRouteError(req, error, 'Error creating obfuscation rule');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -163,7 +164,7 @@ router.put(
 
       res.json({ data: { ...rule, ...updated } });
     } catch (error) {
-      console.error('Error updating obfuscation rule:', error);
+      logRouteError(req, error, 'Error updating obfuscation rule');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -194,7 +195,7 @@ router.delete(
 
       res.json({ data: { deleted: true, id: req.params.id } });
     } catch (error) {
-      console.error('Error deleting obfuscation rule:', error);
+      logRouteError(req, error, 'Error deleting obfuscation rule');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -237,7 +238,7 @@ router.post(
 
       res.json({ data: result });
     } catch (error) {
-      console.error('Error previewing obfuscation:', error);
+      logRouteError(req, error, 'Error previewing obfuscation');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

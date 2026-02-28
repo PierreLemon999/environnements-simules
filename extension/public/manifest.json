@@ -3,7 +3,7 @@
   "name": "Lemon Lab",
   "short_name": "Lemon Lab",
   "description": "Capture et gestion de pages web pour Lemon Lab - Lemon Learning",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "permissions": [
     "activeTab",
     "storage",

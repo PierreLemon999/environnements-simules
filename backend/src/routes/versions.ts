@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
 import { dataDir } from '../db/index.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.get(
 
       res.json({ data: enriched });
     } catch (error) {
-      console.error('Error listing versions:', error);
+      logRouteError(req, error, 'Error listing versions');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -100,7 +101,7 @@ router.post(
 
       res.status(201).json({ data: version });
     } catch (error: any) {
-      console.error('Error creating version:', error);
+      logRouteError(req, error, 'Error creating version');
       const msg = process.env.NODE_ENV !== 'production' && error?.message ? error.message : 'Internal server error';
       res.status(500).json({ error: msg, code: 500 });
     }
@@ -140,7 +141,7 @@ router.put(
 
       res.json({ data: { ...version, ...updated } });
     } catch (error) {
-      console.error('Error updating version:', error);
+      logRouteError(req, error, 'Error updating version');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -229,7 +230,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error duplicating version:', error);
+      logRouteError(req, error, 'Error duplicating version');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -266,7 +267,7 @@ router.delete(
 
       res.json({ data: { deleted: true, id: req.params.id } });
     } catch (error) {
-      console.error('Error deleting version:', error);
+      logRouteError(req, error, 'Error deleting version');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -311,6 +312,10 @@ router.get(
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
       const archive = archiver('zip', { zlib: { level: 6 } });
+      archive.on('error', (err) => {
+        logRouteError(req, err, 'Version export archive error');
+        if (!res.headersSent) res.status(500).json({ error: 'Export failed', code: 500 });
+      });
       archive.pipe(res);
 
       // Add metadata JSON
@@ -355,7 +360,7 @@ router.get(
 
       await archive.finalize();
     } catch (error) {
-      console.error('Error exporting version:', error);
+      logRouteError(req, error, 'Error exporting version');
       if (!res.headersSent) {
         res.status(500).json({ error: 'Internal server error', code: 500 });
       }

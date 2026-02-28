@@ -5,6 +5,7 @@ import { eq, and, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
+import { logRouteError } from '../services/error-logger.js';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -218,7 +219,7 @@ router.post(
 
       res.status(201).json({ data: page });
     } catch (error) {
-      console.error('Error uploading page:', error);
+      logRouteError(req, error, 'Error uploading page');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -252,7 +253,7 @@ router.get(
 
       res.json({ data: pageList });
     } catch (error) {
-      console.error('Error listing pages:', error);
+      logRouteError(req, error, 'Error listing pages');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -352,7 +353,7 @@ router.get(
 
       res.json({ data: root });
     } catch (error) {
-      console.error('Error building tree:', error);
+      logRouteError(req, error, 'Error building tree');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -389,7 +390,7 @@ router.get('/pages/:id', authenticate, async (req: Request, res: Response) => {
 
     res.json({ data: { ...page, modals: childModals } });
   } catch (error) {
-    console.error('Error getting page:', error);
+    logRouteError(req, error, 'Error getting page');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -427,7 +428,7 @@ router.put(
 
       res.json({ data: { ...page, ...updated } });
     } catch (error) {
-      console.error('Error updating page:', error);
+      logRouteError(req, error, 'Error updating page');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -462,7 +463,7 @@ router.get(
       const html = fs.readFileSync(fullPath, 'utf-8');
       res.json({ data: { html } });
     } catch (error) {
-      console.error('Error reading page content:', error);
+      logRouteError(req, error, 'Error reading page content');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -508,7 +509,7 @@ router.patch(
 
       res.json({ data: { updated: true, id: req.params.id, fileSize: stats.size } });
     } catch (error) {
-      console.error('Error updating page content:', error);
+      logRouteError(req, error, 'Error updating page content');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -547,9 +548,14 @@ router.get(
 
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Cache-Control', 'public, max-age=3600');
-      fs.createReadStream(fullPath).pipe(res);
+      const stream = fs.createReadStream(fullPath);
+      stream.on('error', (err) => {
+        logRouteError(req, err, 'Screenshot stream error');
+        if (!res.headersSent) res.status(500).json({ error: 'File read error', code: 500 });
+      });
+      stream.pipe(res);
     } catch (error) {
-      console.error('Error serving screenshot:', error);
+      logRouteError(req, error, 'Error serving screenshot');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -594,7 +600,7 @@ router.delete(
 
       res.json({ data: { deleted: true, id: req.params.id } });
     } catch (error) {
-      console.error('Error deleting page:', error);
+      logRouteError(req, error, 'Error deleting page');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

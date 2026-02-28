@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import { getToolLogo } from '../db/tool-logos.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const SUBDOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
@@ -15,7 +16,7 @@ const router = Router();
  * GET /projects
  * List all projects with version count and page count.
  */
-router.get('/', authenticate, async (_req: Request, res: Response) => {
+router.get('/', authenticate, async (req: Request, res: Response) => {
   try {
     const allProjects = await db.select().from(projects).all();
 
@@ -48,7 +49,7 @@ router.get('/', authenticate, async (_req: Request, res: Response) => {
 
     res.json({ data: enriched });
   } catch (error) {
-    console.error('Error listing projects:', error);
+    logRouteError(req, error, 'Error listing projects');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -88,7 +89,7 @@ router.get('/check-subdomain', authenticate, async (req: Request, res: Response)
       res.json({ data: { available: !existing } });
     }
   } catch (error) {
-    console.error('Error checking subdomain:', error);
+    logRouteError(req, error, 'Error checking subdomain');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -141,7 +142,7 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
 
     res.status(201).json({ data: project });
   } catch (error) {
-    console.error('Error creating project:', error);
+    logRouteError(req, error, 'Error creating project');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -165,7 +166,7 @@ router.get('/by-subdomain/:subdomain/favicon', async (req: Request, res: Respons
 
     res.json({ data: { faviconUrl: project.faviconUrl } });
   } catch (error) {
-    console.error('Error getting project favicon:', error);
+    logRouteError(req, error, 'Error getting project favicon');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -216,7 +217,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error getting project:', error);
+    logRouteError(req, error, 'Error getting project');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -276,7 +277,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
 
     res.json({ data: { ...project, ...updated } });
   } catch (error) {
-    console.error('Error updating project:', error);
+    logRouteError(req, error, 'Error updating project');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -302,7 +303,7 @@ router.delete('/:id', authenticate, requireRole('admin'), async (req: Request, r
 
     res.json({ data: { deleted: true, id: req.params.id } });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    logRouteError(req, error, 'Error deleting project');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });

@@ -15,7 +15,7 @@ Le système qui sert les pages capturées aux prospects et clients : résolution
 ## Périmètre fichiers
 
 ### Backend (serving engine)
-- `routes/demo.ts` (64 LOC) — Router Express, point d'entrée GET /demo/:subdomain/*
+- `routes/demo.ts` (75 LOC) — Router Express, point d'entrée GET /demo/:subdomain/*
 - `services/demo-serving.ts` (179 LOC) — Orchestrateur : project→version→page→transform→serve
 - `services/link-rewriter.ts` (108 LOC) — Réécriture des liens internes
 - `services/obfuscation.ts` (70 LOC) — Moteur search/replace texte et regex

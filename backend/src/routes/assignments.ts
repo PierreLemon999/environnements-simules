@@ -7,6 +7,7 @@ import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -70,7 +71,7 @@ router.get(
 
       res.json({ data: enriched });
     } catch (error) {
-      console.error('Error listing assignments:', error);
+      logRouteError(req, error, 'Error listing assignments');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -168,7 +169,7 @@ router.post(
         },
       });
     } catch (error) {
-      console.error('Error creating assignment:', error);
+      logRouteError(req, error, 'Error creating assignment');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -199,7 +200,7 @@ router.delete(
 
       res.json({ data: { deleted: true, id: req.params.id } });
     } catch (error) {
-      console.error('Error deleting assignment:', error);
+      logRouteError(req, error, 'Error deleting assignment');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

@@ -7,7 +7,8 @@ export const STORAGE_KEYS = {
 	ACTIVE_PROJECT: 'active_project',
 	ACTIVE_VERSION: 'active_version',
 	CAPTURE_MODE: 'capture_mode',
-	CAPTURE_STATE: 'capture_state'
+	CAPTURE_STATE: 'capture_state',
+	VERSION_OUTDATED: 'version_outdated'
 } as const;
 
 export const CAPTURE_MODES = {

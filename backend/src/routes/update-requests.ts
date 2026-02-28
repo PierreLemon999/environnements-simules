@@ -5,6 +5,7 @@ import { eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -50,7 +51,7 @@ router.post(
 
       res.status(201).json({ data: request });
     } catch (error) {
-      console.error('Error creating update request:', error);
+      logRouteError(req, error, 'Error creating update request');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -96,7 +97,7 @@ router.get(
 
       res.json({ data: enriched });
     } catch (error) {
-      console.error('Error listing update requests:', error);
+      logRouteError(req, error, 'Error listing update requests');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -145,7 +146,7 @@ router.put(
 
       res.json({ data: { ...request, ...updated } });
     } catch (error) {
-      console.error('Error updating update request:', error);
+      logRouteError(req, error, 'Error updating update request');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

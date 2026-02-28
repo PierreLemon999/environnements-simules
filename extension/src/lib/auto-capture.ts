@@ -39,7 +39,7 @@ const DEFAULT_CONFIG: AutoCaptureConfig = {
 	targetPageCount: 20,
 	maxDepth: 12,
 	delayBetweenPages: 500,
-	pageTimeout: 60000,
+	pageTimeout: 20000,
 	interestZones: [],
 	blacklist: [
 		'Supprimer',
@@ -181,8 +181,8 @@ export async function stopAutoCrawl(): Promise<void> {
 		await api.put(`/capture-jobs/${state.jobId}`, {
 			status: 'done',
 			pagesCaptured: doneCount
-		}).catch(() => {
-			// Non-critical
+		}).catch((e) => {
+			console.warn('[Auto Capture] Failed to finalize capture job:', e);
 		});
 	}
 
@@ -226,7 +226,7 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 				await api.put(`/capture-jobs/${state.jobId}`, {
 					status: 'done',
 					pagesCaptured: doneCount
-				}).catch(() => {});
+				}).catch((e) => console.warn('[Auto Capture] Failed to update capture job:', e));
 			}
 			await updateCaptureState({ isRunning: false, jobId: undefined });
 			isRunning = false;
@@ -329,7 +329,7 @@ async function crawlLoop(config: AutoCaptureConfig, versionId: string): Promise<
 						await api.put(`/capture-jobs/${postCaptureState.jobId}`, {
 							pagesCaptured: capturedCount,
 							status: capturedCount >= config.targetPageCount ? 'done' : 'running'
-						}).catch(() => {});
+						}).catch((e) => console.warn('[Auto Capture] Failed to update capture job progress:', e));
 					}
 				}
 

@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -46,7 +47,7 @@ router.get(
 
           return {
             ...job,
-            config: job.config ? JSON.parse(job.config) : null,
+            config: (() => { try { return job.config ? JSON.parse(job.config) : null; } catch { return null; } })(),
             interestZones: zones,
           };
         })
@@ -54,7 +55,7 @@ router.get(
 
       res.json({ data: enriched });
     } catch (error) {
-      console.error('Error listing capture jobs:', error);
+      logRouteError(req, error, 'Error listing capture jobs');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -107,7 +108,7 @@ router.post(
 
       res.status(201).json({ data: job });
     } catch (error) {
-      console.error('Error creating capture job:', error);
+      logRouteError(req, error, 'Error creating capture job');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -142,12 +143,12 @@ router.get(
       res.json({
         data: {
           ...job,
-          config: job.config ? JSON.parse(job.config) : null,
+          config: (() => { try { return job.config ? JSON.parse(job.config) : null; } catch { return null; } })(),
           interestZones: zones,
         },
       });
     } catch (error) {
-      console.error('Error getting capture job:', error);
+      logRouteError(req, error, 'Error getting capture job');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -193,7 +194,7 @@ router.put(
 
       res.json({ data: { ...job, ...updated } });
     } catch (error) {
-      console.error('Error updating capture job:', error);
+      logRouteError(req, error, 'Error updating capture job');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -238,7 +239,7 @@ router.post(
 
       res.status(201).json({ data: zone });
     } catch (error) {
-      console.error('Error adding interest zone:', error);
+      logRouteError(req, error, 'Error adding interest zone');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

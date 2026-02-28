@@ -9,7 +9,8 @@ const manifest = JSON.parse(readFileSync(resolve(__dirname, 'public/manifest.jso
 
 export default defineConfig(({ mode }) => ({
 	define: {
-		__APP_VERSION__: JSON.stringify(manifest.version)
+		__APP_VERSION__: JSON.stringify(manifest.version),
+		__BUILD_HASH__: JSON.stringify(Date.now().toString(36).slice(-6))
 	},
 	plugins: [svelte(), validateManifest(), ...(mode === 'development' ? [chromeExtensionReload()] : [])],
 	base: './',

@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
@@ -27,7 +28,7 @@ const router = Router();
  * GET /users
  * List all users.
  */
-router.get('/', authenticate, requireRole('admin'), async (_req: Request, res: Response) => {
+router.get('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
     const allUsers = await db.select().from(users).all();
 
@@ -39,7 +40,7 @@ router.get('/', authenticate, requireRole('admin'), async (_req: Request, res: R
 
     res.json({ data: sanitized });
   } catch (error) {
-    console.error('Error listing users:', error);
+    logRouteError(req, error, 'Error listing users');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -104,7 +105,7 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       },
     });
   } catch (error) {
-    console.error('Error creating user:', error);
+    logRouteError(req, error, 'Error creating user');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -133,7 +134,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error getting user:', error);
+    logRouteError(req, error, 'Error getting user');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -207,7 +208,7 @@ router.put(
         },
       });
     } catch (error) {
-      console.error('Error updating user:', error);
+      logRouteError(req, error, 'Error updating user');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -230,7 +231,7 @@ router.patch('/me', authenticate, async (req: Request, res: Response) => {
     const updated = await db.select().from(users).where(eq(users.id, req.user!.userId)).get();
     res.json({ data: { ...updated, passwordHash: undefined } });
   } catch (error) {
-    console.error('Error updating profile:', error);
+    logRouteError(req, error, 'Error updating profile');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -276,7 +277,7 @@ router.post('/me/avatar', authenticate, avatarUpload.single('avatar'), async (re
     const updated = await db.select().from(users).where(eq(users.id, userId)).get();
     res.json({ data: { ...updated, passwordHash: undefined } });
   } catch (error) {
-    console.error('Error uploading avatar:', error);
+    logRouteError(req, error, 'Error uploading avatar');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -312,7 +313,7 @@ router.delete(
 
       res.json({ data: { deleted: true, id: req.params.id } });
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logRouteError(req, error, 'Error deleting user');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

@@ -6,14 +6,15 @@
 src/
 ├── +layout.svelte            # Root layout, hydratation auth au mount
 ├── lib/
-│   ├── api.ts                # Client HTTP, injection JWT auto, upload multipart
+│   ├── api.ts                # Client HTTP, injection JWT auto, upload multipart, reportError
+│   ├── i18n/                 # Infrastructure i18n (fr/en/de/es, lazy-loading)
 │   ├── stores/
 │   │   ├── auth.ts           # user, token, isAuthenticated, login/logout
+│   │   ├── project.ts        # Sélection/gestion projet actif
 │   │   └── toast.ts          # Notifications
 │   └── components/
-│       ├── ui/               # 30 composants shadcn-svelte (créés manuellement)
-│       ├── layout/           # Sidebar, Header, CommandPalette
-│       └── validation/       # ValidationInventoryPanel, ValidationRuleEditor
+│       ├── ui/               # 14 composants shadcn-svelte (créés manuellement)
+│       └── layout/           # Sidebar, Header, CommandPalette
 └── routes/
     ├── login/                # Email/password + Google SSO
     ├── admin/                # Layout avec sidebar → toutes les pages admin
@@ -40,8 +41,8 @@ src/
 
 - Base URL : `http://localhost:3001/api` (dev) ou `PUBLIC_API_BASE_URL` (prod)
 - JWT injecté automatiquement dans `Authorization: Bearer {token}`
-- Méthodes : `get`, `post`, `put`, `patch`, `del`, `upload`
-- Erreurs : throw `ApiError(status, code, message)`
+- Méthodes : `get`, `post`, `put`, `patch`, `del`, `upload`, `reportError` (fire-and-forget 5xx)
+- Erreurs : throw `ApiError(status, code, message)` — auto-report vers `/error-logs/report` pour les 5xx
 
 ## Composants UI
 
@@ -54,5 +55,5 @@ Composants notables : Avatar, AvatarEditor, Badge, Button, Card, Dialog, Dropdow
 ## Sidebar (Linear-style)
 
 - 220px expanded / 48px collapsed (icon-only)
-- Sections : PRINCIPAL (Dashboard, Projets, Arborescence, Analytics, Invitations), GESTION (Utilisateurs, Obfuscation, Demandes MAJ, Paramètres)
-- Active : texte bleu + bordure gauche 3px bleu
+- Sections : GESTION (Dashboard, Projets, Statistiques, Invitations, Utilisateurs, Journal erreurs, Paramètres admin), LAB (Arborescence, Éditeur, Obfuscation, Demandes MAJ, Composants)
+- Active : gradient jaune + bordure gauche 3px jaune (#FAE100)

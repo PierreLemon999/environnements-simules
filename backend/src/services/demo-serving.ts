@@ -152,7 +152,12 @@ export async function serveDemoPage(
   if (!fs.existsSync(filePath)) {
     throw new NotFoundError('Page content not available');
   }
-  let html = fs.readFileSync(filePath, 'utf-8');
+  let html: string;
+  try {
+    html = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    throw new NotFoundError('Page content not available');
+  }
 
   // 5. Apply obfuscation rules
   const rules = await db

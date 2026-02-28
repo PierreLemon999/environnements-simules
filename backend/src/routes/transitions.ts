@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.post(
 
       res.status(201).json({ data: transition });
     } catch (error) {
-      console.error('Error creating transition:', error);
+      logRouteError(req, error, 'Error creating transition');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -102,7 +103,7 @@ router.get(
 
       res.json({ data: transitions });
     } catch (error) {
-      console.error('Error listing transitions:', error);
+      logRouteError(req, error, 'Error listing transitions');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -142,7 +143,7 @@ router.get(
 
       res.json({ data: { incoming, outgoing } });
     } catch (error) {
-      console.error('Error getting page transitions:', error);
+      logRouteError(req, error, 'Error getting page transitions');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }
@@ -173,7 +174,7 @@ router.delete(
 
       res.json({ data: { deleted: true, id: req.params.id } });
     } catch (error) {
-      console.error('Error deleting transition:', error);
+      logRouteError(req, error, 'Error deleting transition');
       res.status(500).json({ error: 'Internal server error', code: 500 });
     }
   }

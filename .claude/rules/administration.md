@@ -7,12 +7,15 @@ paths:
   - "backend/src/routes/analytics.ts"
   - "backend/src/routes/auth.ts"
   - "backend/src/routes/settings.ts"
+  - "backend/src/routes/error-logs.ts"
+  - "backend/src/services/error-logger.ts"
   - "frontend/src/routes/admin/users/**"
   - "frontend/src/routes/admin/invitations/**"
   - "frontend/src/routes/admin/obfuscation/**"
   - "frontend/src/routes/admin/update-requests/**"
   - "frontend/src/routes/admin/analytics/**"
   - "frontend/src/routes/admin/settings/**"
+  - "frontend/src/routes/admin/error-logs/**"
   - "frontend/src/routes/login/**"
   - "frontend/src/lib/stores/auth.ts"
 ---
@@ -24,13 +27,15 @@ Gestion des utilisateurs, invitations de prospects, règles d'obfuscation, analy
 ## Périmètre fichiers
 
 ### Backend
-- `routes/auth.ts` (319 LOC) — Login, Google SSO, verify JWT, demo-access
-- `routes/users.ts` (321 LOC) — CRUD utilisateurs (admin only)
-- `routes/assignments.ts` (208 LOC) — Tokens d'accès démo pour prospects
-- `routes/obfuscation.ts` (246 LOC) — Règles CRUD + preview
-- `routes/analytics.ts` (432 LOC) — Sessions, events, guides, overview
-- `routes/update-requests.ts` (154 LOC) — Demandes de MAJ workflow
+- `routes/auth.ts` (327 LOC) — Login, Google SSO, verify JWT, demo-access
+- `routes/users.ts` (322 LOC) — CRUD utilisateurs (admin only)
+- `routes/assignments.ts` (209 LOC) — Tokens d'accès démo pour prospects
+- `routes/obfuscation.ts` (247 LOC) — Règles CRUD + preview
+- `routes/analytics.ts` (433 LOC) — Sessions, events, guides, overview
+- `routes/update-requests.ts` (155 LOC) — Demandes de MAJ workflow
 - `routes/settings.ts` (75 LOC) — Paramètres application
+- `routes/error-logs.ts` (160 LOC) — Report, list, stats, delete logs d'erreurs
+- `services/error-logger.ts` — Logging erreurs en DB, cleanup lazy 6 mois
 - `middleware/auth.ts` — JWT verify, signToken(), authenticate()
 - `middleware/roles.ts` — requireRole('admin'|'client')
 
@@ -42,6 +47,7 @@ Gestion des utilisateurs, invitations de prospects, règles d'obfuscation, analy
 - `routes/admin/analytics/` — Dashboard sessions + guides
 - `routes/admin/update-requests/` — Workflow demandes MAJ
 - `routes/admin/settings/` — Paramètres globaux
+- `routes/admin/error-logs/` — Backlog d'erreurs (table + stats + filtres)
 - `lib/stores/auth.ts` — Stores Svelte : user, token, isAuthenticated
 
 ## Tables DB impliquées
@@ -52,6 +58,7 @@ Gestion des utilisateurs, invitations de prospects, règles d'obfuscation, analy
 - `sessions` (id, userId, assignmentId, versionId, ipAddress, userAgent, startedAt, endedAt)
 - `sessionEvents` (id, sessionId, pageId, eventType, metadata, timestamp, durationSeconds)
 - `updateRequests` (id, pageId, requestedBy, comment, status, createdAt, resolvedAt)
+- `errorLogs` (id, source, level, message, stack, endpoint, method, statusCode, userId, userAgent, metadata, createdAt)
 
 ## Flux d'authentification
 
@@ -129,3 +136,9 @@ Vérification au chargement:
 
 **Settings:**
 - `GET/PUT /api/settings` — Paramètres globaux
+
+**Error logs:**
+- `POST /api/error-logs/report` — Report erreur (frontend/extension, auth requise)
+- `GET /api/error-logs` — Liste paginée + filtres (admin only)
+- `GET /api/error-logs/stats` — Stats 24h/7j/par source (admin only)
+- `DELETE /api/error-logs/:id` — Supprimer un log (admin only)

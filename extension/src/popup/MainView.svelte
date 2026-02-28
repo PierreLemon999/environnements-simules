@@ -48,6 +48,7 @@
 		targetPageCount: 20,
 		maxDepth: 12,
 		delayBetweenPages: 500,
+		pageTimeout: 20000,
 		interestZones: [],
 		blacklist: ['Supprimer', 'Delete', 'Remove', 'Déconnexion', 'Logout', 'Sign out']
 	});
@@ -357,9 +358,9 @@
 	<!-- Top bar -->
 	<div class="flex items-center justify-end gap-2 px-3 py-1.5 border-b border-gray-100 bg-white">
 		{#if outdated}
-			<span class="text-[10px] text-[#F1362A] font-medium">Extension pas à jour : v{__APP_VERSION__}</span>
+			<span class="text-[10px] text-[#F1362A] font-medium">Mise à jour requise : v{__APP_VERSION__}</span>
 		{:else}
-			<span class="text-[10px] text-gray-300">v{__APP_VERSION__}</span>
+			<span class="text-[10px] text-gray-400 font-mono">v{__APP_VERSION__}+{__BUILD_HASH__}</span>
 		{/if}
 		<button
 			onclick={onLogout}
@@ -372,6 +373,14 @@
 		</button>
 	</div>
 
+	{#if loading}
+		<div class="flex-1 flex items-center justify-center">
+			<div class="flex flex-col items-center gap-2">
+				<div class="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+				<span class="text-xs text-gray-400">Chargement des projets...</span>
+			</div>
+		</div>
+	{:else}
 	<!-- Project selector -->
 	<div class="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
 		<ProjectDropdown
@@ -741,5 +750,6 @@
 			</button>
 		{/if}
 	</div>
+	{/if}
 
 </div>

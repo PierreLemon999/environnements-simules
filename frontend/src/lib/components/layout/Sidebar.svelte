@@ -26,6 +26,7 @@
 		Gauge,
 		FlaskConical,
 		ChevronDown,
+		AlertTriangle,
 	} from 'lucide-svelte';
 
 	let { collapsed = $bindable(false), onToggle }: { collapsed?: boolean; onToggle?: () => void } = $props();
@@ -68,6 +69,7 @@
 		{ href: '/admin/analytics', label: 'Statistiques', icon: BarChart3, badgeKey: 'sessions' },
 		{ href: '/admin/invitations', label: 'Invitations', icon: Send, badgeKey: 'invitations' },
 		{ href: '/admin/users', label: 'Utilisateurs', icon: Users, badgeKey: null },
+		{ href: '/admin/error-logs', label: 'Journal erreurs', icon: AlertTriangle, badgeKey: null },
 		{ href: '/admin/settings', label: 'Paramètres admin', icon: Settings, badgeKey: null },
 	];
 

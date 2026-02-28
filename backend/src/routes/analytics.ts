@@ -14,6 +14,7 @@ import {
 import { eq, sql, and, gte, lte, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
+import { logRouteError } from '../services/error-logger.js';
 
 const router = Router();
 
@@ -126,7 +127,7 @@ router.get('/sessions', authenticate, async (req: Request, res: Response) => {
 
     res.json({ data: enriched });
   } catch (error) {
-    console.error('Error listing sessions:', error);
+    logRouteError(req, error, 'Error listing sessions');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -167,7 +168,7 @@ router.get('/sessions/:id', authenticate, async (req: Request, res: Response) =>
 
         return {
           ...event,
-          metadata: event.metadata ? JSON.parse(event.metadata) : null,
+          metadata: (() => { try { return event.metadata ? JSON.parse(event.metadata) : null; } catch { return null; } })(),
           page,
         };
       })
@@ -234,7 +235,7 @@ router.get('/sessions/:id', authenticate, async (req: Request, res: Response) =>
       },
     });
   } catch (error) {
-    console.error('Error getting session detail:', error);
+    logRouteError(req, error, 'Error getting session detail');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -291,7 +292,7 @@ router.get('/guides', authenticate, async (req: Request, res: Response) => {
 
     res.json({ data: stats });
   } catch (error) {
-    console.error('Error getting guide stats:', error);
+    logRouteError(req, error, 'Error getting guide stats');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -377,7 +378,7 @@ router.get('/overview', authenticate, async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Error getting analytics overview:', error);
+    logRouteError(req, error, 'Error getting analytics overview');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -424,7 +425,7 @@ router.post('/events', async (req: Request, res: Response) => {
 
     res.status(201).json({ data: event });
   } catch (error) {
-    console.error('Error recording event:', error);
+    logRouteError(req, error, 'Error recording event');
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
