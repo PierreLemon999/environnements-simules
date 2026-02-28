@@ -1,10 +1,16 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
 import { chromeExtensionReload } from './scripts/reload-plugin';
 import { validateManifest } from './scripts/validate-manifest-plugin';
 
+const manifest = JSON.parse(readFileSync(resolve(__dirname, 'public/manifest.json'), 'utf-8'));
+
 export default defineConfig(({ mode }) => ({
+	define: {
+		__APP_VERSION__: JSON.stringify(manifest.version)
+	},
 	plugins: [svelte(), validateManifest(), ...(mode === 'development' ? [chromeExtensionReload()] : [])],
 	base: './',
 	build: {

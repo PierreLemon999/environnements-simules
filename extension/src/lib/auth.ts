@@ -5,6 +5,7 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	user: User | null;
 	token: string | null;
+	outdated?: boolean;
 }
 
 export async function getAuthState(): Promise<AuthState> {
@@ -49,6 +50,18 @@ export async function loginWithGoogle(
 	return { isAuthenticated: true, user, token };
 }
 
+function isVersionOutdated(current: string, minimum: string): boolean {
+	const c = current.split('.').map(Number);
+	const m = minimum.split('.').map(Number);
+	for (let i = 0; i < Math.max(c.length, m.length); i++) {
+		const cv = c[i] || 0;
+		const mv = m[i] || 0;
+		if (cv < mv) return true;
+		if (cv > mv) return false;
+	}
+	return false;
+}
+
 export async function verifyToken(): Promise<AuthState> {
 	const result = await chrome.storage.local.get(STORAGE_KEYS.AUTH_TOKEN);
 	const token = result[STORAGE_KEYS.AUTH_TOKEN];
@@ -59,7 +72,11 @@ export async function verifyToken(): Promise<AuthState> {
 
 	try {
 		const response = await api.post<{
-			data: { valid: boolean; user: { userId: string; email: string; role: string; name: string } | null };
+			data: {
+				valid: boolean;
+				user: { userId: string; email: string; role: string; name: string } | null;
+				minExtensionVersion?: string;
+			};
 		}>('/auth/verify', { token, extensionVersion: chrome.runtime.getManifest().version });
 
 		if (!response.data.valid || !response.data.user) {
@@ -76,7 +93,11 @@ export async function verifyToken(): Promise<AuthState> {
 
 		await chrome.storage.local.set({ [STORAGE_KEYS.USER]: user });
 
-		return { isAuthenticated: true, user, token };
+		const minVersion = response.data.minExtensionVersion;
+		const currentVersion = chrome.runtime.getManifest().version;
+		const outdated = minVersion ? isVersionOutdated(currentVersion, minVersion) : false;
+
+		return { isAuthenticated: true, user, token, outdated };
 	} catch {
 		await logout();
 		return { isAuthenticated: false, user: null, token: null };

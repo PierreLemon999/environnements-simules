@@ -110,13 +110,19 @@ export default {
 			},
 			animation: {
 				'fade-up': 'fadeUp 0.5s ease both',
+				'fade-in': 'fadeIn 0.3s ease both',
 				'slide-in': 'slideIn 0.3s ease both',
-				'pulse-dot': 'pulseDot 2s ease-in-out infinite'
+				'pulse-dot': 'pulseDot 2s ease-in-out infinite',
+				'bounce-subtle': 'bounceSubtle 2s ease-in-out infinite'
 			},
 			keyframes: {
 				fadeUp: {
 					from: { opacity: '0', transform: 'translateY(8px)' },
 					to: { opacity: '1', transform: 'translateY(0)' }
+				},
+				fadeIn: {
+					from: { opacity: '0' },
+					to: { opacity: '1' }
 				},
 				slideIn: {
 					from: { opacity: '0', transform: 'translateX(-8px)' },
@@ -125,6 +131,10 @@ export default {
 				pulseDot: {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.4' }
+				},
+				bounceSubtle: {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(4px)' }
 				}
 			}
 		}

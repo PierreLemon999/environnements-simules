@@ -33,6 +33,12 @@ const SKIP_URL_PREFIXES = ['data:', 'blob:', 'javascript:', 'about:', '#', 'mail
 
 let dataUriCache: Map<string, string>;
 let fetchCount: number;
+let lastFaviconDataUri: string | null = null;
+
+/** Return the first favicon data URI found during the last buildSelfContainedPage call. */
+export function getLastFaviconDataUri(): string | null {
+	return lastFaviconDataUri;
+}
 
 // ---------------------------------------------------------------------------
 // MIME type helpers
@@ -519,6 +525,17 @@ export async function buildSelfContainedPage(
 
 	// 3. Inline favicons
 	result = await inlineFavicons(result, resources.faviconUrls, baseUrl);
+
+	// Extract first favicon data URI for project auto-detection
+	lastFaviconDataUri = null;
+	for (const favUrl of resources.faviconUrls) {
+		const resolved = resolveUrl(favUrl, baseUrl);
+		const cached = dataUriCache.get(resolved);
+		if (cached && cached.startsWith('data:')) {
+			lastFaviconDataUri = cached;
+			break;
+		}
+	}
 
 	// 4. Resolve any remaining url() references in inline styles and <style> tags
 	result = await resolveInlineUrls(result, baseUrl);

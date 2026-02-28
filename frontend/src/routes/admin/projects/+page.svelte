@@ -17,6 +17,7 @@
 		DialogDescription,
 		DialogFooter,
 	} from '$components/ui/dialog';
+	import { selectProject } from '$lib/stores/project';
 	import {
 		FolderKanban,
 		Plus,
@@ -29,6 +30,8 @@
 		Trash2,
 		ImagePlus,
 		X,
+		Check,
+		Loader2,
 		ChevronDown,
 	} from 'lucide-svelte';
 	import {
@@ -62,7 +65,6 @@
 	let dialogOpen = $state(false);
 	let editingProject: Project | null = $state(null);
 	let formName = $state('');
-	let formToolName = $state('');
 	let formSubdomain = $state('');
 	let formDescription = $state('');
 	let formLogoUrl = $state('');
@@ -71,13 +73,11 @@
 	let formSubmitting = $state(false);
 	let formError = $state('');
 
-	// Tool selector state
-	let toolSearchQuery = $state('');
-	let toolDropdownOpen = $state(false);
-	let customTools: string[] = $state([]);
-	let creatingNewTool = $state(false);
-	let newToolName = $state('');
 	let logoFileInput: HTMLInputElement | undefined = $state();
+
+	// Subdomain reactive validation
+	let subdomainStatus: 'idle' | 'checking' | 'available' | 'taken' | 'invalid' = $state('idle');
+	let subdomainCheckTimer: ReturnType<typeof setTimeout> | undefined;
 
 	// Delete confirmation dialog
 	let deleteDialogOpen = $state(false);
@@ -88,50 +88,15 @@
 	let headerButtonEl: HTMLElement | undefined = $state();
 	let showFab = $state(false);
 
-	// Tool name options
-	const toolOptions = [
-		'Salesforce',
-		'SAP SuccessFactors',
-		'Workday',
-		'ServiceNow',
-		'HubSpot',
-		'Zendesk',
-		'Oracle',
-		'Microsoft Dynamics',
-		'Jira',
-		'Confluence',
-		'Autre',
+	// Scroll hint — subtle down arrow when more projects are below
+	let gridBottomEl: HTMLElement | undefined = $state();
+	let showScrollHint = $state(false);
+
+	// Color palette for icon
+	const colorPalette = [
+		'#2B72EE', '#00A1E0', '#10B981', '#F5A623',
+		'#FF7A59', '#C74634', '#6D7481', '#03363D',
 	];
-
-	// Filtered tools for searchable dropdown
-	let filteredTools = $derived(() => {
-		const all = [...toolOptions.filter(t => t !== 'Autre'), ...customTools];
-		if (!toolSearchQuery.trim()) return all;
-		const q = toolSearchQuery.toLowerCase();
-		return all.filter(t => t.toLowerCase().includes(q));
-	});
-
-	function selectTool(tool: string) {
-		formToolName = tool;
-		toolSearchQuery = '';
-		toolDropdownOpen = false;
-	}
-
-	function startCreateTool() {
-		creatingNewTool = true;
-		newToolName = toolSearchQuery;
-	}
-
-	function confirmCreateTool() {
-		if (newToolName.trim()) {
-			customTools = [...customTools, newToolName.trim()];
-			formToolName = newToolName.trim();
-			newToolName = '';
-			creatingNewTool = false;
-			toolDropdownOpen = false;
-			toolSearchQuery = '';
-		}
-	}
 
 	async function handleLogoChange(e: Event) {
 		const input = e.target as HTMLInputElement;
@@ -155,8 +120,8 @@
 		if (logoFileInput) logoFileInput.value = '';
 	}
 
-	// Tool name to color mapping
-	function getToolColor(toolName: string): string {
+	// Fallback color for project initials
+	function getToolColor(name: string): string {
 		const colors: Record<string, string> = {
 			'Salesforce': '#00A1E0',
 			'SAP SuccessFactors': '#0070F2',
@@ -169,7 +134,7 @@
 			'Jira': '#0052CC',
 			'Confluence': '#1868DB',
 		};
-		return colors[toolName] ?? '#6D7481';
+		return colors[name] ?? '#6D7481';
 	}
 
 	function formatDate(dateStr: string): string {
@@ -190,30 +155,48 @@
 			.replace(/^-|-$/g, '');
 	}
 
+	function checkSubdomain(subdomain: string) {
+		clearTimeout(subdomainCheckTimer);
+
+		if (!subdomain.trim()) {
+			subdomainStatus = 'idle';
+			return;
+		}
+
+		if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(subdomain)) {
+			subdomainStatus = 'invalid';
+			return;
+		}
+
+		subdomainStatus = 'checking';
+		subdomainCheckTimer = setTimeout(async () => {
+			try {
+				const params = new URLSearchParams({ subdomain });
+				if (editingProject) params.set('excludeId', editingProject.id);
+				const res = await get<{ data: { available: boolean } }>(`/projects/check-subdomain?${params}`);
+				subdomainStatus = res.data.available ? 'available' : 'taken';
+			} catch {
+				subdomainStatus = 'idle';
+			}
+		}, 400);
+	}
+
 	let filteredProjects = $derived(() => {
 		let result = projects;
 
-		// Status filter — requires per-project version status data (active/test/deprecated)
-		// which is not loaded in the list endpoint. For now, we approximate:
-		// - "active" = has at least one version (versionCount > 0)
-		// - "archived" = no versions (versionCount === 0)
-		// - "test" = not distinguishable without version-level status data
-		// TODO: add version status breakdown to GET /projects response for proper filtering
 		if (statusFilter === 'active') {
 			result = result.filter((p) => p.versionCount > 0);
 		} else if (statusFilter === 'archived') {
 			result = result.filter((p) => p.versionCount === 0);
 		}
-		// 'test' filter is a no-op until version status data is available
 
-		// Search filter
 		if (searchQuery.trim()) {
 			const q = searchQuery.toLowerCase();
 			result = result.filter(
 				(p) =>
 					p.name.toLowerCase().includes(q) ||
-					p.toolName.toLowerCase().includes(q) ||
-					p.subdomain.toLowerCase().includes(q)
+					p.subdomain.toLowerCase().includes(q) ||
+					(p.toolName || '').toLowerCase().includes(q)
 			);
 		}
 
@@ -223,31 +206,25 @@
 	function openCreateDialog() {
 		editingProject = null;
 		formName = '';
-		formToolName = '';
 		formSubdomain = '';
 		formDescription = '';
 		formLogoUrl = '';
 		formIconColor = '';
 		formVersionName = 'Version 1';
 		formError = '';
-		toolSearchQuery = '';
-		toolDropdownOpen = false;
-		creatingNewTool = false;
+		subdomainStatus = 'idle';
 		dialogOpen = true;
 	}
 
 	function openEditDialog(project: Project) {
 		editingProject = project;
 		formName = project.name;
-		formToolName = project.toolName;
 		formSubdomain = project.subdomain;
 		formDescription = project.description ?? '';
 		formLogoUrl = project.logoUrl ?? '';
-		formIconColor = project.iconColor ?? getToolColor(project.toolName);
+		formIconColor = project.iconColor ?? getToolColor(project.name);
 		formError = '';
-		toolSearchQuery = '';
-		toolDropdownOpen = false;
-		creatingNewTool = false;
+		subdomainStatus = 'idle';
 		dialogOpen = true;
 	}
 
@@ -257,8 +234,17 @@
 	}
 
 	async function handleSubmit() {
-		if (!formName.trim() || !formToolName.trim()) {
-			formError = 'Le nom et l\'outil sont requis.';
+		if (!formName.trim()) {
+			formError = 'Le nom du projet est requis.';
+			return;
+		}
+
+		if (subdomainStatus === 'taken') {
+			formError = 'Ce sous-domaine est déjà utilisé.';
+			return;
+		}
+		if (subdomainStatus === 'invalid') {
+			formError = 'Format de sous-domaine invalide.';
 			return;
 		}
 
@@ -268,7 +254,7 @@
 		try {
 			const body = {
 				name: formName.trim(),
-				toolName: formToolName.trim(),
+				toolName: formName.trim(),
 				subdomain: formSubdomain.trim() || generateSubdomain(formName),
 				description: formDescription.trim() || null,
 				logoUrl: formLogoUrl || null,
@@ -295,8 +281,9 @@
 							language: 'fr',
 						});
 						versionCount = 1;
-					} catch {
-						// Project created but version failed — not blocking
+					} catch (versionErr: any) {
+						console.error('Version creation failed:', versionErr);
+						toast.error(`Projet créé, mais la version n'a pas pu être ajoutée : ${versionErr.message || 'Erreur inconnue'}`);
 					}
 				}
 
@@ -336,6 +323,7 @@
 	}
 
 	let observer: IntersectionObserver | undefined;
+	let gridBottomObserver: IntersectionObserver | undefined;
 
 	onMount(async () => {
 		window.addEventListener('open-create-project', handleCreateProjectEvent);
@@ -362,21 +350,25 @@
 		return () => observer?.disconnect();
 	});
 
+	// Watch grid bottom sentinel for scroll hint arrow
+	$effect(() => {
+		if (!gridBottomEl) { showScrollHint = false; return; }
+		gridBottomObserver?.disconnect();
+		gridBottomObserver = new IntersectionObserver(
+			([entry]) => { showScrollHint = !entry.isIntersecting; },
+			{ threshold: 0 }
+		);
+		gridBottomObserver.observe(gridBottomEl);
+		return () => gridBottomObserver?.disconnect();
+	});
+
 	onDestroy(() => {
 		window.removeEventListener('open-create-project', handleCreateProjectEvent);
 		observer?.disconnect();
+		gridBottomObserver?.disconnect();
+		clearTimeout(subdomainCheckTimer);
 	});
 </script>
-
-<svelte:window onclick={(e) => {
-	if (toolDropdownOpen) {
-		const target = e.target as HTMLElement;
-		if (!target.closest('.tool-dropdown-container')) {
-			toolDropdownOpen = false;
-			creatingNewTool = false;
-		}
-	}
-}} />
 
 <svelte:head>
 	<title>Projets — Lemon Lab</title>
@@ -491,20 +483,20 @@
 						</div>
 
 						<!-- Card content (clickable) -->
-						<a href="/admin/projects/{project.id}" class="block">
+						<a href="/admin/projects/{project.id}" class="block" onclick={() => selectProject(project.id)}>
 							<div class="flex items-start gap-3">
 								{#if project.logoUrl}
 									<img
 										src={project.logoUrl}
-										alt={project.toolName}
+										alt={project.name}
 										class="h-10 w-10 shrink-0 rounded-lg object-cover"
 									/>
 								{:else}
 									<div
 										class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
-										style="background-color: {project.iconColor || getToolColor(project.toolName)}"
+										style="background-color: {project.iconColor || getToolColor(project.name)}"
 									>
-										{project.toolName.slice(0, 2).toUpperCase()}
+										{project.name.slice(0, 2).toUpperCase()}
 									</div>
 								{/if}
 								<div class="min-w-0 flex-1">
@@ -516,7 +508,7 @@
 											<Badge variant="secondary" class="text-[10px]">Vide</Badge>
 										{/if}
 									</div>
-									<p class="text-xs text-muted-foreground">{project.toolName}</p>
+									<p class="text-xs text-muted-foreground">{project.subdomain}</p>
 								</div>
 							</div>
 
@@ -543,8 +535,24 @@
 				</Card>
 			{/each}
 		</div>
+		<!-- Scroll sentinel -->
+		<div bind:this={gridBottomEl} class="h-1"></div>
 	{/if}
 </div>
+
+<!-- Scroll hint arrow — visible when more projects are below the fold -->
+{#if showScrollHint}
+	<div
+		class="fixed bottom-5 z-30 pointer-events-none animate-fade-in"
+		style="left: var(--sidebar-current-width, var(--sidebar-width)); right: 0"
+	>
+		<div class="flex justify-center">
+			<div class="flex h-7 w-7 items-center justify-center rounded-full bg-white/80 border border-border/50 shadow-sm backdrop-blur-sm animate-bounce-subtle">
+				<ChevronDown class="h-3.5 w-3.5 text-muted" />
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Floating action button — visible when header button is scrolled out of view -->
 {#if showFab}
@@ -611,119 +619,83 @@
 							<span class="text-[9px] font-medium">Logo</span>
 						</button>
 					{/if}
-				</div>
 
-				<!-- Name + Tool -->
-				<div class="flex-1 space-y-3">
-					<div class="space-y-1.5">
-						<label for="project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
-						<Input
-							id="project-name"
-							bind:value={formName}
-							placeholder="ex: Salesforce CRM — Démo commerciale"
-							oninput={() => {
-								if (!editingProject && !formSubdomain) {
-									formSubdomain = generateSubdomain(formName);
-								}
-							}}
-						/>
-					</div>
-
-					<!-- Searchable tool selector -->
-					<div class="space-y-1.5">
-						<label class="text-sm font-medium text-foreground">Outil simulé</label>
-						<div class="relative tool-dropdown-container">
+					<!-- Color palette under logo -->
+					<div class="mt-2 flex flex-wrap gap-1 max-w-[64px] justify-center">
+						{#each colorPalette as color}
 							<button
 								type="button"
-								class="flex h-9 w-full items-center justify-between rounded-md border border-border bg-transparent px-3 text-sm shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								onclick={() => { toolDropdownOpen = !toolDropdownOpen; creatingNewTool = false; }}
-							>
-								<span class={formToolName ? 'text-foreground' : 'text-muted'}>
-									{formToolName || 'Sélectionner un outil'}
-								</span>
-								<ChevronDown class="h-3.5 w-3.5 text-muted-foreground" />
-							</button>
-
-							{#if toolDropdownOpen}
-								<div class="absolute left-0 top-[calc(100%+4px)] z-50 w-full rounded-md border border-border bg-card shadow-lg">
-									<!-- Search input -->
-									<div class="border-b border-border p-2">
-										<div class="relative">
-											<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-											<input
-												type="text"
-												class="h-8 w-full rounded-md border border-border bg-transparent pl-8 pr-3 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring"
-												placeholder="Rechercher un outil..."
-												bind:value={toolSearchQuery}
-											/>
-										</div>
-									</div>
-
-									{#if creatingNewTool}
-										<!-- Create new tool inline -->
-										<div class="p-2 space-y-2">
-											<p class="text-xs font-medium text-muted-foreground px-1">Nouvel outil</p>
-											<div class="flex gap-2">
-												<input
-													type="text"
-													class="h-8 flex-1 rounded-md border border-border bg-transparent px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-													placeholder="Nom de l'outil..."
-													bind:value={newToolName}
-													onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmCreateTool(); } }}
-												/>
-												<Button size="sm" type="button" class="h-8 px-3" onclick={confirmCreateTool}>
-													Créer
-												</Button>
-											</div>
-										</div>
-									{:else}
-										<!-- Tool list -->
-										<div class="max-h-48 overflow-y-auto p-1">
-											{#each filteredTools() as tool}
-												<button
-													type="button"
-													class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent {tool === formToolName ? 'bg-accent font-medium text-primary' : 'text-foreground'}"
-													onclick={() => selectTool(tool)}
-												>
-													<span
-														class="h-2.5 w-2.5 shrink-0 rounded-full"
-														style="background-color: {getToolColor(tool)}"
-													></span>
-													{tool}
-												</button>
-											{:else}
-												<p class="px-3 py-2 text-sm text-muted-foreground">Aucun outil trouvé</p>
-											{/each}
-										</div>
-
-										<!-- Create new tool button -->
-										<div class="border-t border-border p-1">
-											<button
-												type="button"
-												class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-accent"
-												onclick={startCreateTool}
-											>
-												<Plus class="h-3.5 w-3.5" />
-												Créer un nouvel outil
-											</button>
-										</div>
-									{/if}
-								</div>
-							{/if}
-						</div>
+								class="h-4 w-4 rounded-full transition-all {formIconColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'}"
+								style="background-color: {color}"
+								onclick={() => { formIconColor = color; }}
+								title={color}
+							></button>
+						{/each}
+						<label
+							class="relative h-4 w-4 rounded-full cursor-pointer border border-border transition-all hover:scale-110 overflow-hidden"
+							style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)"
+							title="Couleur personnalisée"
+						>
+							<input
+								type="color"
+								bind:value={formIconColor}
+								class="absolute inset-0 cursor-pointer opacity-0"
+							/>
+						</label>
 					</div>
+					{#if formIconColor}
+						<p class="mt-1 text-center text-[9px] font-mono text-muted-foreground">{formIconColor}</p>
+					{/if}
+				</div>
+
+				<!-- Name -->
+				<div class="flex-1 space-y-1.5">
+					<label for="project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
+					<Input
+						id="project-name"
+						bind:value={formName}
+						placeholder="ex: Salesforce CRM — Démo commerciale"
+						oninput={() => {
+							if (!editingProject && !formSubdomain) {
+								formSubdomain = generateSubdomain(formName);
+							}
+						}}
+					/>
 				</div>
 			</div>
 
+			<!-- Subdomain with reactive validation -->
 			<div class="space-y-1.5">
 				<label for="project-subdomain" class="text-sm font-medium text-foreground">Sous-domaine des démos</label>
 				<div class="flex items-center gap-2">
-					<Input
-						id="project-subdomain"
-						bind:value={formSubdomain}
-						placeholder="salesforce-crm"
-						class="flex-1"
-					/>
+					<div class="relative flex-1">
+						<Input
+							id="project-subdomain"
+							bind:value={formSubdomain}
+							placeholder="salesforce-crm"
+							oninput={() => checkSubdomain(formSubdomain)}
+						/>
+						{#if subdomainStatus === 'checking'}
+							<div class="absolute right-2.5 top-1/2 -translate-y-1/2">
+								<Loader2 class="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+							</div>
+						{:else if subdomainStatus === 'available'}
+							<div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+								<Check class="h-3.5 w-3.5 text-emerald-500" />
+								<span class="text-[10px] font-medium text-emerald-500">Disponible</span>
+							</div>
+						{:else if subdomainStatus === 'taken'}
+							<div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+								<X class="h-3.5 w-3.5 text-destructive" />
+								<span class="text-[10px] font-medium text-destructive">Indisponible</span>
+							</div>
+						{:else if subdomainStatus === 'invalid'}
+							<div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+								<X class="h-3.5 w-3.5 text-destructive" />
+								<span class="text-[10px] font-medium text-destructive">Format invalide</span>
+							</div>
+						{/if}
+					</div>
 					<span class="text-xs text-muted-foreground shrink-0">.env-ll.com</span>
 				</div>
 			</div>
@@ -739,27 +711,14 @@
 				></textarea>
 			</div>
 
-			<div class="space-y-1.5">
-				<label for="project-icon-color" class="text-sm font-medium text-foreground">Couleur de l'icône</label>
-				<div class="flex items-center gap-3">
-					<label class="relative h-8 w-8 shrink-0 cursor-pointer rounded-full border border-border shadow-xs transition-shadow hover:shadow-md" style="background-color: {formIconColor || '#6D7481'}">
-						<input type="color" id="project-icon-color" bind:value={formIconColor} class="absolute inset-0 cursor-pointer opacity-0" />
-					</label>
-					<span class="text-xs text-muted-foreground font-mono">{formIconColor || '#6D7481'}</span>
-					<span class="text-xs text-muted-foreground">Extraite automatiquement du logo</span>
-				</div>
-			</div>
-
 			{#if !editingProject}
 				<div class="space-y-1.5">
-					<label for="project-version" class="text-sm font-medium text-foreground">Première version <span class="text-muted-foreground">(optionnel)</span></label>
+					<label for="project-version" class="text-sm font-medium text-foreground">Version (sous projet)</label>
 					<Input
 						id="project-version"
 						bind:value={formVersionName}
 						placeholder="Version 1"
-						class=""
 					/>
-					<p class="text-xs text-muted-foreground">Laissez vide pour ne pas créer de version.</p>
 				</div>
 			{/if}
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { user, logout } from '$lib/stores/auth';
+	import { projects as projectsStore, selectedProjectId as selectedProjectIdStore, selectProject } from '$lib/stores/project';
 	import { get } from '$lib/api';
 	import { onMount } from 'svelte';
 	import { Avatar, AvatarFallback, AvatarImage } from '$components/ui/avatar';
@@ -20,20 +21,38 @@
 		Blocks,
 		PenSquare,
 		LogOut,
+		Search,
 		ChevronsLeft,
 		Gauge,
 		FlaskConical,
+		ChevronDown,
 	} from 'lucide-svelte';
 
 	let { collapsed = $bindable(false), onToggle }: { collapsed?: boolean; onToggle?: () => void } = $props();
 
+	import { onDestroy } from 'svelte';
+
 	let avatarEditorOpen = $state(false);
 
-	let projects: Array<{ id: string; name: string; toolName: string; iconColor?: string | null; pageCount: number }> = $state([]);
 	let sessionCount = $state(0);
 	let updateRequestCount = $state(0);
 	let invitationCount = $state(0);
 	let hovered = $state(false);
+	let projectSearch = $state('');
+
+	// Scroll hint for project list
+	let projectListEl: HTMLUListElement | undefined = $state();
+	let projectListEndEl: HTMLDivElement | undefined = $state();
+	let showProjectsScrollHint = $state(false);
+	let scrollObserver: IntersectionObserver | undefined;
+
+	let filteredProjects = $derived(
+		$projectsStore.filter(p => {
+			if (!projectSearch.trim()) return true;
+			const q = projectSearch.toLowerCase();
+			return p.toolName.toLowerCase().includes(q) || p.name.toLowerCase().includes(q);
+		})
+	);
 
 	const labItems = [
 		{ href: '/admin/tree', label: 'Arborescence', icon: GitBranch, badgeKey: null },
@@ -53,7 +72,7 @@
 	];
 
 	let badges = $derived<Record<string, { value: number; variant: 'default' | 'destructive' }>>({
-		projects: { value: projects.length, variant: 'default' },
+		projects: { value: $projectsStore.length, variant: 'default' },
 		sessions: { value: sessionCount, variant: 'default' },
 		invitations: { value: invitationCount, variant: 'default' },
 		updateRequests: { value: updateRequestCount, variant: updateRequestCount > 0 ? 'destructive' : 'default' },
@@ -82,35 +101,32 @@
 		return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 	}
 
+	// Watch project list end sentinel for scroll hint
+	$effect(() => {
+		if (!projectListEndEl || !projectListEl) { showProjectsScrollHint = false; return; }
+		scrollObserver?.disconnect();
+		scrollObserver = new IntersectionObserver(
+			([entry]) => { showProjectsScrollHint = !entry.isIntersecting; },
+			{ root: projectListEl, threshold: 0.1 }
+		);
+		scrollObserver.observe(projectListEndEl);
+		return () => scrollObserver?.disconnect();
+	});
+
 	onMount(async () => {
 		try {
-			const [projectsRes, overviewRes, updateRequestsRes] = await Promise.all([
-				get<{ data: Array<{ id: string; name: string; toolName: string; pageCount: number }> }>('/projects'),
+			const [overviewRes, updateRequestsRes] = await Promise.all([
 				get<{ data: { last7Days: { sessions: number } } }>('/analytics/overview'),
 				get<{ data: Array<{ status: string }> }>('/update-requests').catch(() => ({ data: [] })),
 			]);
-			projects = projectsRes.data;
 			sessionCount = overviewRes.data.last7Days.sessions;
 			updateRequestCount = updateRequestsRes.data.filter(r => r.status === 'pending').length;
-
-			let totalInvitations = 0;
-			for (const p of projectsRes.data) {
-				try {
-					const detail = await get<{ data: { versions: Array<{ id: string; status: string }> } }>(`/projects/${p.id}`);
-					const activeVersion = detail.data.versions?.find(v => v.status === 'active');
-					if (activeVersion) {
-						const assignments = await get<{ data: Array<{ id: string }> }>(`/versions/${activeVersion.id}/assignments`);
-						totalInvitations += assignments.data.length;
-					}
-				} catch {
-					// Skip
-				}
-			}
-			invitationCount = totalInvitations;
 		} catch {
 			// Silently fail
 		}
 	});
+
+	onDestroy(() => { scrollObserver?.disconnect(); });
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -121,24 +137,17 @@
 	onmouseleave={() => { hovered = false; }}
 >
 	<!-- Branding -->
-	<div class="flex h-14 items-center gap-3 border-b border-border px-3">
-		<div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-			<svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-				<path d="M12 4 L12 13 L6 25 Q5 27 7 28 L25 28 Q27 27 26 25 L20 13 L20 4" stroke="#2B72EE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-				<line x1="10" y1="4" x2="22" y2="4" stroke="#2B72EE" stroke-width="2.5" stroke-linecap="round"/>
-				<path d="M8.5 21 L12.5 14 L19.5 14 L23.5 21 Q25 24 24 26 Q23 27 22 27 L10 27 Q9 27 8 26 Q7 24 8.5 21Z" fill="#D5E3FC" opacity="0.6"/>
-				<circle cx="14" cy="22" r="1.8" fill="#FAE100"/>
-				<circle cx="18.5" cy="19" r="1.3" fill="#2B72EE" opacity="0.5"/>
-				<circle cx="11.5" cy="18.5" r="1" fill="#FAE100" opacity="0.7"/>
-			</svg>
-		</div>
+	<div class="flex h-14 items-center gap-2 border-b border-border {collapsed ? 'justify-center px-1' : 'px-3'}">
+		<img src="/logo-icon.png" alt="Lemon Lab" class="{collapsed ? 'h-8 w-8' : 'h-9 w-9'} shrink-0" />
 		{#if !collapsed}
-			<span class="truncate text-sm font-semibold text-foreground">Lemon Lab</span>
+			<span class="text-[17px] tracking-[-0.01em] text-foreground">
+				<span class="font-bold">lemon</span><span class="font-normal">lab</span>
+			</span>
 		{/if}
 	</div>
 
-	<!-- Navigation -->
-	<nav class="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+	<!-- Navigation (fixed sections) -->
+	<nav class="shrink-0 overflow-x-hidden px-2 py-3">
 		<!-- GESTION section -->
 		<div class="mb-1 flex items-center gap-2 px-2">
 			<Gauge class="h-3.5 w-3.5 text-yellow-dark" />
@@ -212,23 +221,36 @@
 				</li>
 			{/each}
 		</ul>
+	</nav>
 
-		<!-- MES PROJETS section -->
-		{#if projects.length > 0}
-			<Separator class="my-3" />
+	<!-- MES PROJETS section (scrollable) -->
+	{#if $projectsStore.length > 0}
+		<div class="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border px-2 pt-3">
 			{#if !collapsed}
-				<p class="mb-1 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Mes projets</p>
+				<p class="mb-1 shrink-0 px-2 text-[11px] font-semibold uppercase tracking-[0.6px] text-muted">Mes projets</p>
+				<div class="relative mb-1 shrink-0 px-1">
+					<Search class="pointer-events-none absolute left-3.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted" />
+					<input
+						bind:value={projectSearch}
+						placeholder="Rechercher..."
+						class="h-6 w-full rounded border border-transparent bg-transparent pl-6 pr-2 text-[11px] placeholder:text-muted outline-none focus:border-border focus:bg-accent/50"
+					/>
+				</div>
 			{/if}
-			<ul class="space-y-0.5">
-				{#each projects.slice(0, 8) as project}
+			<div class="relative min-h-0 flex-1">
+			<ul bind:this={projectListEl} class="h-full space-y-0.5 overflow-x-hidden pb-2 sidebar-scroll">
+				{#each filteredProjects as project}
 					<li>
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<a
 							href="/admin/projects/{project.id}"
-							class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {isActive(`/admin/projects/${project.id}`) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+							onclick={() => selectProject(project.id)}
+							class="nav-item group relative flex items-center gap-2.5 rounded-md px-3 py-[7px] text-[13px] transition-colors {$selectedProjectIdStore === project.id ? 'text-primary font-medium' : isActive(`/admin/projects/${project.id}`) ? 'bg-accent text-primary font-medium' : 'text-secondary hover:bg-accent hover:text-foreground'}"
+							style={$selectedProjectIdStore === project.id ? 'background: linear-gradient(90deg, var(--color-yellow-bg) 0%, var(--color-yellow-bg) 30%, transparent 100%)' : ''}
 							title={collapsed ? project.toolName : undefined}
 						>
-						{#if isActive(`/admin/projects/${project.id}`)}
-							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary"></span>
+						{#if $selectedProjectIdStore === project.id}
+							<span class="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm" style="background: #FAE100"></span>
 						{/if}
 							<span
 								class="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -236,14 +258,24 @@
 							></span>
 							{#if !collapsed}
 								<span class="truncate flex-1">{project.toolName}</span>
-								<span class="ml-auto font-mono text-[11px] text-muted-foreground">{project.pageCount}</span>
+								<span class="ml-auto mr-1 font-mono text-[11px] text-muted-foreground">{project.pageCount}</span>
 							{/if}
 						</a>
 					</li>
 				{/each}
+				<li bind:this={projectListEndEl} class="h-px shrink-0" aria-hidden="true"></li>
 			</ul>
-		{/if}
-	</nav>
+			{#if showProjectsScrollHint && !collapsed}
+				<div class="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center">
+					<div class="h-8 w-full bg-gradient-to-t from-sidebar to-transparent"></div>
+					<div class="absolute bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-white/80 border border-border/50 shadow-xs">
+						<ChevronDown class="h-3 w-3 text-muted" />
+					</div>
+				</div>
+			{/if}
+		</div>
+		</div>
+	{/if}
 
 	<!-- Collapse toggle — floating circular button -->
 	<button
@@ -288,3 +320,27 @@
 </aside>
 
 <AvatarEditor bind:open={avatarEditorOpen} />
+
+<style>
+	.sidebar-scroll {
+		overflow-y: auto;
+	}
+	.sidebar-scroll::-webkit-scrollbar {
+		width: 4px;
+	}
+	.sidebar-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.sidebar-scroll::-webkit-scrollbar-thumb {
+		background: var(--color-border);
+		border-radius: 9999px;
+	}
+	.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+		background: var(--color-muted);
+	}
+	/* Firefox */
+	.sidebar-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: var(--color-border) transparent;
+	}
+</style>

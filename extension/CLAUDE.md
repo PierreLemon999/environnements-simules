@@ -17,7 +17,7 @@ src/
     ├── auth.ts                     # Token management (chrome.storage.local)
     ├── capture.ts                  # Capture DOM : inline CSS, images base64, nettoyage
     ├── auto-capture.ts             # BFS crawling avec zones d'intérêt
-    ├── guided-capture.ts           # Crawl guidé par l'utilisateur
+    ├── guided-orchestrator.ts      # Orchestration capture guidée (auto/manual)
     ├── constants.ts                # STORAGE_KEYS, PAGE_STATUS, types
     └── uuid.ts                     # Génération UUID v4
 
@@ -46,3 +46,33 @@ GET_VERSIONS, CREATE_CAPTURE_JOB, UPDATE_CAPTURE_JOB, CHECK_AUTH, LOGOUT
 
 Alarm Chrome toutes les 30 min → POST /api/auth/verify → refresh si valide
 ```
+
+## Versioning (OBLIGATOIRE)
+
+**Source de vérité** : `public/manifest.json` → version synchronisée dans `package.json`.
+
+### Règles
+
+- **Chaque modification de l'extension DOIT incrémenter la version** :
+  - `patch` (0.3.0 → 0.3.1) : bugfix, ajustement UI, refacto interne
+  - `minor` (0.3.x → 0.4.0) : nouvelle fonctionnalité, nouveau message handler, changement d'API
+  - `major` (0.x.y → 1.0.0) : breaking change, refonte majeure
+- **Les deux fichiers doivent rester synchronisés** (manifest.json ET package.json)
+- Le script `scripts/bump-version.ts` gère l'incrément automatique
+- Le build prod (`npm run build`) auto-incrémente le patch via `prebuild`
+- Le dev (`npm run dev`) n'incrémente PAS
+
+### Commandes
+
+```bash
+npm run bump            # patch: 0.3.0 → 0.3.1
+npm run bump:minor      # minor: 0.3.x → 0.4.0
+npm run bump:major      # major: 0.x.y → 1.0.0
+npm run build           # auto-bump patch + build
+```
+
+### Affichage
+
+- La version est injectée au build via `__APP_VERSION__` (Vite `define`)
+- Déclaration TS : `src/globals.d.ts`
+- Affichée dans le header du popup : "Lemon Lab v0.3.0" (petit, grisé)

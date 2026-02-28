@@ -97,6 +97,39 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 			sendResponse(computeStateIdentity());
 			return false;
 
+		case 'OBSERVE_LL_BUBBLE':
+			startBubbleObserver();
+			sendResponse({ success: true });
+			return false;
+
+		case 'STOP_OBSERVE_LL_BUBBLE':
+			stopBubbleObserver();
+			sendResponse({ success: true });
+			return false;
+
+		case 'HIDE_LL_BUBBLE': {
+			const hidden = hideLLBubble();
+			sendResponse({ success: hidden });
+			return false;
+		}
+
+		case 'SHOW_LL_BUBBLE':
+			showLLBubble();
+			sendResponse({ success: true });
+			return false;
+
+		case 'CLICK_LL_NEXT': {
+			const clicked = clickLLNextButton();
+			sendResponse(clicked);
+			return false;
+		}
+
+		case 'GET_LL_BUBBLE_INFO': {
+			const info = getLLBubbleInfo();
+			sendResponse(info);
+			return false;
+		}
+
 		case 'PING':
 			sendResponse({ pong: true });
 			return false;
@@ -709,6 +742,275 @@ function modalEscapeAttr(str: string): string {
 
 function modalEscapeHtml(str: string): string {
 	return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ---------------------------------------------------------------------------
+// LL Player Bubble observation & interaction
+// ---------------------------------------------------------------------------
+
+let bubbleObserver: MutationObserver | null = null;
+let lastBubbleContentHash = '';
+let bubbleDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let savedBubbleDisplay: string | null = null;
+
+/**
+ * Find the LL Player bubble element in the DOM.
+ * The bubble is rendered as a fixed-position element with max z-index,
+ * NOT inside a Shadow DOM. We detect it by structural properties.
+ */
+function findLLBubble(): HTMLElement | null {
+	// Strategy 1: Known LL Player container IDs
+	const knownIds = ['lemon-learning-player', 'lemonlearning-player-embed'];
+	for (const id of knownIds) {
+		const el = document.getElementById(id);
+		if (el) {
+			// Check for shadow root first (player may render inside)
+			const shadow = el.shadowRoot;
+			if (shadow) {
+				// Look for the bubble inside the shadow root
+				const fixedEls = shadow.querySelectorAll('*');
+				for (const child of Array.from(fixedEls)) {
+					const style = window.getComputedStyle(child);
+					if (style.position === 'fixed' && parseInt(style.zIndex, 10) > 2000000000) {
+						return child as HTMLElement;
+					}
+				}
+			}
+			// The element itself might be the bubble container
+			const style = window.getComputedStyle(el);
+			if (style.position === 'fixed') return el;
+		}
+	}
+
+	// Strategy 2: Find fixed element with extremely high z-index
+	const allElements = document.querySelectorAll('*');
+	for (const el of Array.from(allElements)) {
+		const style = window.getComputedStyle(el);
+		if (style.position === 'fixed' && parseInt(style.zIndex, 10) > 2000000000) {
+			// Verify it looks like a bubble (has meaningful content, not just an overlay)
+			const rect = el.getBoundingClientRect();
+			if (rect.width > 50 && rect.width < 600 && rect.height > 50 && rect.height < 500) {
+				return el as HTMLElement;
+			}
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Compute a simple hash of the bubble's visible content to detect step changes.
+ */
+function computeBubbleHash(bubble: HTMLElement): string {
+	const text = bubble.innerText?.trim() || '';
+	// Use first 200 chars — enough to detect step changes
+	return text.substring(0, 200);
+}
+
+/**
+ * Start observing the DOM for bubble appearance/changes.
+ * Sends BUBBLE_CHANGED to the service worker when detected.
+ */
+function startBubbleObserver(): void {
+	stopBubbleObserver();
+
+	lastBubbleContentHash = '';
+
+	const checkBubble = () => {
+		const bubble = findLLBubble();
+		if (!bubble) {
+			if (lastBubbleContentHash !== '') {
+				// Bubble disappeared — guide may have ended
+				lastBubbleContentHash = '';
+				chrome.runtime.sendMessage({
+					type: 'BUBBLE_CHANGED',
+					bubblePresent: false,
+					contentHash: ''
+				}).catch(() => {});
+			}
+			return;
+		}
+
+		const hash = computeBubbleHash(bubble);
+		if (hash && hash !== lastBubbleContentHash) {
+			lastBubbleContentHash = hash;
+			const info = getLLBubbleInfo();
+			chrome.runtime.sendMessage({
+				type: 'BUBBLE_CHANGED',
+				bubblePresent: true,
+				contentHash: hash,
+				...info
+			}).catch(() => {});
+		}
+	};
+
+	// Initial check
+	checkBubble();
+
+	// Observe DOM mutations to detect bubble changes
+	bubbleObserver = new MutationObserver(() => {
+		// Debounce: wait 300ms of no mutations before checking
+		if (bubbleDebounceTimer) clearTimeout(bubbleDebounceTimer);
+		bubbleDebounceTimer = setTimeout(checkBubble, 300);
+	});
+
+	bubbleObserver.observe(document.documentElement, {
+		childList: true,
+		subtree: true,
+		characterData: true,
+		attributes: true,
+		attributeFilter: ['style', 'class']
+	});
+}
+
+function stopBubbleObserver(): void {
+	if (bubbleObserver) {
+		bubbleObserver.disconnect();
+		bubbleObserver = null;
+	}
+	if (bubbleDebounceTimer) {
+		clearTimeout(bubbleDebounceTimer);
+		bubbleDebounceTimer = null;
+	}
+	lastBubbleContentHash = '';
+}
+
+/**
+ * Hide the LL bubble before capturing the page.
+ */
+function hideLLBubble(): boolean {
+	const bubble = findLLBubble();
+	if (!bubble) return false;
+
+	savedBubbleDisplay = bubble.style.display;
+	bubble.style.display = 'none';
+
+	// Also hide the shadow host if it exists
+	const shadowHost = document.getElementById('lemon-learning-player');
+	if (shadowHost && shadowHost !== bubble) {
+		shadowHost.setAttribute('data-ll-saved-display', shadowHost.style.display);
+		shadowHost.style.display = 'none';
+	}
+	return true;
+}
+
+/**
+ * Restore the LL bubble after capture.
+ */
+function showLLBubble(): void {
+	const bubble = findLLBubble();
+	if (bubble && savedBubbleDisplay !== null) {
+		bubble.style.display = savedBubbleDisplay;
+		savedBubbleDisplay = null;
+	}
+
+	const shadowHost = document.getElementById('lemon-learning-player');
+	if (shadowHost) {
+		const saved = shadowHost.getAttribute('data-ll-saved-display');
+		if (saved !== null) {
+			shadowHost.style.display = saved;
+			shadowHost.removeAttribute('data-ll-saved-display');
+		}
+	}
+}
+
+/**
+ * Find and click the Next button in the LL bubble.
+ * Returns info about whether the click was successful and if there's a next step.
+ */
+function clickLLNextButton(): { clicked: boolean; hasNext: boolean; error?: string } {
+	const bubble = findLLBubble();
+	if (!bubble) return { clicked: false, hasNext: false, error: 'Bubble not found' };
+
+	// Strategy 1: Find buttons by text content (Suivant, Next, Continuer, etc.)
+	const nextTexts = ['suivant', 'next', 'continuer', 'continue', 'compris', 'ok', 'got it', 'commencer', 'start'];
+	const allButtons = bubble.querySelectorAll('button, [role="button"], div[class*="action"], a');
+	let nextButton: HTMLElement | null = null;
+
+	for (const btn of Array.from(allButtons)) {
+		const text = (btn as HTMLElement).innerText?.trim().toLowerCase() || '';
+		if (nextTexts.some(nt => text.includes(nt))) {
+			nextButton = btn as HTMLElement;
+			break;
+		}
+	}
+
+	// Strategy 2: Find last clickable element in the footer area (LL Player pattern)
+	if (!nextButton) {
+		const footerCandidates = bubble.querySelectorAll('div[class*="footer"] button, div[class*="footer"] [role="button"], div[class*="footer"] div[class*="action"]');
+		if (footerCandidates.length > 0) {
+			nextButton = footerCandidates[footerCandidates.length - 1] as HTMLElement;
+		}
+	}
+
+	// Strategy 3: Look for arrow/chevron icons (SVG with right-pointing arrow)
+	if (!nextButton) {
+		const svgs = bubble.querySelectorAll('svg');
+		for (const svg of Array.from(svgs)) {
+			const parent = svg.parentElement;
+			if (parent && (parent.tagName === 'BUTTON' || parent.getAttribute('role') === 'button' || parent.style.cursor === 'pointer')) {
+				// Check if SVG looks like a forward/next arrow
+				const pathD = svg.querySelector('path')?.getAttribute('d') || '';
+				if (pathD.includes('l') || pathD.includes('L')) {
+					// Could be an arrow — take the last one found (usually "next" is rightmost)
+					nextButton = parent;
+				}
+			}
+		}
+	}
+
+	if (!nextButton) {
+		return { clicked: false, hasNext: false, error: 'Next button not found' };
+	}
+
+	// Click the button
+	nextButton.click();
+	return { clicked: true, hasNext: true };
+}
+
+/**
+ * Get information about the current bubble state.
+ */
+function getLLBubbleInfo(): {
+	bubblePresent: boolean;
+	title?: string;
+	bodyText?: string;
+	stepIndicator?: string;
+	hasNextButton: boolean;
+	hasPrevButton: boolean;
+} {
+	const bubble = findLLBubble();
+	if (!bubble) {
+		return { bubblePresent: false, hasNextButton: false, hasPrevButton: false };
+	}
+
+	// Extract title (first heading or prominent text)
+	const heading = bubble.querySelector('h1, h2, h3, h4, [class*="title"]');
+	const title = heading?.textContent?.trim();
+
+	// Extract body text
+	const bodyText = bubble.innerText?.trim().substring(0, 300);
+
+	// Look for step indicator (e.g. "2/5", "Step 2 of 5", "Étape 2/5")
+	const allText = bubble.innerText || '';
+	const stepMatch = allText.match(/(\d+)\s*[/\/]\s*(\d+)/) ||
+		allText.match(/(?:step|étape)\s+(\d+)\s+(?:of|sur|\/)\s+(\d+)/i);
+	const stepIndicator = stepMatch ? `${stepMatch[1]}/${stepMatch[2]}` : undefined;
+
+	// Check for Next/Previous buttons
+	const nextTexts = ['suivant', 'next', 'continuer', 'continue', 'compris', 'ok', 'got it', 'commencer'];
+	const prevTexts = ['précédent', 'previous', 'retour', 'back'];
+	const allButtons = bubble.querySelectorAll('button, [role="button"], div[class*="action"]');
+	let hasNextButton = false;
+	let hasPrevButton = false;
+
+	for (const btn of Array.from(allButtons)) {
+		const text = (btn as HTMLElement).innerText?.trim().toLowerCase() || '';
+		if (nextTexts.some(nt => text.includes(nt))) hasNextButton = true;
+		if (prevTexts.some(pt => text.includes(pt))) hasPrevButton = true;
+	}
+
+	return { bubblePresent: true, title, bodyText, stepIndicator, hasNextButton, hasPrevButton };
 }
 
 // ---------------------------------------------------------------------------

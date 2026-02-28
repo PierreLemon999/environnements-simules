@@ -135,14 +135,18 @@ router.post('/google', async (req: Request, res: Response) => {
       }
     }
 
-    // Check if user already exists
+    // Check if user already exists (by googleId first, then by email)
     let user = await db.select().from(users).where(eq(users.googleId, googleId)).get();
+    if (!user) {
+      user = await db.select().from(users).where(eq(users.email, email)).get() ?? null;
+    }
 
     if (user) {
-      // Update avatar and name on each login (may change on Google side)
+      // Update avatar, name, and googleId on each login
       const updates: Record<string, string> = {};
       if (avatarUrl && avatarUrl !== user.avatarUrl) updates.avatarUrl = avatarUrl;
       if (name && name !== user.name) updates.name = name;
+      if (googleId && googleId !== user.googleId) updates.googleId = googleId;
       if (Object.keys(updates).length > 0) {
         await db.update(users).set(updates).where(eq(users.id, user.id));
         user = { ...user, ...updates };
@@ -296,6 +300,8 @@ router.post('/verify', async (req: Request, res: Response) => {
       await db.update(users).set({ extensionVersion }).where(eq(users.id, decoded.userId));
     }
 
+    const minExtensionVersion = process.env.MIN_EXTENSION_VERSION || '0.0.0';
+
     res.json({
       data: {
         valid: true,
@@ -304,6 +310,7 @@ router.post('/verify', async (req: Request, res: Response) => {
           avatarUrl: fullUser?.avatarUrl ?? null,
           extensionVersion: extensionVersion ?? fullUser?.extensionVersion ?? null,
         },
+        minExtensionVersion,
       },
     });
   } catch {

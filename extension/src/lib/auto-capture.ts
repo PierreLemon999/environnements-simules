@@ -7,7 +7,7 @@ import {
 	getCaptureState,
 	updateCaptureState
 } from './capture';
-import { buildSelfContainedPage } from './resource-fetcher';
+import { buildSelfContainedPage, getLastFaviconDataUri } from './resource-fetcher';
 import api from './api';
 import { v4 as uuidv4 } from './uuid';
 
@@ -37,7 +37,7 @@ interface CrawlQueueItem {
 
 const DEFAULT_CONFIG: AutoCaptureConfig = {
 	targetPageCount: 20,
-	maxDepth: 3,
+	maxDepth: 12,
 	delayBetweenPages: 500,
 	pageTimeout: 60000,
 	interestZones: [],
@@ -459,7 +459,9 @@ async function captureAndUploadPage(
 		const result = await uploadCapturedPage(
 			versionId,
 			{ html: selfContainedHtml, title: collected.title, url: collected.url },
-			'auto'
+			'auto',
+			null,
+			getLastFaviconDataUri()
 		);
 
 		let urlPath: string | undefined;

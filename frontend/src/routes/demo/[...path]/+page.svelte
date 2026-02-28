@@ -1,13 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { onMount, onDestroy } from 'svelte';
-	import { get } from '$lib/api';
+	import { get, post } from '$lib/api';
 	import {
 		Share2,
 		Copy,
 		ExternalLink,
-		Settings,
-		Users,
 		Search,
 		Check,
 		Loader2,
@@ -18,6 +16,8 @@
 		ChevronUp,
 		Clock,
 		ArrowLeft,
+		Building,
+		Link2,
 	} from 'lucide-svelte';
 
 	// Types
@@ -26,6 +26,7 @@
 		name: string;
 		toolName: string;
 		subdomain: string;
+		faviconUrl?: string | null;
 		versions: Array<{
 			id: string;
 			name: string;
@@ -56,18 +57,32 @@
 	let iframeUrl = $state('');
 	let iframeError = $state(false);
 	let iframeLoaded = $state(false);
-	let copiedUrl = $state(false);
 
 	// Floating card state
 	let cardOpen = $state(false);
 	let cardClosing = $state(false);
 	let searchQuery = $state('');
 
-	// Share view inside card
+	// Card resize state
+	let cardWidth = $state(600);
+	let resizing = $state(false);
+	let resizeEdge = $state<'left' | 'right'>('right');
+	let resizeStartX = $state(0);
+	let resizeStartWidth = $state(600);
+
+	// Custom dropdown states (replacing native selects)
+	let projectDropdownOpen = $state(false);
+	let versionDropdownOpen = $state(false);
+	let projectSearchQuery = $state('');
+	let versionSearchQuery = $state('');
+
+	// Share view inside card (admin-like)
 	let shareView = $state(false);
-	let shareLinkDuration = $state('7d');
+	let shareCompany = $state('');
+	let shareExpiryDays = $state(180);
 	let sharePasswordEnabled = $state(false);
-	let shareLinkPassword = $state('');
+	let sharePassword = $state('');
+	let shareGenerating = $state(false);
 	let shareGeneratedUrl = $state('');
 	let shareCopied = $state(false);
 
@@ -123,6 +138,21 @@
 		);
 	});
 
+	// Filtered projects for searchable dropdown
+	let filteredDropdownProjects = $derived(() => {
+		if (!projectSearchQuery.trim()) return allProjects;
+		const q = projectSearchQuery.toLowerCase();
+		return allProjects.filter(p => p.toolName.toLowerCase().includes(q) || p.name?.toLowerCase().includes(q));
+	});
+
+	// Filtered versions for searchable dropdown
+	let filteredDropdownVersions = $derived(() => {
+		const versions = currentProject?.versions ?? [];
+		if (!versionSearchQuery.trim()) return versions;
+		const q = versionSearchQuery.toLowerCase();
+		return versions.filter(v => v.name.toLowerCase().includes(q));
+	});
+
 	function showToast(msg: string) {
 		if (toastTimeout) clearTimeout(toastTimeout);
 		toastMessage = msg;
@@ -133,17 +163,13 @@
 		}, 2000);
 	}
 
-	function copyUrl() {
-		const url = window.location.href;
-		navigator.clipboard.writeText(url);
-		copiedUrl = true;
-		showToast('URL copiée');
-		setTimeout(() => { copiedUrl = false; }, 2000);
-	}
-
 	function openShareView() {
 		shareView = true;
-		shareGeneratedUrl = window.location.href;
+		shareCompany = '';
+		shareExpiryDays = 180;
+		sharePasswordEnabled = false;
+		sharePassword = '';
+		shareGeneratedUrl = '';
 		shareCopied = false;
 	}
 
@@ -154,8 +180,60 @@
 		setTimeout(() => { shareCopied = false; }, 2000);
 	}
 
+	async function handleGenerateShareLink() {
+		if (!shareCompany.trim() || !selectedVersionId) return;
+		shareGenerating = true;
+		try {
+			const res = await post<{ data: { accessToken: string } }>(`/versions/${selectedVersionId}/assignments`, {
+				email: `${shareCompany.trim().toLowerCase().replace(/\s+/g, '-')}@link.demo`,
+				name: shareCompany.trim(),
+				company: shareCompany.trim(),
+				expiresInDays: shareExpiryDays,
+			});
+			const baseUrl = window.location.origin;
+			shareGeneratedUrl = `${baseUrl}/view/${subdomain}?token=${res.data.accessToken}`;
+			showToast('Lien généré');
+		} catch (err: any) {
+			showToast(err.message || 'Erreur lors de la génération');
+		} finally {
+			shareGenerating = false;
+		}
+	}
+
 	function openAsClient() {
 		window.open(`/view/${fullPath}`, '_blank');
+	}
+
+	// Resize handlers
+	function startResize(e: MouseEvent, edge: 'left' | 'right') {
+		e.preventDefault();
+		resizing = true;
+		resizeEdge = edge;
+		resizeStartX = e.clientX;
+		resizeStartWidth = cardWidth;
+		window.addEventListener('mousemove', onResize);
+		window.addEventListener('mouseup', endResize);
+	}
+
+	function onResize(e: MouseEvent) {
+		if (!resizing) return;
+		const dx = e.clientX - resizeStartX;
+		const delta = resizeEdge === 'right' ? dx * 2 : -dx * 2;
+		const newWidth = Math.max(400, Math.min(window.innerWidth * 0.9, resizeStartWidth + delta));
+		cardWidth = newWidth;
+	}
+
+	function endResize() {
+		resizing = false;
+		window.removeEventListener('mousemove', onResize);
+		window.removeEventListener('mouseup', endResize);
+	}
+
+	// Close dropdowns on click outside
+	function handleCardClick(e: MouseEvent) {
+		const target = e.target as HTMLElement;
+		if (!target.closest('.custom-dropdown-project')) projectDropdownOpen = false;
+		if (!target.closest('.custom-dropdown-version')) versionDropdownOpen = false;
 	}
 
 	function openCard() {
@@ -282,6 +360,9 @@
 
 <svelte:head>
 	<title>Démo {currentProject?.toolName ?? ''} — Lemon Lab</title>
+	{#if currentProject?.faviconUrl}
+		<link rel="icon" href={currentProject.faviconUrl} />
+	{/if}
 	<style>
 		body { margin: 0; padding: 0; overflow: hidden; }
 
@@ -312,6 +393,10 @@
 		@keyframes fadeShareIn {
 			from { opacity: 0; transform: translateX(12px); }
 			to { opacity: 1; transform: translateX(0); }
+		}
+		@keyframes dropdownFadeIn {
+			from { opacity: 0; transform: translateY(-4px); }
+			to { opacity: 1; transform: translateY(0); }
 		}
 	</style>
 </svelte:head>
@@ -401,11 +486,19 @@
 	<!--  FLOATING DROP-DOWN CARD                         -->
 	<!-- ================================================ -->
 	{#if cardOpen}
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="dropdown-card"
 			class:open={cardOpen && !cardClosing}
 			class:closing={cardClosing}
+			style="width: {cardWidth}px; max-width: 90vw;"
+			onclick={handleCardClick}
 		>
+			<!-- Resize handles -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="resize-handle resize-handle-left" onmousedown={(e) => startResize(e, 'left')}></div>
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="resize-handle resize-handle-right" onmousedown={(e) => startResize(e, 'right')}></div>
 			{#if !shareView}
 			<!-- ========== MAIN VIEW ========== -->
 			<div>
@@ -443,33 +536,91 @@
 					</div>
 				</div>
 
-				<!-- Selectors row -->
+				<!-- Selectors row — custom searchable dropdowns -->
 				<div class="card-selectors">
-					<div class="card-selector">
+					<!-- Project dropdown -->
+					<div class="card-selector custom-dropdown-project">
 						<label class="selector-label">Projet</label>
-						<select
-							class="selector-select"
-							value={currentProject?.id ?? ''}
-							onchange={(e) => changeProject(e.currentTarget.value)}
+						<button
+							class="selector-trigger"
+							onclick={() => { projectDropdownOpen = !projectDropdownOpen; versionDropdownOpen = false; projectSearchQuery = ''; }}
 						>
-							{#each allProjects as project}
-								<option value={project.id}>{project.toolName}</option>
-							{/each}
-						</select>
+							<span class="selector-trigger-text">{currentProject?.toolName ?? 'Sélectionner...'}</span>
+							<ChevronDown class="h-3.5 w-3.5 selector-trigger-chevron" />
+						</button>
+						{#if projectDropdownOpen}
+							<div class="selector-dropdown">
+								<div class="selector-dropdown-search">
+									<Search class="selector-dropdown-search-icon" />
+									<input
+										class="selector-dropdown-search-input"
+										type="text"
+										bind:value={projectSearchQuery}
+										placeholder="Rechercher un projet..."
+									/>
+								</div>
+								<div class="selector-dropdown-list">
+									{#each filteredDropdownProjects() as project}
+										<button
+											class="selector-dropdown-item"
+											class:active={project.id === currentProject?.id}
+											onclick={() => { changeProject(project.id); projectDropdownOpen = false; }}
+										>
+											{project.toolName}
+										</button>
+									{:else}
+										<p class="selector-dropdown-empty">Aucun projet trouvé</p>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					</div>
-					<div class="card-selector">
+					<!-- Version dropdown -->
+					<div class="card-selector custom-dropdown-version">
 						<label class="selector-label">Version</label>
-						<select
-							class="selector-select"
-							bind:value={selectedVersionId}
-							onchange={(e) => changeVersion(e.currentTarget.value)}
+						<button
+							class="selector-trigger"
+							onclick={() => { versionDropdownOpen = !versionDropdownOpen; projectDropdownOpen = false; versionSearchQuery = ''; }}
 						>
-							{#each currentProject?.versions ?? [] as version}
-								<option value={version.id}>
-									{version.name}{version.status === 'active' ? ' (active)' : ''}
-								</option>
-							{/each}
-						</select>
+							<span class="selector-trigger-text">
+								{#if selectedVersionId}
+									{@const v = currentProject?.versions?.find(v => v.id === selectedVersionId)}
+									{v?.name ?? 'Sélectionner...'}{v?.status === 'active' ? ' (active)' : ''}
+								{:else}
+									Sélectionner...
+								{/if}
+							</span>
+							<ChevronDown class="h-3.5 w-3.5 selector-trigger-chevron" />
+						</button>
+						{#if versionDropdownOpen}
+							<div class="selector-dropdown">
+								<div class="selector-dropdown-search">
+									<Search class="selector-dropdown-search-icon" />
+									<input
+										class="selector-dropdown-search-input"
+										type="text"
+										bind:value={versionSearchQuery}
+										placeholder="Rechercher une version..."
+									/>
+								</div>
+								<div class="selector-dropdown-list">
+									{#each filteredDropdownVersions() as version}
+										<button
+											class="selector-dropdown-item"
+											class:active={version.id === selectedVersionId}
+											onclick={() => { changeVersion(version.id); versionDropdownOpen = false; }}
+										>
+											{version.name}
+											{#if version.status === 'active'}
+												<span class="selector-dropdown-badge">active</span>
+											{/if}
+										</button>
+									{:else}
+										<p class="selector-dropdown-empty">Aucune version trouvée</p>
+									{/each}
+								</div>
+							</div>
+						{/if}
 					</div>
 				</div>
 
@@ -518,89 +669,116 @@
 
 				<!-- Action bar -->
 				<div class="card-action-bar">
-					<button class="action-bar-btn primary" onclick={openShareView} title="Partager">
-						<Share2 class="h-3.5 w-3.5" />
-						<span>Partager</span>
-					</button>
-					<button class="action-bar-btn" onclick={copyUrl} title="Copier l'URL">
-						{#if copiedUrl}
-							<Check class="h-3.5 w-3.5" />
-						{:else}
-							<Copy class="h-3.5 w-3.5" />
-						{/if}
-						<span>{copiedUrl ? 'Copié !' : 'Copier'}</span>
-					</button>
 					<button class="action-bar-btn" onclick={openAsClient} title="Vue client">
 						<ExternalLink class="h-3.5 w-3.5" />
 						<span>Vue client</span>
+					</button>
+					<button class="action-bar-btn primary" onclick={openShareView} title="Partager">
+						<Share2 class="h-3.5 w-3.5" />
+						<span>Partager</span>
 					</button>
 				</div>
 			</div>
 
 			{:else}
-			<!-- ========== SHARE VIEW ========== -->
+			<!-- ========== SHARE VIEW (admin-like) ========== -->
 			<div style="animation: fadeShareIn 0.25s ease forwards;">
 				<div class="share-header">
 					<button class="share-back-btn" onclick={() => { shareView = false; }} title="Retour">
 						<ArrowLeft class="h-4 w-4" />
 					</button>
-					<div class="share-title">Partager le lien</div>
+					<div class="share-title">Partager un lien</div>
 				</div>
 				<div class="share-body">
-					<!-- URL -->
-					<div class="share-field">
-						<div class="share-field-label">Lien de partage</div>
-						<div class="share-url-row">
-							<input class="share-url-input" type="text" value={shareGeneratedUrl} readonly />
-							<button class="share-copy-btn" onclick={copyShareLink} title="Copier">
-								{#if shareCopied}
-									<Check class="h-3.5 w-3.5" />
-								{:else}
-									<Copy class="h-3.5 w-3.5" />
-								{/if}
-							</button>
+					{#if shareGeneratedUrl}
+						<!-- Generated link display -->
+						<div class="share-success-banner">
+							<Check class="h-3.5 w-3.5" />
+							<span>Lien généré pour <strong>{shareCompany}</strong></span>
 						</div>
-					</div>
-
-					<!-- Duration -->
-					<div class="share-field">
-						<div class="share-field-label">Durée de validité</div>
-						<select class="share-select" bind:value={shareLinkDuration}>
-							<option value="24h">24 heures</option>
-							<option value="7d">7 jours</option>
-							<option value="30d">30 jours</option>
-							<option value="permanent">Permanent</option>
-						</select>
-					</div>
-
-					<!-- Password -->
-					<div class="share-field">
-						<div class="share-field-label">Mot de passe</div>
-						<div class="share-password-row">
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div
-								class="share-password-toggle"
-								class:on={sharePasswordEnabled}
-								onclick={() => { sharePasswordEnabled = !sharePasswordEnabled; }}
-								onkeydown={(e) => { if (e.key === 'Enter') sharePasswordEnabled = !sharePasswordEnabled; }}
-								role="switch"
-								aria-checked={sharePasswordEnabled}
-								tabindex="0"
-							></div>
-							<input
-								class="share-password-input"
-								type="password"
-								placeholder="Mot de passe..."
-								disabled={!sharePasswordEnabled}
-								bind:value={shareLinkPassword}
-							/>
+						<div class="share-field">
+							<div class="share-field-label">Lien de partage</div>
+							<div class="share-url-row">
+								<input class="share-url-input" type="text" value={shareGeneratedUrl} readonly />
+								<button class="share-copy-btn" onclick={copyShareLink} title="Copier">
+									{#if shareCopied}
+										<Check class="h-3.5 w-3.5" />
+									{:else}
+										<Copy class="h-3.5 w-3.5" />
+									{/if}
+								</button>
+							</div>
 						</div>
-					</div>
+						<div class="share-info-text">
+							Expire dans {shareExpiryDays >= 365 ? `${Math.round(shareExpiryDays / 365)} an${shareExpiryDays >= 730 ? 's' : ''}` : `${Math.round(shareExpiryDays / 30)} mois`}.
+							Toute personne utilisant ce lien sera associée à {shareCompany}.
+						</div>
+						<button class="share-generate-btn" onclick={() => { shareGeneratedUrl = ''; shareCompany = ''; shareCopied = false; }}>
+							Générer un autre lien
+						</button>
+					{:else}
+						<!-- Share form -->
+						<div class="share-field">
+							<div class="share-field-label">Entreprise</div>
+							<div class="share-input-wrap">
+								<Building class="share-input-icon" />
+								<input
+									class="share-text-input"
+									type="text"
+									bind:value={shareCompany}
+									placeholder="Nom de l'entreprise..."
+								/>
+							</div>
+						</div>
 
-					<!-- Generate button -->
-					<button class="share-generate-btn" onclick={copyShareLink}>
-						{shareCopied ? 'Lien copié !' : 'Copier le lien de partage'}
-					</button>
+						<div class="share-field">
+							<div class="share-field-label">Expiration</div>
+							<select class="share-select" bind:value={shareExpiryDays}>
+								<option value={30}>1 mois</option>
+								<option value={90}>3 mois</option>
+								<option value={180}>6 mois (recommandé)</option>
+								<option value={365}>1 an</option>
+								<option value={730}>2 ans</option>
+							</select>
+						</div>
+
+						<div class="share-field">
+							<div class="share-field-label">Mot de passe <span class="share-optional">(optionnel)</span></div>
+							<div class="share-password-row">
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<div
+									class="share-password-toggle"
+									class:on={sharePasswordEnabled}
+									onclick={() => { sharePasswordEnabled = !sharePasswordEnabled; }}
+									onkeydown={(e) => { if (e.key === 'Enter') sharePasswordEnabled = !sharePasswordEnabled; }}
+									role="switch"
+									aria-checked={sharePasswordEnabled}
+									tabindex="0"
+								></div>
+								<input
+									class="share-password-input"
+									type="password"
+									placeholder="Mot de passe..."
+									disabled={!sharePasswordEnabled}
+									bind:value={sharePassword}
+								/>
+							</div>
+						</div>
+
+						<button
+							class="share-generate-btn"
+							disabled={!shareCompany.trim() || shareGenerating}
+							onclick={handleGenerateShareLink}
+						>
+							{#if shareGenerating}
+								<Loader2 class="h-4 w-4 animate-spin" />
+								Génération...
+							{:else}
+								<Link2 class="h-4 w-4" />
+								Générer le lien
+							{/if}
+						</button>
+					{/if}
 				</div>
 			</div>
 			{/if}
@@ -652,8 +830,7 @@
 	.tongue-tab {
 		position: fixed;
 		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
+		right: 16px;
 		z-index: 10001;
 		width: 60px;
 		height: 14px;
@@ -700,8 +877,6 @@
 		left: 50%;
 		transform: translate(-50%, -100%);
 		z-index: 10000;
-		width: 600px;
-		max-width: 90vw;
 		max-height: 480px;
 		background: rgba(36, 47, 66, 0.95);
 		backdrop-filter: blur(24px);
@@ -866,6 +1041,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 3px;
+		position: relative;
 	}
 	.selector-label {
 		font-size: 10px;
@@ -874,13 +1050,17 @@
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
 	}
-	.selector-select {
-		appearance: none;
+	/* Custom searchable dropdown trigger */
+	.selector-trigger {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
 		height: 32px;
 		background: rgba(255,255,255,.06);
 		border: 1px solid rgba(255,255,255,.1);
 		border-radius: 7px;
-		padding: 0 28px 0 10px;
+		padding: 0 10px;
 		color: #fff;
 		font-size: 12px;
 		font-family: inherit;
@@ -888,17 +1068,138 @@
 		cursor: pointer;
 		outline: none;
 		transition: background .15s, border-color .15s;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-		background-repeat: no-repeat;
-		background-position: right 8px center;
 	}
-	.selector-select:focus {
-		border-color: rgba(250,225,0,.35);
-		background-color: rgba(255,255,255,.1);
+	.selector-trigger:hover {
+		background: rgba(255,255,255,.1);
+		border-color: rgba(255,255,255,.15);
 	}
-	.selector-select option {
-		background: #1E2737;
+	.selector-trigger-text {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		flex: 1;
+		text-align: left;
+	}
+	:global(.selector-trigger-chevron) {
+		color: rgba(255,255,255,.4);
+		flex-shrink: 0;
+	}
+
+	/* Dropdown panel */
+	.selector-dropdown {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		margin-top: 4px;
+		background: rgba(30, 39, 55, 0.98);
+		border: 1px solid rgba(255,255,255,.12);
+		border-radius: 8px;
+		box-shadow: 0 12px 32px rgba(0,0,0,.4);
+		z-index: 50;
+		overflow: hidden;
+		animation: dropdownFadeIn 0.15s ease;
+	}
+
+	.selector-dropdown-search {
+		position: relative;
+		padding: 6px;
+		border-bottom: 1px solid rgba(255,255,255,.08);
+	}
+	:global(.selector-dropdown-search-icon) {
+		position: absolute;
+		left: 14px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 13px !important;
+		height: 13px !important;
+		color: rgba(255,255,255,.3);
+		pointer-events: none;
+	}
+	.selector-dropdown-search-input {
+		width: 100%;
+		height: 30px;
+		background: rgba(255,255,255,.06);
+		border: 1px solid rgba(255,255,255,.08);
+		border-radius: 6px;
+		padding: 0 8px 0 30px;
 		color: #fff;
+		font-size: 11.5px;
+		font-family: inherit;
+		outline: none;
+	}
+	.selector-dropdown-search-input:focus {
+		border-color: rgba(250,225,0,.3);
+		background: rgba(255,255,255,.1);
+	}
+	.selector-dropdown-search-input::placeholder {
+		color: rgba(255,255,255,.3);
+	}
+
+	.selector-dropdown-list {
+		max-height: 160px;
+		overflow-y: auto;
+		padding: 4px;
+	}
+	.selector-dropdown-list::-webkit-scrollbar { width: 4px; }
+	.selector-dropdown-list::-webkit-scrollbar-track { background: transparent; }
+	.selector-dropdown-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+
+	.selector-dropdown-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		padding: 7px 10px;
+		border-radius: 5px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: inherit;
+		font-size: 12px;
+		font-weight: 500;
+		color: rgba(255,255,255,.65);
+		text-align: left;
+		transition: background .1s, color .1s;
+	}
+	.selector-dropdown-item:hover {
+		background: rgba(255,255,255,.08);
+		color: #fff;
+	}
+	.selector-dropdown-item.active {
+		background: rgba(250,225,0,.1);
+		color: #FAE100;
+	}
+	.selector-dropdown-badge {
+		font-size: 9px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		padding: 1px 5px;
+		background: rgba(16,185,129,.15);
+		color: #10B981;
+		border-radius: 3px;
+	}
+	.selector-dropdown-empty {
+		padding: 12px;
+		text-align: center;
+		font-size: 11px;
+		color: rgba(255,255,255,.3);
+	}
+
+	/* Resize handles */
+	.resize-handle {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 6px;
+		cursor: col-resize;
+		z-index: 10;
+	}
+	.resize-handle-left { left: -3px; }
+	.resize-handle-right { right: -3px; }
+	.resize-handle:hover {
+		background: rgba(250,225,0,.15);
 	}
 
 	/* ============================== */
@@ -1236,11 +1537,80 @@
 		font-weight: 700;
 		font-family: inherit;
 		cursor: pointer;
-		transition: background .15s;
+		transition: background .15s, opacity .15s;
 		margin-top: 2px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
 	}
-	.share-generate-btn:hover {
+	.share-generate-btn:hover:not(:disabled) {
 		background: #F18E2A;
+	}
+	.share-generate-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	/* Share success banner */
+	.share-success-banner {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		background: rgba(16,185,129,.1);
+		border: 1px solid rgba(16,185,129,.25);
+		border-radius: 8px;
+		font-size: 12px;
+		color: #10B981;
+	}
+	.share-success-banner strong {
+		font-weight: 600;
+	}
+
+	.share-info-text {
+		font-size: 11px;
+		color: rgba(255,255,255,.4);
+		line-height: 1.5;
+	}
+
+	.share-optional {
+		font-weight: 400;
+		color: rgba(255,255,255,.3);
+	}
+
+	.share-input-wrap {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	:global(.share-input-icon) {
+		position: absolute;
+		left: 10px;
+		width: 14px !important;
+		height: 14px !important;
+		color: rgba(255,255,255,.3);
+		pointer-events: none;
+	}
+	.share-text-input {
+		width: 100%;
+		height: 34px;
+		background: rgba(255,255,255,.06);
+		border: 1px solid rgba(255,255,255,.1);
+		border-radius: 7px;
+		padding: 0 10px 0 32px;
+		color: #fff;
+		font-size: 12px;
+		font-family: inherit;
+		outline: none;
+		transition: background .15s, border-color .15s;
+	}
+	.share-text-input:focus {
+		background: rgba(255,255,255,.1);
+		border-color: rgba(250,225,0,.35);
+	}
+	.share-text-input::placeholder {
+		color: rgba(255,255,255,.3);
 	}
 
 	/* ============================== */

@@ -98,6 +98,18 @@ const jiraSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
 </g>
 </svg>`;
 
+// Monday.com — red/pink with M dots
+const mondaySvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<rect width="200" height="200" rx="40" fill="#FF3D57"/>
+<g fill="white">
+  <circle cx="68" cy="130" r="10"/>
+  <circle cx="132" cy="130" r="10"/>
+  <rect x="60" y="60" width="16" height="60" rx="8" transform="rotate(-15 68 90)"/>
+  <rect x="92" y="60" width="16" height="60" rx="8" transform="rotate(15 100 90)"/>
+  <rect x="124" y="60" width="16" height="60" rx="8" transform="rotate(-15 132 90)"/>
+</g>
+</svg>`;
+
 // Confluence — blue with book/pages
 const confluenceSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
 <rect width="200" height="200" rx="40" fill="#1868DB"/>
@@ -124,6 +136,8 @@ export const TOOL_LOGOS: Record<string, string> = {
   dynamics: svgToDataUrl(dynamicsSvg),
   jira: svgToDataUrl(jiraSvg),
   confluence: svgToDataUrl(confluenceSvg),
+  'monday.com': svgToDataUrl(mondaySvg),
+  monday: svgToDataUrl(mondaySvg),
 };
 
 /**

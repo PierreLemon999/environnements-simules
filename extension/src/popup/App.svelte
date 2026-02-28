@@ -6,6 +6,7 @@
 	let isAuthenticated = $state(false);
 	let user = $state<User | null>(null);
 	let loading = $state(true);
+	let outdated = $state(false);
 
 	$effect(() => {
 		checkAuth();
@@ -21,6 +22,7 @@
 				isAuthenticated = false;
 				user = null;
 			}
+			outdated = response?.outdated ?? false;
 		} catch {
 			isAuthenticated = false;
 			user = null;
@@ -59,5 +61,5 @@
 {:else if !isAuthenticated}
 	<LoginView onLogin={handleLogin} />
 {:else}
-	<MainView {user} onLogout={handleLogout} />
+	<MainView {user} {outdated} onLogout={handleLogout} />
 {/if}

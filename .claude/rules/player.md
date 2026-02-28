@@ -6,7 +6,6 @@ paths:
   - "backend/src/services/obfuscation.ts"
   - "frontend/src/routes/view/**"
   - "frontend/src/routes/demo/**"
-  - "frontend/src/lib/components/demo/**"
 ---
 
 # Domaine : Player / Serveur de démos
@@ -24,7 +23,6 @@ Le système qui sert les pages capturées aux prospects et clients : résolution
 ### Frontend (viewers)
 - `routes/view/[...path]/` — Viewer prospect (accès par token, pas de login)
 - `routes/demo/[...path]/` — Viewer client authentifié
-- `lib/components/demo/` — Toolbar, banners, contrôles du viewer
 
 ## Tables DB impliquées
 
@@ -33,7 +31,7 @@ Le système qui sert les pages capturées aux prospects et clients : résolution
 - `pages` (urlPath, filePath — page à servir)
 - `pageLinks` (liens internes pour la réécriture)
 - `obfuscationRules` (règles appliquées au serve-time)
-- `tagManagerConfig` (script injecté dans chaque page)
+- `tagManagerConfig` (scriptUrl + configJson injectés dans chaque page)
 - `sessions` + `sessionEvents` (tracking côté analytics)
 
 ## Flux principal : Servir une démo
@@ -54,7 +52,7 @@ GET /demo/salesforce-demo/accounts/list
   │     fs.readFile('/data/uploads/{pageId}/index.html')
   │
   ├─ 5. Obfuscation
-  │     Pour chaque règle active du projet (ordonnée) :
+  │     Pour chaque règle active du projet (ordonnée par createdAt) :
   │       - Si isRegex : new RegExp(searchTerm, 'g').replace(html, replaceTerm)
   │       - Sinon : html.replaceAll(searchTerm, replaceTerm)
   │
@@ -65,7 +63,7 @@ GET /demo/salesforce-demo/accounts/list
   │
   ├─ 7. Injection tag manager
   │     Si tagManagerConfig existe pour ce projet :
-  │     → Injecte <script> avant </body>
+  │     → Injecte <script src="scriptUrl"> + config JSON avant </body>
   │
   └─ 8. Réponse
         Content-Type: text/html
@@ -92,7 +90,6 @@ GET /demo/salesforce-demo/accounts/list
 
 - Les endpoints de demo sont PUBLICS (pas de middleware auth)
 - L'obfuscation est appliquée au serve-time, pas au stockage → le HTML original est préservé
-- L'ordre des règles d'obfuscation compte (champ `order`)
 - Le link rewriter ne transforme que les liens vers des pages effectivement capturées
 - Le tag manager script est injecté dynamiquement, pas stocké dans le HTML
 - Performance : chaque requête lit un fichier HTML du disque + applique les transformations

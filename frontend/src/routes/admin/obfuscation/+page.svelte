@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { get, post, put, del } from '$lib/api';
 	import { toast } from '$lib/stores/toast';
+	import { selectedProjectId, selectedProject, projects as projectsStore, selectProject } from '$lib/stores/project';
 	import { Card, CardContent, CardHeader, CardTitle } from '$components/ui/card';
 	import { Button } from '$components/ui/button';
 	import { Badge } from '$components/ui/badge';
@@ -31,12 +31,6 @@
 		ShieldCheck,
 	} from 'lucide-svelte';
 
-	interface Project {
-		id: string;
-		name: string;
-		toolName: string;
-	}
-
 	interface ObfuscationRule {
 		id: string;
 		projectId: string;
@@ -47,8 +41,6 @@
 		createdAt: string;
 	}
 
-	let projects: Project[] = $state([]);
-	let selectedProjectId = $state('');
 	let rules: ObfuscationRule[] = $state([]);
 	let loading = $state(true);
 	let rulesLoading = $state(false);
@@ -196,16 +188,6 @@
 		}
 	}
 
-	function handleProjectChange(e: Event) {
-		const value = (e.target as HTMLSelectElement).value;
-		selectedProjectId = value;
-		loadRules(value);
-		// Reset preview when project changes
-		previewObfuscated = '';
-		previewOriginal = '';
-		previewChangesCount = 0;
-	}
-
 	// Add rule
 	async function handleAdd() {
 		if (!addSearchTerm.trim() || !addReplaceTerm.trim()) {
@@ -217,7 +199,7 @@
 		addError = '';
 
 		try {
-			const res = await post<{ data: ObfuscationRule }>(`/projects/${selectedProjectId}/obfuscation`, {
+			const res = await post<{ data: ObfuscationRule }>(`/projects/${$selectedProjectId}/obfuscation`, {
 				searchTerm: addSearchTerm.trim(),
 				replaceTerm: addReplaceTerm.trim(),
 				isRegex: addIsRegex,
@@ -304,11 +286,11 @@
 
 	// Preview
 	async function handlePreview() {
-		if (!previewInput.trim() || !selectedProjectId) return;
+		if (!previewInput.trim() || !$selectedProjectId) return;
 		previewLoading = true;
 
 		try {
-			const res = await post<{ data: any }>(`/projects/${selectedProjectId}/obfuscation/preview`, {
+			const res = await post<{ data: any }>(`/projects/${$selectedProjectId}/obfuscation/preview`, {
 				sampleHtml: previewInput,
 			});
 			const raw = res.data;
@@ -339,7 +321,7 @@
 
 	// Auto-preview when rules change
 	$effect(() => {
-		if (rules.length > 0 && previewInput.trim() && selectedProjectId) {
+		if (rules.length > 0 && previewInput.trim() && $selectedProjectId) {
 			// Debounced auto-preview
 			const timeout = setTimeout(() => {
 				handlePreview();
@@ -348,17 +330,13 @@
 		}
 	});
 
-	onMount(async () => {
-		try {
-			const res = await get<{ data: Project[] }>('/projects');
-			projects = res.data;
-			if (projects.length > 0) {
-				selectedProjectId = projects[0].id;
-				await loadRules(projects[0].id);
-			}
-		} catch (err) {
-			console.error('Failed to load projects:', err);
-		} finally {
+	// Load rules when selected project changes
+	$effect(() => {
+		if ($selectedProjectId) {
+			loadRules($selectedProjectId);
+			previewObfuscated = '';
+			previewOriginal = '';
+			previewChangesCount = 0;
 			loading = false;
 		}
 	});
@@ -376,13 +354,13 @@
 
 			<!-- Project selector (inline in header) -->
 			<SearchableSelect
-				value={selectedProjectId}
-				options={projects.map(p => ({ value: p.id, label: `${p.name} — ${p.toolName}` }))}
+				value={$selectedProjectId ?? ''}
+				options={$projectsStore.map(p => ({ value: p.id, label: `${p.name} — ${p.toolName}` }))}
 				placeholder="Chargement..."
 				searchable={true}
 				searchPlaceholder="Rechercher un projet..."
 				class="w-64"
-				onchange={(val) => { selectedProjectId = val; loadRules(val); previewObfuscated = ''; previewOriginal = ''; previewChangesCount = 0; }}
+				onchange={(val) => selectProject(val)}
 			/>
 
 			<!-- Tab pills (inline in header) -->
@@ -424,7 +402,7 @@
 							<CardTitle class="text-base">{activeTab === 'auto' ? 'Règles automatiques' : 'Règles manuelles'}</CardTitle>
 							<Badge variant="secondary">{filteredRules().length} règle{filteredRules().length !== 1 ? 's' : ''}</Badge>
 						</div>
-						<Button size="sm" class="gap-1.5" onclick={() => { showAddForm = true; addError = ''; }} disabled={!selectedProjectId}>
+						<Button size="sm" class="gap-1.5" onclick={() => { showAddForm = true; addError = ''; }} disabled={!$selectedProjectId}>
 							<Plus class="h-3.5 w-3.5" />
 							Ajouter une règle
 						</Button>
@@ -674,7 +652,7 @@
 							size="sm"
 							class="w-full gap-1.5"
 							onclick={handlePreview}
-							disabled={previewLoading || !previewInput.trim() || !selectedProjectId}
+							disabled={previewLoading || !previewInput.trim() || !$selectedProjectId}
 						>
 							<Eye class="h-3.5 w-3.5" />
 							{previewLoading ? 'Application...' : 'Appliquer les règles'}

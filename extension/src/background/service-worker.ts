@@ -9,7 +9,7 @@ import {
 	updatePageStatus,
 	removePageFromState
 } from '$lib/capture';
-import { buildSelfContainedPage } from '$lib/resource-fetcher';
+import { buildSelfContainedPage, getLastFaviconDataUri } from '$lib/resource-fetcher';
 import {
 	startAutoCrawl,
 	stopAutoCrawl,
@@ -19,8 +19,14 @@ import {
 	saveAutoConfig,
 	type AutoCaptureConfig
 } from '$lib/auto-capture';
+import {
+	startGuidedCapture as startGuided,
+	stopGuidedCapture as stopGuided,
+	onBubbleChanged as guidedBubbleChanged,
+	isGuidedCaptureRunning
+} from '$lib/guided-orchestrator';
 import { v4 as uuidv4 } from '$lib/uuid';
-import { verifyToken } from '$lib/auth';
+import { getAuthState, verifyToken } from '$lib/auth';
 import api, { uploadPage } from '$lib/api';
 
 // ---------------------------------------------------------------------------
@@ -66,6 +72,9 @@ async function handleMessage(
 
 		case 'SET_CAPTURE_MODE':
 			return updateCaptureState({ mode: message.mode as 'free' | 'guided' | 'auto' });
+
+		case 'SET_CAPTURE_STRATEGY':
+			return updateCaptureState({ captureStrategy: message.strategy as 'url_based' | 'fingerprint_based' });
 
 		case 'PAUSE_CAPTURE':
 			return updateCaptureState({ isPaused: true });
@@ -135,6 +144,28 @@ async function handleMessage(
 			return api.put(`/capture-jobs/${jobId}`, updates);
 		}
 
+		case 'START_GUIDED_CAPTURE': {
+			const tabId = message.tabId as number;
+			const guides = message.guides as Array<{ id: string; name: string; stepCount: number; selected: boolean }>;
+			const executionMode = message.executionMode as 'manual' | 'auto';
+			await startGuided(tabId, guides, executionMode);
+			return { success: true };
+		}
+
+		case 'STOP_GUIDED_CAPTURE':
+			await stopGuided();
+			return { success: true };
+
+		case 'BUBBLE_CHANGED':
+			await guidedBubbleChanged({
+				bubblePresent: message.bubblePresent as boolean,
+				contentHash: message.contentHash as string,
+				hasNextButton: message.hasNextButton as boolean | undefined,
+				stepIndicator: message.stepIndicator as string | undefined,
+				title: message.title as string | undefined
+			});
+			return { success: true };
+
 		case 'DETECT_LL_PLAYER': {
 			const tabId = message.tabId as number;
 			return detectLLPlayer(tabId);
@@ -169,8 +200,15 @@ async function handleMessage(
 			return projectRes;
 		}
 
-		case 'CHECK_AUTH':
-			return verifyToken();
+		case 'CHECK_AUTH': {
+			// Fast path: check storage only (no backend call) for instant popup load
+			const authState = await getAuthState();
+			// Lazily verify token with backend in background (updates user, reports version)
+			if (authState.isAuthenticated) {
+				verifyToken().catch(() => {});
+			}
+			return authState;
+		}
 
 		case 'LOGOUT': {
 			// Remove auth + preferences, then clear all per-version capture states
@@ -281,12 +319,14 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 
 		// Step 3: Upload to backend
 		console.log(`${LOG} Step 3: Uploading to backend`);
+		const faviconDataUri = getLastFaviconDataUri();
 		const uploadStart = Date.now();
 		const result = await uploadCapturedPage(
 			version.id,
 			{ html: selfContainedHtml, title: collected.title, url: collected.url },
 			state.mode,
-			screenshotBlob
+			screenshotBlob,
+			faviconDataUri
 		);
 		console.log(`${LOG} Upload complete in ${Date.now() - uploadStart}ms — page ID: ${result.id}, size: ${result.fileSize}`);
 
@@ -304,17 +344,6 @@ async function handleCapturePage(tabId: number): Promise<CapturedPage> {
 			urlPath
 		});
 
-		// Update badge with done count
-		const updatedState = await getCaptureState();
-		const totalDone = updatedState.pages.filter(
-			(p) => p.status === PAGE_STATUS.DONE
-		).length;
-		await updateBadge(totalDone);
-
-		// For single captures (non-auto), clear badge after 3s
-		if (state.mode !== 'auto') {
-			setTimeout(() => updateBadge(0), 3000);
-		}
 
 		// Update capture job if exists
 		if (state.jobId) {
@@ -567,18 +596,6 @@ if (import.meta.env?.MODE === 'development' || !import.meta.env?.PROD) {
 	checkForReload();
 }
 
-// ---------------------------------------------------------------------------
-// Badge helper
-// ---------------------------------------------------------------------------
-
-async function updateBadge(count: number): Promise<void> {
-	if (count > 0) {
-		await chrome.action.setBadgeText({ text: String(count) });
-		await chrome.action.setBadgeBackgroundColor({ color: '#10B981' });
-	} else {
-		await chrome.action.setBadgeText({ text: '' });
-	}
-}
 
 // ---------------------------------------------------------------------------
 // Lemon Learning Player detection & guide scanning

@@ -6,11 +6,13 @@ paths:
   - "backend/src/routes/update-requests.ts"
   - "backend/src/routes/analytics.ts"
   - "backend/src/routes/auth.ts"
+  - "backend/src/routes/settings.ts"
   - "frontend/src/routes/admin/users/**"
   - "frontend/src/routes/admin/invitations/**"
   - "frontend/src/routes/admin/obfuscation/**"
   - "frontend/src/routes/admin/update-requests/**"
   - "frontend/src/routes/admin/analytics/**"
+  - "frontend/src/routes/admin/settings/**"
   - "frontend/src/routes/login/**"
   - "frontend/src/lib/stores/auth.ts"
 ---
@@ -22,12 +24,13 @@ Gestion des utilisateurs, invitations de prospects, règles d'obfuscation, analy
 ## Périmètre fichiers
 
 ### Backend
-- `routes/auth.ts` (246 LOC) — Login, Google SSO, verify JWT, demo-access
-- `routes/users.ts` (206 LOC) — CRUD utilisateurs (admin only)
-- `routes/assignments.ts` (204 LOC) — Tokens d'accès démo pour prospects
-- `routes/obfuscation.ts` (234 LOC) — Règles CRUD + preview
-- `routes/analytics.ts` (385 LOC) — Sessions, events, guides, overview
+- `routes/auth.ts` (319 LOC) — Login, Google SSO, verify JWT, demo-access
+- `routes/users.ts` (321 LOC) — CRUD utilisateurs (admin only)
+- `routes/assignments.ts` (208 LOC) — Tokens d'accès démo pour prospects
+- `routes/obfuscation.ts` (246 LOC) — Règles CRUD + preview
+- `routes/analytics.ts` (432 LOC) — Sessions, events, guides, overview
 - `routes/update-requests.ts` (154 LOC) — Demandes de MAJ workflow
+- `routes/settings.ts` (75 LOC) — Paramètres application
 - `middleware/auth.ts` — JWT verify, signToken(), authenticate()
 - `middleware/roles.ts` — requireRole('admin'|'client')
 
@@ -38,38 +41,48 @@ Gestion des utilisateurs, invitations de prospects, règles d'obfuscation, analy
 - `routes/admin/obfuscation/` — Éditeur de règles par projet
 - `routes/admin/analytics/` — Dashboard sessions + guides
 - `routes/admin/update-requests/` — Workflow demandes MAJ
+- `routes/admin/settings/` — Paramètres globaux
 - `lib/stores/auth.ts` — Stores Svelte : user, token, isAuthenticated
 
 ## Tables DB impliquées
 
-- `users` (id, email, name, role, passwordHash, googleId, createdAt)
-- `demoAssignments` (id, versionId, recipientEmail, recipientName, company, token, password, expiresAt)
-- `obfuscationRules` (id, projectId, searchTerm, replaceTerm, isRegex, isActive, order)
-- `sessions` (id, assignmentId, ipAddress, userAgent, startedAt, lastActivityAt)
-- `sessionEvents` (id, sessionId, pageId, eventType, metadata, createdAt)
-- `updateRequests` (id, pageId, requestedBy, description, status, createdAt, resolvedAt)
+- `users` (id, email, name, role, passwordHash, googleId, company, avatarUrl, extensionVersion, language, createdAt)
+- `demoAssignments` (id, versionId, userId (FK→users), accessToken, passwordHash, expiresAt, createdAt)
+- `obfuscationRules` (id, projectId, searchTerm, replaceTerm, isRegex, isActive, createdAt)
+- `sessions` (id, userId, assignmentId, versionId, ipAddress, userAgent, startedAt, endedAt)
+- `sessionEvents` (id, sessionId, pageId, eventType, metadata, timestamp, durationSeconds)
+- `updateRequests` (id, pageId, requestedBy, comment, status, createdAt, resolvedAt)
 
 ## Flux d'authentification
 
 ```
 Admin (Google SSO):
-  Frontend → POST /api/auth/google { credential }
-  Backend → Vérifie token Google (mock en dev) → Crée user si premier login
-  → Retourne JWT (7 jours) + user object
+  Frontend → POST /api/auth/google { idToken }
+  Backend → Vérifie le token Google via google-auth-library
+  → Auto-provisionne si domaine @lemonlearning.com/.fr ou @goldfuchs-software.de
+  → Crée user admin si premier login, met à jour avatarUrl/name sinon
+  → Signe JWT { userId, email, role, name } (expiration: 7 jours)
+  → Retourne { data: { token, user } }
   → Frontend stocke dans localStorage + stores Svelte
+
+  Dev bypass (NODE_ENV !== 'production'):
+    POST /api/auth/google { devBypass: true, email, name, googleId }
+    → Pas de vérification Google, trust les champs fournis
 
 Client (email/password):
   Frontend → POST /api/auth/login { email, password }
   Backend → bcrypt.compare → JWT
-  → Même stockage côté frontend
+  → Même flow JWT que SSO
 
 Prospect (token d'accès):
-  POST /api/auth/demo-access { token, password }
-  → Vérifie assignment non expiré → JWT limité
+  POST /api/auth/demo-access { accessToken, password }
+  → Vérifie demoAssignment.accessToken + password + expiresAt
+  → JWT avec role: 'client'
 
 Vérification au chargement:
-  +layout.svelte → loadFromStorage() → POST /api/auth/verify
-  → Si valide : hydrate stores. Si invalide : logout.
+  +layout.svelte → loadFromStorage() → POST /api/auth/verify { token, extensionVersion? }
+  → Si valide : hydrate stores (inclut avatarUrl depuis DB). Si invalide : logout.
+  → Si extensionVersion fourni : stocké en DB pour l'utilisateur.
 ```
 
 ## Obfuscation
@@ -77,12 +90,12 @@ Vérification au chargement:
 - Règles par projet, appliquées au serve-time (pas au stockage)
 - Support texte brut et regex
 - Preview : POST /api/projects/:id/obfuscation/preview { html, rules[] }
-- Ordre d'application : champ `order` dans la table
+- Ordre d'application : par date de création (createdAt)
 
 ## Analytics
 
 - Session créée quand un prospect accède à /demo/*
-- Events trackés : page_view, click, scroll, guide_start, guide_complete
+- Events trackés : page_view, click, guide_start, guide_complete
 - Dashboard admin : overview agrégé + sessions filtrables + détail par session
 - Stats guides : taux de complétion, temps moyen
 
@@ -90,9 +103,9 @@ Vérification au chargement:
 
 **Auth:**
 - `POST /api/auth/login` — Login client
-- `POST /api/auth/google` — SSO admin
+- `POST /api/auth/google` — SSO admin (+ dev bypass)
 - `POST /api/auth/demo-access` — Accès prospect
-- `POST /api/auth/verify` — Vérifier JWT
+- `POST /api/auth/verify` — Vérifier JWT + stocker extensionVersion
 
 **Users:** `GET/POST/PUT/DELETE /api/users` (admin only)
 
@@ -113,3 +126,6 @@ Vérification au chargement:
 **Update requests:**
 - `POST /api/pages/:id/update-request`
 - `GET/PUT /api/update-requests`
+
+**Settings:**
+- `GET/PUT /api/settings` — Paramètres globaux

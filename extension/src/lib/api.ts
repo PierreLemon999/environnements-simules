@@ -108,6 +108,7 @@ export async function uploadPage(
 		syntheticUrl?: string;
 		captureTimingMs?: number;
 		stateIndex?: number;
+		faviconDataUri?: string;
 	},
 	screenshotBlob?: Blob | null
 ): Promise<{ data: { id: string; fileSize: number } }> {

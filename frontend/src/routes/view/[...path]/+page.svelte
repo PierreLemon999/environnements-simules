@@ -18,6 +18,7 @@
 	let iframeUrl = $state('');
 	let iframeError = $state(false);
 	let iframeLoaded = $state(false);
+	let faviconUrl = $state('');
 
 	// Build the demo API URL — use proxy path
 	let demoApiUrl = $derived(
@@ -52,6 +53,18 @@
 
 	onMount(async () => {
 		window.addEventListener('message', handleDemoMessage);
+
+		// Fetch project favicon
+		if (subdomain) {
+			try {
+				const favRes = await fetch(`/api/projects/by-subdomain/${subdomain}/favicon`);
+				if (favRes.ok) {
+					const favData = await favRes.json();
+					faviconUrl = favData.data?.faviconUrl ?? '';
+				}
+			} catch { /* ignore */ }
+		}
+
 		try {
 			// If there's a token, verify demo access
 			if (accessToken) {
@@ -95,6 +108,9 @@
 
 <svelte:head>
 	<title>Démo — Lemon Lab</title>
+	{#if faviconUrl}
+		<link rel="icon" href={faviconUrl} />
+	{/if}
 	<style>
 		body {
 			margin: 0;

@@ -531,7 +531,8 @@ export async function uploadCapturedPage(
 	versionId: string,
 	page: { html: string; title: string; url: string },
 	captureMode: string,
-	screenshotBlob?: Blob | null
+	screenshotBlob?: Blob | null,
+	faviconDataUri?: string | null
 ): Promise<{ id: string; fileSize: number }> {
 	const LOG = '[LL Capture]';
 	const blob = new Blob([page.html], { type: 'text/html' });
@@ -549,7 +550,8 @@ export async function uploadCapturedPage(
 			urlSource: page.url,
 			urlPath,
 			title: page.title,
-			captureMode
+			captureMode,
+			faviconDataUri: faviconDataUri || undefined
 		}, screenshotBlob);
 		return response.data;
 	} catch (err) {

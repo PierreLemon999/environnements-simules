@@ -96,7 +96,7 @@
 					<input
 						type="number"
 						min="1"
-						max="10"
+						max="20"
 						bind:value={config.maxDepth}
 						class="w-full text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 					/>

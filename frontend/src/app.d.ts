@@ -46,6 +46,8 @@ declare global {
 		revoke(hint: string, callback?: () => void): void;
 	}
 
+	declare const __APP_VERSION__: string;
+
 	const google: {
 		accounts: {
 			id: GoogleAccountsId;

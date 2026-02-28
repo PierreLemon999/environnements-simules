@@ -32,3 +32,6 @@ sqlite.pragma('foreign_keys = ON');
 export const db = drizzle(sqlite, { schema });
 export { sqlite, dataDir, uploadsDir };
 export default db;
+
+// ── Migrations ──────────────────────────────────────────────────────────────
+try { sqlite.exec(`ALTER TABLE projects ADD COLUMN favicon_url TEXT`); } catch { /* already exists */ }

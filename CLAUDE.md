@@ -30,6 +30,8 @@ cd frontend && npm run build             # Build prod
 - Auth : `Authorization: Bearer <jwt>`
 - Commits : conventional commits (feat:, fix:, chore:)
 - Frontend proxy : vite.config.ts redirige `/api` vers backend:3001
+- **Versioning extension** : toute modif de l'extension DOIT incrémenter la version (voir `extension/CLAUDE.md` § Versioning). Patch auto au build, minor/major manuellement.
+- **Versioning frontend** : toute modif du frontend DOIT incrémenter la version (`cd frontend && npm run bump`). La version est affichée dans le BO (coin bas-droite) via `__APP_VERSION__`.
 
 ## Gotchas
 

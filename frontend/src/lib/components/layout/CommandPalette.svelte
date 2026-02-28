@@ -6,6 +6,7 @@
 		FileText,
 		FolderKanban,
 		Users,
+		Globe,
 	} from 'lucide-svelte';
 
 	interface SearchResult {
@@ -18,7 +19,7 @@
 		meta?: string;
 	}
 
-	type CategoryFilter = 'all' | 'page' | 'project' | 'user' | 'action';
+	type CategoryFilter = 'all' | 'page' | 'project' | 'user' | 'demo_url' | 'action';
 
 	let open = $state(false);
 	let query = $state('');
@@ -34,6 +35,7 @@
 		{ key: 'page', label: 'Pages' },
 		{ key: 'project', label: 'Projets' },
 		{ key: 'user', label: 'Utilisateurs' },
+		{ key: 'demo_url', label: 'URL de démo' },
 	];
 
 	const avatarColors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
@@ -85,6 +87,7 @@
 			case 'page': return FileText;
 			case 'project': return FolderKanban;
 			case 'user': return Users;
+			case 'demo_url': return Globe;
 			default: return FileText;
 		}
 	}
@@ -94,6 +97,7 @@
 			case 'page': return 'Pages';
 			case 'project': return 'Projets';
 			case 'user': return 'Utilisateurs';
+			case 'demo_url': return 'URL de démo';
 			default: return '';
 		}
 	}
@@ -101,6 +105,7 @@
 	function getActionHintForType(type: string) {
 		switch (type) {
 			case 'user': return 'Voir le profil';
+			case 'demo_url': return 'Voir le projet';
 			default: return 'Ouvrir';
 		}
 	}
@@ -127,7 +132,7 @@
 	}
 
 	function groupResults(items: SearchResult[]): Record<string, SearchResult[]> {
-		const order = ['page', 'project', 'user', 'action'];
+		const order = ['page', 'project', 'user', 'demo_url', 'action'];
 		const groups: Record<string, SearchResult[]> = {};
 		for (const type of order) {
 			const matching = items.filter((r) => r.type === type);
@@ -190,6 +195,21 @@
 						title: p.name,
 						subtitle: p.toolName,
 						href: `/admin/projects/${p.id}`,
+					});
+				}
+			}
+
+			// Search by demo URL (subdomain.env-ll.com)
+			for (const p of projectsRes.data) {
+				const demoUrl = `${p.subdomain}.env-ll.com`;
+				if (demoUrl.includes(ql) || p.subdomain.toLowerCase().includes(ql)) {
+					allResults.push({
+						id: `demo-url-${p.id}`,
+						type: 'demo_url',
+						title: demoUrl,
+						subtitle: p.toolName,
+						href: `/admin/projects/${p.id}`,
+						meta: p.name,
 					});
 				}
 			}
@@ -377,7 +397,7 @@
 											{:else}
 												<span class="palette-result-name">{result.title}</span>
 											{/if}
-											{#if (result.type === 'page' || result.type === 'project') && result.subtitle}
+											{#if (result.type === 'page' || result.type === 'project' || result.type === 'demo_url') && result.subtitle}
 												{@const badge = getBadgeStyle(result.subtitle)}
 												<span class="palette-result-badge" style="background:{badge.bg};color:{badge.color}">
 													{getBadgeLabel(result.subtitle)}
@@ -386,7 +406,7 @@
 										</div>
 										{#if result.meta}
 											<span class="palette-result-meta">{result.meta}</span>
-										{:else if result.subtitle && result.type !== 'page' && result.type !== 'project'}
+										{:else if result.subtitle && result.type !== 'page' && result.type !== 'project' && result.type !== 'demo_url'}
 											<span class="palette-result-meta">{result.subtitle}</span>
 										{/if}
 									</div>

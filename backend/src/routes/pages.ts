@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db, dataDir } from '../db/index.js';
-import { pages, versions } from '../db/schema.js';
+import { pages, versions, projects } from '../db/schema.js';
 import { eq, and, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
@@ -64,6 +64,7 @@ router.post(
         syntheticUrl?: string;
         captureTimingMs?: number;
         stateIndex?: number;
+        faviconDataUri?: string;
       } = {};
 
       if (req.body.metadata) {
@@ -193,6 +194,27 @@ router.post(
       };
 
       await db.insert(pages).values(page);
+
+      // Auto-set project favicon from first capture if project has none
+      if (metadata.faviconDataUri) {
+        try {
+          const project = await db
+            .select({ id: projects.id, faviconUrl: projects.faviconUrl })
+            .from(projects)
+            .innerJoin(versions, eq(versions.projectId, projects.id))
+            .where(eq(versions.id, req.params.versionId))
+            .get();
+
+          if (project && !project.faviconUrl) {
+            await db.update(projects)
+              .set({ faviconUrl: metadata.faviconDataUri, updatedAt: new Date().toISOString() })
+              .where(eq(projects.id, project.id));
+            console.log(`[Pages] Auto-set favicon for project ${project.id} from capture`);
+          }
+        } catch (err) {
+          console.warn('[Pages] Failed to auto-set project favicon:', err);
+        }
+      }
 
       res.status(201).json({ data: page });
     } catch (error) {

@@ -77,6 +77,7 @@ async function main() {
       description TEXT,
       logo_url TEXT,
       icon_color TEXT,
+      favicon_url TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -408,6 +409,39 @@ async function main() {
       createdAt: isoDaysAgo(30),
       updatedAt: isoDaysAgo(4),
     },
+    {
+      id: uuidv4(),
+      name: 'Microsoft Dynamics 365',
+      toolName: 'Microsoft Dynamics',
+      subdomain: 'dynamics',
+      description: 'Environnement de demo Dynamics 365 - CRM et ERP integres',
+      logoUrl: getToolLogo('Microsoft Dynamics'),
+      iconColor: '#0078D4',
+      createdAt: isoDaysAgo(250),
+      updatedAt: isoDaysAgo(210),
+    },
+    {
+      id: uuidv4(),
+      name: 'Jira Software',
+      toolName: 'Jira',
+      subdomain: 'jira',
+      description: 'Environnement de demo Jira Software - gestion de projet agile',
+      logoUrl: getToolLogo('Jira'),
+      iconColor: '#0052CC',
+      createdAt: isoDaysAgo(280),
+      updatedAt: isoDaysAgo(240),
+    },
+    {
+      id: uuidv4(),
+      name: 'Monday.com Work OS',
+      toolName: 'Monday.com',
+      subdomain: 'monday',
+      description: 'Environnement de demo Monday.com - gestion de travail et collaboration',
+      logoUrl: getToolLogo('Monday.com'),
+      iconColor: '#FF3D57',
+      createdAt: isoDaysAgo(15),
+      updatedAt: isoDaysAgo(0),
+    },
   ];
 
   await db.insert(projects).values(projectData);
@@ -465,6 +499,20 @@ async function main() {
       { name: 'Cloud 24C', status: 'active' as const, lang: 'fr', author: userPierre },
       { name: 'Cloud 24B', status: 'deprecated' as const, lang: 'fr', author: userMarie },
       { name: 'Cloud 24C EN', status: 'test' as const, lang: 'en', author: userPierre },
+    ],
+    // Microsoft Dynamics: 2 versions
+    [
+      { name: 'Wave 2 2024', status: 'active' as const, lang: 'fr', author: userMarie },
+      { name: 'Wave 1 2024', status: 'deprecated' as const, lang: 'fr', author: userThomas },
+    ],
+    // Jira: 1 version
+    [
+      { name: 'Cloud 2024', status: 'active' as const, lang: 'fr', author: userPierre },
+    ],
+    // Monday.com: 2 versions
+    [
+      { name: 'Enterprise 2025', status: 'active' as const, lang: 'fr', author: userThomas },
+      { name: 'Pro Trial', status: 'test' as const, lang: 'fr', author: userPierre },
     ],
   ];
 
@@ -678,6 +726,105 @@ async function main() {
       thumbnailPath: null,
       healthStatus: Math.random() > 0.8 ? 'warning' : 'ok',
       createdAt: isoDaysAgo(Math.floor(Math.random() * 15) + 1),
+    });
+  }
+
+  // Microsoft Dynamics pages (15 pages — old project, lots of content)
+  const dynVersion = allVersions.find((v) => v.name === 'Wave 2 2024')!;
+  const dynPagePaths = ['home', 'sales/dashboard', 'sales/leads', 'sales/leads/new', 'sales/opportunities', 'sales/accounts', 'sales/contacts', 'service/cases', 'service/cases/new', 'service/knowledge', 'marketing/campaigns', 'marketing/segments', 'finance/invoices', 'finance/payments', 'settings'];
+  const dynPages = [
+    { path: 'home', title: 'Accueil Dynamics', url: 'https://org.crm4.dynamics.com/main.aspx' },
+    { path: 'sales/dashboard', title: 'Tableau de bord ventes', url: 'https://org.crm4.dynamics.com/main.aspx?area=Sales' },
+    { path: 'sales/leads', title: 'Prospects', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=lead' },
+    { path: 'sales/leads/new', title: 'Nouveau prospect', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entityrecord&etn=lead' },
+    { path: 'sales/opportunities', title: 'Opportunites ventes', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=opportunity' },
+    { path: 'sales/accounts', title: 'Comptes clients', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=account' },
+    { path: 'sales/contacts', title: 'Contacts CRM', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=contact' },
+    { path: 'service/cases', title: 'Incidents support', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=incident' },
+    { path: 'service/cases/new', title: 'Nouvel incident', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entityrecord&etn=incident' },
+    { path: 'service/knowledge', title: 'Base de connaissances', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=knowledgearticle' },
+    { path: 'marketing/campaigns', title: 'Campagnes marketing', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=campaign' },
+    { path: 'marketing/segments', title: 'Segments clients', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=msdyncrm_segment' },
+    { path: 'finance/invoices', title: 'Factures', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=invoice' },
+    { path: 'finance/payments', title: 'Paiements', url: 'https://org.crm4.dynamics.com/main.aspx?pagetype=entitylist&etn=payment' },
+    { path: 'settings', title: 'Parametres', url: 'https://org.crm4.dynamics.com/main.aspx?area=Settings' },
+  ];
+
+  for (const p of dynPages) {
+    const id = uuidv4();
+    const html = generateDemoHtml(p.title, 'Microsoft Dynamics', p.path, dynPagePaths);
+    const { filePath, fileSize } = writeDemoPage(dynVersion.id, id, html);
+    allPages.push({
+      id,
+      versionId: dynVersion.id,
+      urlSource: p.url,
+      urlPath: p.path,
+      title: p.title,
+      filePath,
+      fileSize,
+      captureMode: 'auto',
+      thumbnailPath: null,
+      healthStatus: Math.random() > 0.85 ? 'warning' : 'ok',
+      createdAt: isoDaysAgo(Math.floor(Math.random() * 60) + 210),
+    });
+  }
+
+  // Jira pages (3 pages — old project, sparse)
+  const jiraVersion = allVersions.find((v) => v.name === 'Cloud 2024')!;
+  const jiraPagePaths = ['board', 'backlog', 'settings'];
+  const jiraPages = [
+    { path: 'board', title: 'Board Scrum', url: 'https://acme.atlassian.net/jira/software/projects/DEMO/boards/1' },
+    { path: 'backlog', title: 'Backlog produit', url: 'https://acme.atlassian.net/jira/software/projects/DEMO/boards/1/backlog' },
+    { path: 'settings', title: 'Parametres projet', url: 'https://acme.atlassian.net/jira/software/projects/DEMO/settings' },
+  ];
+
+  for (const p of jiraPages) {
+    const id = uuidv4();
+    const html = generateDemoHtml(p.title, 'Jira', p.path, jiraPagePaths);
+    const { filePath, fileSize } = writeDemoPage(jiraVersion.id, id, html);
+    allPages.push({
+      id,
+      versionId: jiraVersion.id,
+      urlSource: p.url,
+      urlPath: p.path,
+      title: p.title,
+      filePath,
+      fileSize,
+      captureMode: 'free',
+      thumbnailPath: null,
+      healthStatus: 'ok',
+      createdAt: isoDaysAgo(Math.floor(Math.random() * 30) + 240),
+    });
+  }
+
+  // Monday.com pages (6 pages — recent project)
+  const mondayVersion = allVersions.find((v) => v.name === 'Enterprise 2025')!;
+  const mondayPagePaths = ['home', 'workspace', 'board', 'dashboard', 'automations', 'integrations'];
+  const mondayPages = [
+    { path: 'home', title: 'Accueil Monday', url: 'https://acme.monday.com/' },
+    { path: 'workspace', title: 'Espace de travail', url: 'https://acme.monday.com/workspaces/1' },
+    { path: 'board', title: 'Tableau principal', url: 'https://acme.monday.com/boards/123' },
+    { path: 'dashboard', title: 'Dashboard equipe', url: 'https://acme.monday.com/dashboards/1' },
+    { path: 'automations', title: 'Automatisations', url: 'https://acme.monday.com/boards/123/automations' },
+    { path: 'integrations', title: 'Integrations', url: 'https://acme.monday.com/apps/installed' },
+  ];
+
+  for (const p of mondayPages) {
+    const id = uuidv4();
+    const html = generateDemoHtml(p.title, 'Monday.com', p.path, mondayPagePaths);
+    const { filePath, fileSize } = writeDemoPage(mondayVersion.id, id, html);
+    allPages.push({
+      id,
+      versionId: mondayVersion.id,
+      urlSource: p.url,
+      urlPath: p.path,
+      title: p.title,
+      filePath,
+      fileSize,
+      captureMode: 'guided',
+      thumbnailPath: null,
+      healthStatus: 'ok',
+      createdAt: isoDaysAgo(Math.floor(Math.random() * 10)),
     });
   }
 
@@ -1096,7 +1243,7 @@ async function main() {
 
   console.log('\n--- Seed complete ---');
   console.log(`Users:             5 (3 admins, 2 clients)`);
-  console.log(`Projects:          ${projectData.length}`);
+  console.log(`Projects:          ${projectData.length} (10 total)`);
   console.log(`Versions:          ${allVersions.length}`);
   console.log(`Pages:             ${allPages.length}`);
   console.log(`Obfuscation rules: ${obfRules.length}`);

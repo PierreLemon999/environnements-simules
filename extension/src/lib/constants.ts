@@ -1,4 +1,5 @@
 export const API_BASE_URL = 'http://localhost:3001/api';
+export const BACKOFFICE_URL = 'http://localhost:5173';
 
 export const STORAGE_KEYS = {
 	AUTH_TOKEN: 'auth_token',
@@ -42,6 +43,8 @@ export interface Project {
 	toolName: string;
 	subdomain: string;
 	description?: string;
+	logoUrl?: string | null;
+	iconColor?: string | null;
 	versionCount: number;
 	pageCount: number;
 }
@@ -79,14 +82,15 @@ export interface LLGuide {
 	selected: boolean;
 }
 
-export interface GuidedCaptureState {
-	playerDetected: boolean;
-	guides: LLGuide[];
-	scanning: boolean;
-	capturing: boolean;
+export interface GuidedProgress {
 	currentGuideIndex: number;
+	totalGuides: number;
+	currentGuideName: string;
 	currentStepIndex: number;
+	totalSteps: number;
 	executionMode: 'manual' | 'auto';
+	capturedPages: number;
+	status: 'waiting_bubble' | 'capturing' | 'advancing' | 'idle' | 'done';
 }
 
 export interface CaptureState {
@@ -99,6 +103,7 @@ export interface CaptureState {
 	captureStrategy?: 'url_based' | 'fingerprint_based';
 	transitions: TransitionRecord[];
 	lastCapturedPageLocalId?: string;
+	guided?: GuidedProgress;
 }
 
 export interface TransitionRecord {

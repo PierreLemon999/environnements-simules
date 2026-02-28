@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { get, patch } from '$lib/api';
 	import { toast } from '$lib/stores/toast';
-	import { Card, CardContent } from '$components/ui/card';
+	import { selectedProject } from '$lib/stores/project';
 	import { Button } from '$components/ui/button';
 	import { Badge } from '$components/ui/badge';
 	import { Input } from '$components/ui/input';
@@ -18,7 +18,6 @@
 		Link2,
 		Code,
 		Braces,
-		Globe,
 		ArrowLeft,
 		CheckCircle2,
 		AlertCircle,
@@ -45,18 +44,6 @@
 		createdAt: string;
 	}
 
-	interface Project {
-		id: string;
-		name: string;
-		toolName: string;
-		subdomain: string;
-		versions: Array<{
-			id: string;
-			name: string;
-			status: string;
-		}>;
-	}
-
 	// State
 	let pageId = $derived($page.params.id);
 	let currentPage: PageData | null = $state(null);
@@ -67,13 +54,8 @@
 	let saved = $state(false);
 	let activeEditorTab = $state('html');
 
-	// Page list for sidebar
-	let projects: Project[] = $state([]);
-	let selectedProjectId = $state('');
-	let selectedVersionId = $state('');
+	// Pages for link mapping
 	let pages: PageData[] = $state([]);
-	let pagesLoading = $state(false);
-	let pageSearchQuery = $state('');
 
 	// Link groups collapsed state
 	let collapsedGroups = $state<Record<string, boolean>>({});
@@ -141,43 +123,12 @@
 	let isDirty = $derived(htmlContent !== originalContent);
 	let editorSearchQuery = $state('');
 
-	// Breadcrumb info
-	let breadcrumbProject = $derived(projects.find((p) => p.id === selectedProjectId));
-	let breadcrumbVersion = $derived(breadcrumbProject?.versions?.find((v) => v.id === selectedVersionId));
-	let selectedProjectVersions = $derived(breadcrumbProject?.versions ?? []);
-
-	let filteredPages = $derived(
-		pages.filter((p) => {
-			const q = pageSearchQuery.toLowerCase();
-			if (!q) return true;
-			return p.title.toLowerCase().includes(q) || p.urlPath.toLowerCase().includes(q);
-		})
-	);
-
 	// Helpers
-	function getHealthDot(status: string): string {
-		switch (status) {
-			case 'ok': return 'bg-success';
-			case 'warning': return 'bg-warning';
-			case 'error': return 'bg-destructive';
-			default: return 'bg-muted';
-		}
-	}
-
 	function formatFileSize(bytes: number | null): string {
 		if (!bytes) return '—';
 		if (bytes < 1024) return `${bytes} o`;
 		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
 		return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-	}
-
-	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString('fr-FR', {
-			day: 'numeric',
-			month: 'short',
-			hour: '2-digit',
-			minute: '2-digit',
-		});
 	}
 
 	// Line count for gutter
@@ -237,18 +188,14 @@
 		}
 	}
 
-	// Load page list for sidebar
+	// Load pages for link mapping
 	async function loadPages(versionId: string) {
 		if (!versionId) return;
-		pagesLoading = true;
 		try {
 			const res = await get<{ data: PageData[] }>(`/versions/${versionId}/pages`);
 			pages = res.data;
-		} catch (err) {
-			console.error('Load pages error:', err);
+		} catch {
 			pages = [];
-		} finally {
-			pagesLoading = false;
 		}
 	}
 
@@ -258,11 +205,6 @@
 			e.preventDefault();
 			saveContent();
 		}
-	}
-
-	// Navigate to another page
-	function navigateToPage(pg: PageData) {
-		window.location.href = `/admin/editor/${pg.id}`;
 	}
 
 	function toggleGroup(key: string) {
@@ -283,27 +225,8 @@
 		(async () => {
 			try {
 				await loadPageContent(pageId ?? '');
-
-				const projectsRes = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
-				const detailed = await Promise.all(
-					projectsRes.data.map((p) =>
-						get<{ data: Project }>(`/projects/${p.id}`).then((r) => r.data)
-					)
-				);
-				projects = detailed;
-
-				if (currentPage) {
-					for (const p of projects) {
-						const v = p.versions?.find((v) => v.id === currentPage!.versionId);
-						if (v) {
-							selectedProjectId = p.id;
-							selectedVersionId = v.id;
-							break;
-						}
-					}
-					if (selectedVersionId) {
-						await loadPages(selectedVersionId);
-					}
+				if (currentPage?.versionId) {
+					await loadPages(currentPage.versionId);
 				}
 			} catch (err) {
 				console.error('Editor init error:', err);
@@ -316,12 +239,6 @@
 			window.removeEventListener('keydown', handleKeyDown);
 		};
 	});
-
-	$effect(() => {
-		if (selectedVersionId) {
-			loadPages(selectedVersionId);
-		}
-	});
 </script>
 
 <svelte:head>
@@ -329,105 +246,6 @@
 </svelte:head>
 
 <div class="flex h-[calc(100vh-56px)] overflow-hidden -m-6">
-	<!-- Page list sidebar (left) -->
-	<div class="flex w-64 shrink-0 flex-col border-r border-border bg-card">
-		<!-- Sidebar header -->
-		<div class="space-y-2 border-b border-border p-3">
-			<nav class="flex flex-wrap items-center gap-1 text-[11px]">
-				<a href="/admin/tree" class="text-muted-foreground hover:text-foreground transition-colors">
-					<ArrowLeft class="inline h-3 w-3 mr-0.5" />
-					Arborescence
-				</a>
-				{#if breadcrumbProject}
-					<span class="text-muted">/</span>
-					<span class="text-muted-foreground">{breadcrumbProject.toolName}</span>
-				{/if}
-				{#if breadcrumbVersion}
-					<span class="text-muted">/</span>
-					<span class="text-muted-foreground">{breadcrumbVersion.name}</span>
-				{/if}
-				{#if currentPage}
-					<span class="text-muted">/</span>
-					<span class="font-medium text-foreground truncate max-w-[120px]">{currentPage.title}</span>
-				{/if}
-			</nav>
-
-			<select
-				bind:value={selectedProjectId}
-				onchange={() => {
-					const proj = projects.find((p) => p.id === selectedProjectId);
-					if (proj && proj.versions.length > 0) {
-						const active = proj.versions.find((v) => v.status === 'active');
-						selectedVersionId = active?.id ?? proj.versions[0].id;
-					}
-				}}
-				class="flex h-8 w-full rounded-md border border-border bg-transparent px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-			>
-				{#each projects as project}
-					<option value={project.id}>{project.toolName}</option>
-				{/each}
-			</select>
-
-			{#if selectedProjectVersions.length > 0}
-				<select
-					bind:value={selectedVersionId}
-					class="flex h-8 w-full rounded-md border border-border bg-transparent px-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				>
-					{#each selectedProjectVersions as version}
-						<option value={version.id}>
-							{version.name}{version.status === 'active' ? ' ●' : ''}
-						</option>
-					{/each}
-				</select>
-			{/if}
-
-			<div class="relative">
-				<Search class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-				<Input
-					bind:value={pageSearchQuery}
-					placeholder="Filtrer les pages..."
-					class="h-8 pl-8 text-xs"
-				/>
-			</div>
-		</div>
-
-		<!-- Page list -->
-		<div class="flex-1 overflow-y-auto px-1 py-2">
-			{#if pagesLoading}
-				<div class="space-y-1 px-2">
-					{#each Array(6) as _}
-						<div class="flex items-center gap-2 py-1.5">
-							<div class="skeleton h-2 w-2 rounded-full"></div>
-							<div class="skeleton h-3 w-32 rounded"></div>
-						</div>
-					{/each}
-				</div>
-			{:else if filteredPages.length === 0}
-				<p class="px-3 py-6 text-center text-xs text-muted-foreground">Aucune page trouvée.</p>
-			{:else}
-				{#each filteredPages as pg}
-					<button
-						class="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent {currentPage?.id === pg.id ? 'bg-accent text-primary' : ''}"
-						onclick={() => navigateToPage(pg)}
-					>
-						<span class="h-1.5 w-1.5 shrink-0 rounded-full {getHealthDot(pg.healthStatus)}"></span>
-						<div class="min-w-0 flex-1">
-							<p class="truncate text-xs {currentPage?.id === pg.id ? 'font-medium text-primary' : 'text-foreground'}">
-								{pg.title}
-							</p>
-							<p class="truncate text-[10px] text-muted-foreground">{formatDate(pg.createdAt)}</p>
-						</div>
-					</button>
-				{/each}
-			{/if}
-		</div>
-
-		<!-- Footer -->
-		<div class="border-t border-border px-3 py-2">
-			<span class="text-xs text-muted-foreground">{pages.length} page{pages.length !== 1 ? 's' : ''}</span>
-		</div>
-	</div>
-
 	<!-- Main editor area -->
 	<div class="flex min-w-0 flex-1 flex-col">
 		{#if loading}
@@ -444,12 +262,15 @@
 			<!-- Editor toolbar -->
 			<div class="flex items-center justify-between border-b border-border bg-card px-4 py-2">
 				<div class="flex items-center gap-3 min-w-0">
-					<img src="/favicon.svg" alt="Lemon Lab" class="h-5 w-5 shrink-0" />
-					<a href="/admin/tree" class="shrink-0 text-xs text-primary hover:underline flex items-center gap-1">
+					<a href="/admin/editor" class="shrink-0 text-xs text-primary hover:underline flex items-center gap-1">
 						<ArrowLeft class="h-3 w-3" />
-						Retour
+						Pages
 					</a>
-					<span class="text-muted shrink-0">|</span>
+					{#if $selectedProject}
+						<span class="text-muted shrink-0">/</span>
+						<span class="text-xs text-muted-foreground shrink-0">{$selectedProject.toolName}</span>
+					{/if}
+					<span class="text-muted shrink-0">/</span>
 					<h2 class="text-sm font-semibold text-foreground truncate">{currentPage.title}</h2>
 					<span class="text-xs text-muted-foreground shrink-0">/{currentPage.urlPath}</span>
 					{#if isDirty}

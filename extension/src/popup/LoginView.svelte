@@ -180,7 +180,7 @@
 		</button>
 
 		<p class="text-center text-xs text-gray-400 mt-3">
-			Lemon Lab v0.2.1
+			Lemon Lab v{__APP_VERSION__}
 		</p>
 	</div>
 </div>

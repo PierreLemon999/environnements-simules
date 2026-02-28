@@ -15,12 +15,12 @@
 	import AutoCapturePanel from './AutoCapturePanel.svelte';
 	import ProjectDropdown from './ProjectDropdown.svelte';
 	import VersionDropdown from './VersionDropdown.svelte';
-	import CreateProjectModal from './CreateProjectModal.svelte';
 	import GuidedCapturePanel from './GuidedCapturePanel.svelte';
+	import { BACKOFFICE_URL } from '$lib/constants';
 	import type { AutoCaptureConfig } from '$lib/auto-capture';
 	import type { LLGuide } from '$lib/constants';
 
-	let { user, onLogout }: { user: User | null; onLogout: () => void } = $props();
+	let { user, outdated = false, onLogout }: { user: User | null; outdated?: boolean; onLogout: () => void } = $props();
 
 	// State
 	let projects = $state<Project[]>([]);
@@ -33,20 +33,20 @@
 		isRunning: false,
 		isPaused: false,
 		pages: [],
-		targetPageCount: 0
+		targetPageCount: 0,
+		transitions: []
 	});
 	let isCapturing = $state(false);
 	let loading = $state(true);
 	let error = $state('');
 	let showAutoPanel = $state(false);
-	let showCreateProject = $state(false);
 	let showCreateVersion = $state(false);
 	let newVersionName = $state('');
 	let detectedProject = $state<Project | null>(null);
 	let pageFilter = $state<'all' | 'done' | 'error'>('all');
 	let autoConfig = $state<AutoCaptureConfig>({
 		targetPageCount: 20,
-		maxDepth: 3,
+		maxDepth: 12,
 		delayBetweenPages: 500,
 		interestZones: [],
 		blacklist: ['Supprimer', 'Delete', 'Remove', 'Déconnexion', 'Logout', 'Sign out']
@@ -96,7 +96,14 @@
 				await loadVersions(activeProject!.id);
 			}
 			if (stored[STORAGE_KEYS.ACTIVE_VERSION]) {
-				activeVersion = stored[STORAGE_KEYS.ACTIVE_VERSION];
+				// Verify the saved version still exists in loaded versions
+				const saved = stored[STORAGE_KEYS.ACTIVE_VERSION];
+				const stillExists = versions.find((v: Version) => v.id === saved.id);
+				activeVersion = stillExists ?? null;
+			}
+			// Auto-select if we have a project + versions but no valid version selected
+			if (activeProject && !activeVersion && versions.length > 0) {
+				autoSelectVersion();
 			}
 			if (stored[STORAGE_KEYS.CAPTURE_MODE]) {
 				captureMode = stored[STORAGE_KEYS.CAPTURE_MODE];
@@ -162,14 +169,22 @@
 		}
 	}
 
+	/** Auto-select the best version: prefer 'active', then first available. */
+	function autoSelectVersion() {
+		if (versions.length === 0) return;
+		const active = versions.find((v) => v.status === 'active');
+		const best = active ?? versions[0];
+		selectVersion(best);
+	}
+
 	async function selectProject(project: Project) {
 		activeProject = project;
 		activeVersion = null;
 		await chrome.storage.local.set({ [STORAGE_KEYS.ACTIVE_PROJECT]: project });
 		await chrome.storage.local.remove(STORAGE_KEYS.ACTIVE_VERSION);
 		await loadVersions(project.id);
-		// No version selected → empty capture state
-		captureState = { mode: captureMode, isRunning: false, isPaused: false, pages: [], targetPageCount: 0 };
+		// Auto-select the active/first version
+		autoSelectVersion();
 	}
 
 	async function selectVersion(version: Version) {
@@ -273,12 +288,15 @@
 			return;
 		}
 		error = '';
-		// For now, start capture for each selected guide
-		// The actual implementation will need the guided-capture.ts rework
-		// This is the hookup point — the capture logic will run from service worker
 		try {
+			const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+			if (!tab?.id) {
+				error = 'Aucun onglet actif trouvé';
+				return;
+			}
 			await chrome.runtime.sendMessage({
 				type: 'START_GUIDED_CAPTURE',
+				tabId: tab.id,
 				guides,
 				executionMode: mode
 			});
@@ -287,32 +305,18 @@
 		}
 	}
 
-	async function createProject(data: { name: string; toolName: string }) {
+	async function stopGuidedCapture() {
+		await chrome.runtime.sendMessage({ type: 'STOP_GUIDED_CAPTURE' });
+	}
+
+	async function refreshProjects() {
 		try {
-			const res = await chrome.runtime.sendMessage({
-				type: 'CREATE_PROJECT',
-				name: data.name,
-				toolName: data.toolName
-			});
-			if (res?.error) {
-				error = res.error;
-				return;
-			}
-			if (res?.data) {
-				// Reload projects and select the new one
-				const projectsRes = await chrome.runtime.sendMessage({ type: 'GET_PROJECTS' });
-				if (projectsRes?.data) {
-					projects = projectsRes.data;
-				}
-				const newProject = projects.find((p) => p.id === res.data.id);
-				if (newProject) {
-					await selectProject(newProject);
-				}
+			const projectsRes = await chrome.runtime.sendMessage({ type: 'GET_PROJECTS' });
+			if (projectsRes?.data) {
+				projects = projectsRes.data;
 			}
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Erreur de création';
-		} finally {
-			showCreateProject = false;
+			error = err instanceof Error ? err.message : 'Erreur de chargement';
 		}
 	}
 
@@ -351,10 +355,15 @@
 
 <div class="flex flex-col h-full">
 	<!-- Top bar -->
-	<div class="flex items-center justify-end px-3 py-1.5 border-b border-gray-100 bg-white">
+	<div class="flex items-center justify-end gap-2 px-3 py-1.5 border-b border-gray-100 bg-white">
+		{#if outdated}
+			<span class="text-[10px] text-[#F1362A] font-medium">Extension pas à jour : v{__APP_VERSION__}</span>
+		{:else}
+			<span class="text-[10px] text-gray-300">v{__APP_VERSION__}</span>
+		{/if}
 		<button
 			onclick={onLogout}
-			class="text-gray-300 hover:text-gray-500 transition p-1 rounded"
+			class="text-gray-300 hover:text-[#2B72EE] transition p-1 rounded"
 			title="Se déconnecter"
 		>
 			<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -370,7 +379,7 @@
 			{activeProject}
 			{detectedProject}
 			onSelect={selectProject}
-			onCreateNew={() => (showCreateProject = true)}
+			onRefresh={refreshProjects}
 		/>
 
 		{#if activeProject}
@@ -412,25 +421,17 @@
 		{:else}
 			<div class="mt-2">
 				<button
-					onclick={() => (showCreateProject = true)}
+					onclick={() => chrome.tabs.create({ url: `${BACKOFFICE_URL}/admin/projects` })}
 					class="w-full flex items-center gap-2 px-3 py-1.5 border border-dashed border-gray-300 rounded-lg text-left hover:border-primary hover:text-primary transition"
 				>
 					<svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+						<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
 					</svg>
-					<span class="text-sm text-gray-400">Créer une version</span>
+					<span class="text-sm text-gray-400">Créer dans le back-office</span>
 				</button>
 			</div>
 		{/if}
 	</div>
-
-	<!-- Create project modal -->
-	{#if showCreateProject}
-		<CreateProjectModal
-			onClose={() => (showCreateProject = false)}
-			onCreate={createProject}
-		/>
-	{/if}
 
 	<!-- Mode selector cards -->
 	<div class="px-4 py-3 border-b border-gray-100">
@@ -511,6 +512,65 @@
 	{#if captureMode === 'guided' && !captureState.isRunning}
 		<div class="px-4 py-3 border-b border-gray-100 bg-blue-50/30">
 			<GuidedCapturePanel onStartCapture={startGuidedCapture} />
+		</div>
+	{/if}
+
+	<!-- Guided capture progress -->
+	{#if captureState.guided && captureState.isRunning}
+		{@const g = captureState.guided}
+		<div class="px-4 py-3 border-b border-gray-100 bg-blue-50/30">
+			<div class="flex items-center justify-between mb-1.5">
+				<span class="text-xs font-medium text-gray-700 truncate">{g.currentGuideName}</span>
+				<span class="text-[10px] text-gray-400 shrink-0 ml-2">
+					{g.executionMode === 'auto' ? 'Auto' : 'Manuel'}
+				</span>
+			</div>
+
+			{#if g.totalSteps > 0}
+				<div class="flex items-center justify-between mb-1">
+					<span class="text-[10px] text-gray-500">
+						Étape {g.currentStepIndex + 1} / {g.totalSteps}
+					</span>
+					{#if g.totalGuides > 1}
+						<span class="text-[10px] text-gray-400">
+							Guide {g.currentGuideIndex + 1}/{g.totalGuides}
+						</span>
+					{/if}
+				</div>
+				<div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
+					<div
+						class="h-full bg-primary rounded-full transition-all duration-500"
+						style="width: {Math.min(100, ((g.currentStepIndex + 1) / Math.max(g.totalSteps, 1)) * 100)}%"
+					></div>
+				</div>
+			{:else}
+				{#if g.totalGuides > 1}
+					<div class="text-[10px] text-gray-400 mb-2">
+						Guide {g.currentGuideIndex + 1}/{g.totalGuides}
+					</div>
+				{/if}
+			{/if}
+
+			<div class="flex items-center gap-2">
+				{#if g.status === 'waiting_bubble'}
+					<div class="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+					<span class="text-[11px] text-gray-500">
+						{g.executionMode === 'manual' ? 'En attente de navigation...' : 'Attente de la bulle...'}
+					</span>
+				{:else if g.status === 'capturing'}
+					<div class="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+					<span class="text-[11px] text-gray-500">Capture en cours...</span>
+				{:else if g.status === 'advancing'}
+					<div class="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+					<span class="text-[11px] text-gray-500">Passage à l'étape suivante...</span>
+				{:else if g.status === 'done'}
+					<svg class="w-3 h-3 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+					<span class="text-[11px] text-success font-medium">Capture terminée</span>
+				{:else}
+					<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+					<span class="text-[11px] text-gray-500">{g.capturedPages} page{g.capturedPages > 1 ? 's' : ''} capturée{g.capturedPages > 1 ? 's' : ''}</span>
+				{/if}
+			</div>
 		</div>
 	{/if}
 
@@ -617,7 +677,15 @@
 
 	<!-- Bottom actions -->
 	<div class="px-4 py-3 border-t border-gray-100 bg-white space-y-2">
-		{#if captureState.isRunning && captureState.mode === 'auto'}
+		{#if captureState.isRunning && captureState.mode === 'guided'}
+			<button
+				onclick={stopGuidedCapture}
+				class="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition"
+			>
+				<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1" /></svg>
+				Arrêter la capture guidée
+			</button>
+		{:else if captureState.isRunning && captureState.mode === 'auto'}
 			<div class="flex gap-2">
 				<button
 					onclick={togglePause}

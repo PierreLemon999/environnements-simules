@@ -1,14 +1,22 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import Sidebar from '$components/layout/Sidebar.svelte';
 	import Header from '$components/layout/Header.svelte';
 	import CommandPalette from '$components/layout/CommandPalette.svelte';
+	import { initFromStorage, loadProjects } from '$lib/stores/project';
 
 	let { children } = $props();
 
 	let collapsed = $state(false);
 	let commandPalette: ReturnType<typeof CommandPalette> | undefined = $state();
+
+	// Initialize project store once for all admin pages
+	onMount(() => {
+		initFromStorage();
+		loadProjects();
+	});
 
 	// Restore persisted sidebar state (default: open)
 	$effect(() => {
@@ -50,4 +58,8 @@
 	>
 		{@render children()}
 	</main>
+
+	<span class="fixed bottom-2 right-3 text-[10px] text-gray-400 select-none pointer-events-none">
+		v{__APP_VERSION__}
+	</span>
 </div>

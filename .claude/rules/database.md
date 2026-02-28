@@ -6,26 +6,35 @@ paths:
 
 # Base de données — SQLite + Drizzle ORM
 
-## Schéma (15 tables)
+## Schéma (16 tables)
 
 ### Core
 ```
 projects
   id (UUID PK), name, toolName, subdomain (unique), description,
-  logoUrl, status, createdAt, updatedAt
+  logoUrl, iconColor, faviconUrl, createdAt, updatedAt
 
 versions
-  id (UUID PK), projectId (FK→projects), name, status (draft|active|archived),
-  createdAt, updatedAt
-  ⚠️ Un seul status='active' par projet
+  id (UUID PK), projectId (FK→projects), name,
+  status (active|test|deprecated), language, authorId (FK→users),
+  captureStrategy (url_based|fingerprint_based), createdAt
 
 pages
-  id (UUID PK), versionId (FK→versions), title, urlPath, filePath,
-  fileSize, status, capturedAt, updatedAt
+  id (UUID PK), versionId (FK→versions), urlSource, urlPath, title,
+  filePath, fileSize, captureMode (free|guided|auto), thumbnailPath,
+  healthStatus (ok|warning|error), pageType (page|modal|spa_state),
+  parentPageId, domFingerprint, syntheticUrl, captureTimingMs,
+  stateIndex, createdAt
 
 pageLinks
   id (UUID PK), sourcePageId (FK→pages), targetPageId (FK→pages),
-  linkUrl, anchorText
+  originalHref, rewrittenHref
+
+pageTransitions
+  id (UUID PK), versionId (FK→versions), sourcePageId (FK→pages),
+  targetPageId (FK→pages), triggerType (click|pushState|replaceState|popstate|hashchange|manual),
+  triggerSelector, triggerText, loadingTimeMs, hadLoadingIndicator (0/1),
+  loadingIndicatorType, captureMode (free|guided|auto), createdAt
 ```
 
 ### Guides
@@ -34,47 +43,51 @@ guides
   id (UUID PK), versionId (FK→versions), name, description, createdAt
 
 guidePages
-  id (UUID PK), guideId (FK→guides), pageId (FK→pages), stepNumber, instruction
+  id (UUID PK), guideId (FK→guides), pageId (FK→pages), stepOrder (int)
 ```
 
 ### Features
 ```
 obfuscationRules
   id (UUID PK), projectId (FK→projects), searchTerm, replaceTerm,
-  isRegex (0/1), isActive (0/1), order (int)
+  isRegex (0/1), isActive (0/1), createdAt
 
 demoAssignments
-  id (UUID PK), versionId (FK→versions), recipientEmail, recipientName,
-  company, token (unique), password (hashed), expiresAt, createdAt
+  id (UUID PK), versionId (FK→versions), userId (FK→users),
+  accessToken (unique), passwordHash, expiresAt, createdAt
 
 sessions
-  id (UUID PK), assignmentId (FK→demoAssignments), ipAddress, userAgent,
-  startedAt, lastActivityAt
+  id (UUID PK), userId (FK→users), assignmentId (FK→demoAssignments),
+  versionId (FK→versions), ipAddress, userAgent, startedAt, endedAt
 
 sessionEvents
   id (UUID PK), sessionId (FK→sessions), pageId (FK→pages),
-  eventType, metadata (JSON string), createdAt
+  eventType (page_view|guide_start|guide_complete|click),
+  metadata (JSON string), timestamp, durationSeconds
 
 updateRequests
   id (UUID PK), pageId (FK→pages), requestedBy (FK→users),
-  description, status (pending|approved|rejected|done), createdAt, resolvedAt
+  comment, status (pending|in_progress|done), createdAt, resolvedAt
 
 captureJobs
-  id (UUID PK), versionId (FK→versions), status (pending|running|done|failed),
-  startUrl, maxDepth, pagesFound, pagesCaptured, createdAt, completedAt
+  id (UUID PK), versionId (FK→versions), mode (free|guided|auto),
+  targetPageCount, pagesCaptured, status (running|paused|done|error),
+  config (JSON string), startedAt, completedAt
 
 interestZones
-  id (UUID PK), captureJobId (FK→captureJobs), urlPattern, depthMultiplier
+  id (UUID PK), captureJobId (FK→captureJobs), urlPattern,
+  depthMultiplier (real, default 1.0)
 
 tagManagerConfig
-  id (UUID PK), projectId (FK→projects), script, isActive (0/1), updatedAt
+  id (UUID PK), projectId (FK→projects), scriptUrl, configJson (JSON string),
+  isActive (0/1)
 ```
 
 ### Auth
 ```
 users
-  id (UUID PK), email (unique), name, role (admin|client),
-  passwordHash, googleId, createdAt
+  id (UUID PK), name, email (unique), passwordHash, role (admin|client),
+  company, avatarUrl, googleId, extensionVersion, language, createdAt
 ```
 
 ## Relations principales
@@ -82,12 +95,15 @@ users
 ```
 projects 1:N versions 1:N pages
 pages 1:N pageLinks (self-referential via sourcePageId/targetPageId)
+pages 1:N pageTransitions (self-referential via sourcePageId/targetPageId)
 projects 1:N obfuscationRules
 projects 1:1 tagManagerConfig
 versions 1:N demoAssignments 1:N sessions 1:N sessionEvents
 versions 1:N guides 1:N guidePages → pages
 versions 1:N captureJobs 1:N interestZones
 pages 1:N updateRequests
+users 1:N demoAssignments (via userId)
+users 1:N versions (via authorId)
 ```
 
 ## Conventions

@@ -11,8 +11,9 @@ src/
 │   │   ├── auth.ts           # user, token, isAuthenticated, login/logout
 │   │   └── toast.ts          # Notifications
 │   └── components/
-│       ├── ui/               # 31 composants shadcn-svelte (créés manuellement)
-│       └── layout/           # Sidebar, Header, CommandPalette
+│       ├── ui/               # 30 composants shadcn-svelte (créés manuellement)
+│       ├── layout/           # Sidebar, Header, CommandPalette
+│       └── validation/       # ValidationInventoryPanel, ValidationRuleEditor
 └── routes/
     ├── login/                # Email/password + Google SSO
     ├── admin/                # Layout avec sidebar → toutes les pages admin
@@ -47,6 +48,8 @@ src/
 shadcn-svelte installé manuellement (pas via CLI) car Tailwind v3.
 Base : bits-ui pour les primitives headless.
 Ne PAS tenter d'utiliser `npx shadcn-svelte@latest add` — ça échouera.
+
+Composants notables : Avatar, AvatarEditor, Badge, Button, Card, Dialog, DropdownMenu, Input, SearchableSelect, Separator, Tabs, Toast, Tooltip.
 
 ## Sidebar (Linear-style)
 

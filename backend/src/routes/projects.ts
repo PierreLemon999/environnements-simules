@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db/index.js';
 import { projects, versions, pages } from '../db/schema.js';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and, ne } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticate } from '../middleware/auth.js';
 import { requireRole } from '../middleware/roles.js';
 import { getToolLogo } from '../db/tool-logos.js';
+
+const SUBDOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 
 const router = Router();
 
@@ -52,20 +54,60 @@ router.get('/', authenticate, async (_req: Request, res: Response) => {
 });
 
 /**
+ * GET /projects/check-subdomain
+ * Check if a subdomain is available and valid.
+ */
+router.get('/check-subdomain', authenticate, async (req: Request, res: Response) => {
+  try {
+    const subdomain = req.query.subdomain as string;
+    const excludeId = req.query.excludeId as string | undefined;
+
+    if (!subdomain) {
+      res.json({ data: { available: false, reason: 'empty' } });
+      return;
+    }
+
+    if (!SUBDOMAIN_REGEX.test(subdomain)) {
+      res.json({ data: { available: false, reason: 'invalid' } });
+      return;
+    }
+
+    if (excludeId) {
+      const existing = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.subdomain, subdomain), ne(projects.id, excludeId)))
+        .get();
+      res.json({ data: { available: !existing } });
+    } else {
+      const existing = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(eq(projects.subdomain, subdomain))
+        .get();
+      res.json({ data: { available: !existing } });
+    }
+  } catch (error) {
+    console.error('Error checking subdomain:', error);
+    res.status(500).json({ error: 'Internal server error', code: 500 });
+  }
+});
+
+/**
  * POST /projects
  * Create a new project.
  */
 router.post('/', authenticate, requireRole('admin'), async (req: Request, res: Response) => {
   try {
-    const { name, toolName, subdomain, description, logoUrl, iconColor } = req.body;
+    const { name, subdomain, description, logoUrl, iconColor, faviconUrl } = req.body;
+    const toolName = req.body.toolName || name;
 
-    if (!name || !toolName || !subdomain) {
-      res.status(400).json({ error: 'Name, toolName, and subdomain are required', code: 400 });
+    if (!name || !subdomain) {
+      res.status(400).json({ error: 'Name and subdomain are required', code: 400 });
       return;
     }
 
-    // Validate subdomain format: only lowercase alphanumeric and hyphens
-    if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(subdomain)) {
+    if (!SUBDOMAIN_REGEX.test(subdomain)) {
       res.status(400).json({ error: 'Subdomain must contain only lowercase letters, digits, and hyphens (2-63 chars)', code: 400 });
       return;
     }
@@ -88,8 +130,9 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
       toolName,
       subdomain,
       description: description || null,
-      logoUrl: logoUrl || getToolLogo(toolName) || null,
+      logoUrl: logoUrl || getToolLogo(toolName) || getToolLogo(name) || null,
       iconColor: iconColor || null,
+      faviconUrl: faviconUrl || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -99,6 +142,30 @@ router.post('/', authenticate, requireRole('admin'), async (req: Request, res: R
     res.status(201).json({ data: project });
   } catch (error) {
     console.error('Error creating project:', error);
+    res.status(500).json({ error: 'Internal server error', code: 500 });
+  }
+});
+
+/**
+ * GET /projects/by-subdomain/:subdomain/favicon
+ * Return project favicon (public, no auth — used by demo viewers).
+ */
+router.get('/by-subdomain/:subdomain/favicon', async (req: Request, res: Response) => {
+  try {
+    const project = await db
+      .select({ faviconUrl: projects.faviconUrl })
+      .from(projects)
+      .where(eq(projects.subdomain, req.params.subdomain))
+      .get();
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found', code: 404 });
+      return;
+    }
+
+    res.json({ data: { faviconUrl: project.faviconUrl } });
+  } catch (error) {
+    console.error('Error getting project favicon:', error);
     res.status(500).json({ error: 'Internal server error', code: 500 });
   }
 });
@@ -171,7 +238,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       return;
     }
 
-    const { name, toolName, subdomain, description, logoUrl, iconColor } = req.body;
+    const { name, toolName, subdomain, description, logoUrl, iconColor, faviconUrl } = req.body;
 
     // Validate subdomain format if changing
     if (subdomain && subdomain !== project.subdomain) {
@@ -201,6 +268,7 @@ router.put('/:id', authenticate, requireRole('admin'), async (req: Request, res:
       description: description !== undefined ? description : project.description,
       logoUrl: logoUrl !== undefined ? (logoUrl || null) : project.logoUrl,
       iconColor: iconColor !== undefined ? (iconColor || null) : project.iconColor,
+      faviconUrl: faviconUrl !== undefined ? (faviconUrl || null) : project.faviconUrl,
       updatedAt: new Date().toISOString(),
     };
 

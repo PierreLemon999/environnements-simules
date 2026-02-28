@@ -1,18 +1,19 @@
 <script lang="ts">
 	import type { Project } from '$lib/constants';
+	import { BACKOFFICE_URL } from '$lib/constants';
 
 	let {
 		projects,
 		activeProject,
 		detectedProject,
 		onSelect,
-		onCreateNew
+		onRefresh
 	}: {
 		projects: Project[];
 		activeProject: Project | null;
 		detectedProject: Project | null;
 		onSelect: (project: Project) => void;
-		onCreateNew: () => void;
+		onRefresh: () => void;
 	} = $props();
 
 	let isOpen = $state(false);
@@ -39,6 +40,12 @@
 		search = '';
 	}
 
+	function openBackOffice() {
+		chrome.tabs.create({ url: `${BACKOFFICE_URL}/admin/projects` });
+		isOpen = false;
+		search = '';
+	}
+
 	function handleClickOutside(e: MouseEvent) {
 		const target = e.target as HTMLElement;
 		if (!target.closest('.project-dropdown')) {
@@ -49,6 +56,23 @@
 
 	function getInitials(name: string): string {
 		return name.slice(0, 2).toUpperCase();
+	}
+
+	// Default icon colors per tool
+	function getToolColor(toolName: string): string {
+		const colors: Record<string, string> = {
+			'Salesforce': '#00A1E0',
+			'SAP SuccessFactors': '#0070F2',
+			'Workday': '#F5A623',
+			'ServiceNow': '#81B5A1',
+			'HubSpot': '#FF7A59',
+			'Zendesk': '#03363D',
+			'Oracle': '#C74634',
+			'Microsoft Dynamics': '#0078D4',
+			'Jira': '#0052CC',
+			'Confluence': '#1868DB',
+		};
+		return colors[toolName] ?? '#6D7481';
 	}
 
 	$effect(() => {
@@ -67,9 +91,16 @@
 		class="w-full flex items-center gap-2.5 px-3 py-2 border border-gray-200 rounded-lg bg-white hover:border-gray-300 transition text-left"
 	>
 		{#if activeProject}
-			<div class="w-7 h-7 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
-				{getInitials(activeProject.toolName || activeProject.name)}
-			</div>
+			{#if activeProject.logoUrl}
+				<img src={activeProject.logoUrl} alt={activeProject.toolName} class="w-7 h-7 rounded-md object-cover shrink-0" />
+			{:else}
+				<div
+					class="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+					style="background-color: {activeProject.iconColor || getToolColor(activeProject.toolName)}"
+				>
+					{getInitials(activeProject.toolName || activeProject.name)}
+				</div>
+			{/if}
 			<div class="flex-1 min-w-0">
 				<p class="text-sm font-medium text-gray-800 truncate">{activeProject.name}</p>
 				{#if detectedProject && detectedProject.id === activeProject.id}
@@ -107,9 +138,16 @@
 					onclick={() => select(project)}
 					class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 transition text-left {activeProject?.id === project.id ? 'bg-blue-50/50' : ''}"
 				>
-					<div class="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold shrink-0">
-						{getInitials(project.toolName || project.name)}
-					</div>
+					{#if project.logoUrl}
+						<img src={project.logoUrl} alt={project.toolName} class="w-6 h-6 rounded-md object-cover shrink-0" />
+					{:else}
+						<div
+							class="w-6 h-6 rounded-md flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+							style="background-color: {project.iconColor || getToolColor(project.toolName)}"
+						>
+							{getInitials(project.toolName || project.name)}
+						</div>
+					{/if}
 					<div class="flex-1 min-w-0">
 						<p class="text-xs font-medium text-gray-700 truncate">{project.name}</p>
 						<p class="text-[10px] text-gray-400 truncate">{project.subdomain}</p>
@@ -130,16 +168,28 @@
 			{/if}
 			</div>
 
-			<!-- Separator + create new -->
-			<div class="border-t border-gray-100 shrink-0">
+			<!-- Separator + actions -->
+			<div class="border-t border-gray-100 shrink-0 flex">
 				<button
-					onclick={() => { isOpen = false; search = ''; onCreateNew(); }}
-					class="w-full flex items-center gap-2 px-3 py-2.5 text-primary hover:bg-blue-50/50 transition"
+					onclick={openBackOffice}
+					class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-primary hover:bg-blue-50/50 transition"
+					title="Créer un projet dans le back-office"
 				>
-					<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
 					</svg>
-					<span class="text-xs font-medium">Nouveau projet</span>
+					<span class="text-xs font-medium">Nouveau</span>
+				</button>
+				<div class="w-px bg-gray-100"></div>
+				<button
+					onclick={() => { isOpen = false; search = ''; onRefresh(); }}
+					class="flex items-center justify-center gap-1.5 px-3 py-2.5 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition"
+					title="Actualiser la liste des projets"
+				>
+					<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+					</svg>
+					<span class="text-xs font-medium">Actualiser</span>
 				</button>
 			</div>
 		</div>

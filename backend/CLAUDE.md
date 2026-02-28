@@ -4,15 +4,28 @@
 
 ```
 src/
-├── index.ts              # App Express, registration des 11 routers, middleware global
+├── index.ts              # App Express, registration des 13 routers, middleware global
 ├── db/
-│   ├── schema.ts         # 15 tables Drizzle (source de vérité du schéma)
+│   ├── schema.ts         # 16 tables Drizzle (source de vérité du schéma)
 │   ├── index.ts          # Init Drizzle + dataDir
 │   └── seed.ts           # Données de test complètes
 ├── middleware/
 │   ├── auth.ts           # JWT verify, signToken(), authenticate()
 │   └── roles.ts          # requireRole('admin'|'client')
-├── routes/               # 11 fichiers de routes (voir .claude/rules/ par domaine)
+├── routes/               # 13 fichiers de routes (voir .claude/rules/ par domaine)
+│   ├── auth.ts           # Login, Google SSO, verify JWT, demo-access
+│   ├── projects.ts       # CRUD projets
+│   ├── versions.ts       # CRUD versions + duplicate
+│   ├── pages.ts          # CRUD pages + upload multipart HTML
+│   ├── demo.ts           # Serving démo publique
+│   ├── obfuscation.ts    # Règles CRUD + preview
+│   ├── assignments.ts    # Tokens d'accès démo
+│   ├── analytics.ts      # Sessions, events, guides, overview
+│   ├── update-requests.ts # Demandes de MAJ workflow
+│   ├── capture-jobs.ts   # Jobs de capture auto
+│   ├── transitions.ts    # Transitions entre pages (SPA)
+│   ├── users.ts          # CRUD utilisateurs (admin only)
+│   └── settings.ts       # Paramètres application
 └── services/
     ├── demo-serving.ts   # Orchestration : project→version→page→obfuscate→rewrite→inject
     ├── link-rewriter.ts  # Réécriture des liens internes vers /demo/:subdomain/
@@ -32,4 +45,4 @@ src/
 - Drizzle ORM pour les queries type-safe
 - Fichier DB : `backend/data/app.db`
 - Cascade deletes configurés dans le schéma
-- 15 tables : voir `.claude/rules/database.md` pour le schéma complet
+- 16 tables : voir `.claude/rules/database.md` pour le schéma complet

@@ -26,6 +26,7 @@
 	} from '$components/ui/dropdown-menu';
 	import { Tooltip, TooltipTrigger, TooltipContent } from '$components/ui/tooltip';
 	import { SearchableSelect } from '$components/ui/searchable-select';
+	import { setVersionsFromData } from '$lib/stores/project';
 	import {
 		ArrowLeft,
 		Plus,
@@ -80,6 +81,7 @@
 		description: string | null;
 		logoUrl: string | null;
 		iconColor: string | null;
+		faviconUrl: string | null;
 		createdAt: string;
 		updatedAt: string;
 		versions: Version[];
@@ -160,9 +162,11 @@
 	let editDescription = $state('');
 	let editLogoUrl = $state('');
 	let editIconColor = $state('');
+	let editFaviconUrl = $state('');
 	let editSubmitting = $state(false);
 	let editError = $state('');
 	let editLogoInput: HTMLInputElement | undefined = $state();
+	let editFaviconInput: HTMLInputElement | undefined = $state();
 
 	let projectId = $derived($page.params.id);
 
@@ -251,6 +255,7 @@
 		editDescription = project.description ?? '';
 		editLogoUrl = project.logoUrl ?? '';
 		editIconColor = project.iconColor ?? getToolColor(project.toolName);
+		editFaviconUrl = project.faviconUrl ?? '';
 		editError = '';
 		editProjectOpen = true;
 	}
@@ -270,6 +275,7 @@
 				description: editDescription.trim() || null,
 				logoUrl: editLogoUrl || null,
 				iconColor: editIconColor || null,
+				faviconUrl: editFaviconUrl || null,
 			};
 			const res = await put<{ data: ProjectDetail }>(`/projects/${project.id}`, body);
 			project = { ...project, ...res.data };
@@ -295,6 +301,15 @@
 			reader.onload = () => { editLogoUrl = reader.result as string; };
 			reader.readAsDataURL(file);
 		}
+	}
+
+	function handleEditFaviconChange(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => { editFaviconUrl = reader.result as string; };
+		reader.readAsDataURL(file);
 	}
 
 	function getStatusBorderColor(status: string): string {
@@ -614,6 +629,11 @@
 		try {
 			const res = await get<{ data: ProjectDetail }>(`/projects/${projectId}`);
 			project = res.data;
+
+			// Sync the global project store so editor/tree pages reflect this project
+			if (projectId && res.data.versions) {
+				setVersionsFromData(projectId, res.data.versions);
+			}
 
 			// Compute health score from actual page data
 			const activeVersion = res.data.versions?.find(v => v.status === 'active') ?? res.data.versions?.[0];
@@ -1462,6 +1482,27 @@
 					</label>
 					<span class="text-xs text-muted-foreground font-mono">{editIconColor || '#6D7481'}</span>
 					<span class="text-xs text-muted-foreground">Extraite automatiquement du logo</span>
+				</div>
+			</div>
+			<div class="space-y-1.5">
+				<label class="text-sm font-medium text-foreground">Favicon <span class="text-muted-foreground">(extrait auto des captures)</span></label>
+				<div class="flex items-center gap-3">
+					<input type="file" accept="image/*" class="hidden" bind:this={editFaviconInput} onchange={handleEditFaviconChange} />
+					{#if editFaviconUrl}
+						<div class="group relative">
+							<button type="button" class="flex h-8 w-8 items-center justify-center overflow-hidden rounded border border-border" onclick={() => editFaviconInput?.click()}>
+								<img src={editFaviconUrl} alt="Favicon" class="h-full w-full object-contain" />
+							</button>
+							<button type="button" class="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-white opacity-0 transition-opacity group-hover:opacity-100" onclick={() => { editFaviconUrl = ''; }}>
+								<svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+							</button>
+						</div>
+					{:else}
+						<button type="button" class="flex h-8 w-8 items-center justify-center rounded border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary" onclick={() => editFaviconInput?.click()}>
+							<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+						</button>
+					{/if}
+					<span class="text-xs text-muted-foreground">{editFaviconUrl ? 'Favicon du projet' : 'Aucun favicon'}</span>
 				</div>
 			</div>
 			{#if editError}

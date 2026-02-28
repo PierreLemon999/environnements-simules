@@ -1,17 +1,11 @@
 <script lang="ts">
-	import { page } from '$app/stores';
 	import { onMount, onDestroy } from 'svelte';
 	import { get } from '$lib/api';
+	import { selectedProject, selectedProjectId, selectedVersionId, versions, selectedVersion, selectVersion } from '$lib/stores/project';
 	import { Card, CardContent } from '$components/ui/card';
 	import { Button } from '$components/ui/button';
-	import { Badge } from '$components/ui/badge';
-	import { Input } from '$components/ui/input';
-	import { Tabs, TabsList, TabsTrigger } from '$components/ui/tabs';
-	import { Separator } from '$components/ui/separator';
 	import { SearchableSelect } from '$components/ui/searchable-select';
 	import {
-		ChevronRight,
-		ChevronLeft,
 		ChevronDown,
 		FileText,
 		Folder,
@@ -75,18 +69,6 @@
 		children: TreeNode[];
 	}
 
-	interface Project {
-		id: string;
-		name: string;
-		toolName: string;
-		subdomain: string;
-		versions: Array<{
-			id: string;
-			name: string;
-			status: string;
-		}>;
-	}
-
 	interface ObfuscationRule {
 		id: string;
 		searchValue: string;
@@ -126,9 +108,6 @@
 	}
 
 	// State
-	let projects: Project[] = $state([]);
-	let selectedProjectId = $state('');
-	let selectedVersionId = $state('');
 	let tree: TreeNode | null = $state(null);
 	let selectedPage: Page | null = $state(null);
 	let obfuscationRules: ObfuscationRule[] = $state([]);
@@ -336,10 +315,10 @@
 	});
 
 	async function loadAllTransitions() {
-		if (!selectedVersionId) return;
+		if (!$selectedVersionId) return;
 		mapLoading = true;
 		try {
-			const res = await get<{ data: Transition[] }>(`/versions/${selectedVersionId}/transitions`);
+			const res = await get<{ data: Transition[] }>(`/versions/${$selectedVersionId}/transitions`);
 			allTransitions = res.data;
 		} catch {
 			allTransitions = [];
@@ -408,11 +387,6 @@
 	let expandedPaths = $state<Set<string>>(new Set());
 	let fullyExpandedSections = $state<Set<string>>(new Set());
 	const SECTION_PAGE_LIMIT = 5;
-
-	// Derived
-	let selectedProject = $derived(projects.find((p) => p.id === selectedProjectId));
-	let versions = $derived(selectedProject?.versions ?? []);
-	let selectedVersion = $derived(versions.find((v) => v.id === selectedVersionId));
 
 	// Page statistics from tree
 	let pageStats = $derived(() => {
@@ -625,29 +599,12 @@
 		window.addEventListener('mouseup', onUp);
 	}
 
-	function getVersionStatusVariant(status: string): 'success' | 'warning' | 'secondary' {
-		switch (status) {
-			case 'active': return 'success';
-			case 'draft': return 'warning';
-			case 'archived': case 'deprecated': return 'secondary';
-			default: return 'secondary';
-		}
-	}
-
 	function getVersionStatusLabel(status: string): string {
 		switch (status) {
 			case 'active': return 'Active';
 			case 'draft': return 'Brouillon';
 			case 'archived': case 'deprecated': return 'Archivée';
 			default: return status;
-		}
-	}
-
-	function navigateVersion(direction: -1 | 1) {
-		const idx = versions.findIndex((v) => v.id === selectedVersionId);
-		const nextIdx = idx + direction;
-		if (nextIdx >= 0 && nextIdx < versions.length) {
-			selectedVersionId = versions[nextIdx].id;
 		}
 	}
 
@@ -672,8 +629,8 @@
 
 	// Preview URL for the iframe
 	let previewUrl = $derived(() => {
-		if (!selectedPage || !selectedProject?.subdomain) return '';
-		return `/demo-api/${selectedProject.subdomain}/${selectedPage.urlPath}`;
+		if (!selectedPage || !$selectedProject?.subdomain) return '';
+		return `/demo-api/${$selectedProject.subdomain}/${selectedPage.urlPath}`;
 	});
 
 	function toggleFullExpand(path: string) {
@@ -687,49 +644,15 @@
 	}
 
 	// Data loading
-	async function loadProjects() {
-		try {
-			const res = await get<{ data: Array<{ id: string; name: string; toolName: string; subdomain: string }> }>('/projects');
-			const detailed = await Promise.all(
-				res.data.map((p) =>
-					get<{ data: Project }>(`/projects/${p.id}`).then((r) => r.data)
-				)
-			);
-			projects = detailed;
-
-			const urlVersion = $page.url.searchParams.get('version');
-			if (urlVersion) {
-				for (const p of projects) {
-					const v = p.versions.find((v) => v.id === urlVersion);
-					if (v) {
-						selectedProjectId = p.id;
-						selectedVersionId = v.id;
-						break;
-					}
-				}
-			} else if (projects.length > 0) {
-				selectedProjectId = projects[0].id;
-				if (projects[0].versions.length > 0) {
-					const active = projects[0].versions.find((v) => v.status === 'active');
-					selectedVersionId = active?.id ?? projects[0].versions[0].id;
-				}
-			}
-		} catch (err) {
-			console.error('Projects fetch error:', err);
-		} finally {
-			loading = false;
-		}
-	}
-
 	async function loadTree() {
-		if (!selectedVersionId) {
+		if (!$selectedVersionId) {
 			tree = null;
 			return;
 		}
 
 		treeLoading = true;
 		try {
-			const res = await get<{ data: TreeNode }>(`/versions/${selectedVersionId}/tree`);
+			const res = await get<{ data: TreeNode }>(`/versions/${$selectedVersionId}/tree`);
 			tree = res.data;
 			if (tree) {
 				const newExpanded = new Set<string>();
@@ -746,9 +669,9 @@
 	}
 
 	async function loadObfuscationRules() {
-		if (!selectedProjectId) return;
+		if (!$selectedProjectId) return;
 		try {
-			const res = await get<{ data: ObfuscationRule[] }>(`/projects/${selectedProjectId}/obfuscation`);
+			const res = await get<{ data: ObfuscationRule[] }>(`/projects/${$selectedProjectId}/obfuscation`);
 			obfuscationRules = res.data;
 		} catch {
 			obfuscationRules = [];
@@ -758,43 +681,37 @@
 	async function loadGuides() {
 		try {
 			const res = await get<{ data: Guide[] }>('/analytics/guides');
-			guides = res.data.filter((g) => g.versionId === selectedVersionId);
+			guides = res.data.filter((g) => g.versionId === $selectedVersionId);
 		} catch {
 			guides = [];
 		}
 	}
 
 	$effect(() => {
-		if (selectedProjectId) {
-			const proj = projects.find((p) => p.id === selectedProjectId);
-			if (proj && proj.versions.length > 0) {
-				const active = proj.versions.find((v) => v.status === 'active');
-				selectedVersionId = active?.id ?? proj.versions[0].id;
-			} else {
-				selectedVersionId = '';
-			}
+		if ($selectedProjectId) {
 			loadObfuscationRules();
+			loading = false;
 		}
 	});
 
 	$effect(() => {
-		if (selectedVersionId) {
+		if ($selectedVersionId) {
 			loadTree();
 			loadGuides();
 		}
 	});
 
 	$effect(() => {
-		if (treeTab === 'map' && selectedVersionId) {
+		if (treeTab === 'map' && $selectedVersionId) {
 			loadAllTransitions();
 		}
 	});
 
 	// Listen for navigation messages from the preview iframe
 	function handlePreviewNavigate(e: MessageEvent) {
-		if (e.data?.type === 'DEMO_NAVIGATE' && e.data.href && selectedProject) {
+		if (e.data?.type === 'DEMO_NAVIGATE' && e.data.href && $selectedProject) {
 			// href is like /demo/{subdomain}/{urlPath}
-			const prefix = `/demo/${selectedProject.subdomain}/`;
+			const prefix = `/demo/${$selectedProject.subdomain}/`;
 			if (e.data.href.startsWith(prefix)) {
 				const targetUrlPath = e.data.href.slice(prefix.length);
 				const allPages = collectAllPages();
@@ -806,7 +723,6 @@
 
 	onMount(() => {
 		window.addEventListener('message', handlePreviewNavigate);
-		loadProjects();
 	});
 
 	onDestroy(() => {
@@ -824,22 +740,12 @@
 		<!-- Tree panel header with title -->
 		<div class="flex items-center justify-between border-b border-border px-4 py-3">
 			<h2 class="text-sm font-semibold text-foreground truncate">
-				{selectedProject?.name ?? 'Chargement...'}{selectedVersion ? ` — ${selectedVersion.name}` : ''}
+				{$selectedProject?.name ?? 'Chargement...'}{$selectedVersion ? ` — ${$selectedVersion.name}` : ''}
 			</h2>
 		</div>
 
-		<!-- Project selector + Tabs + Search -->
+		<!-- Tabs + Search -->
 		<div class="space-y-2 border-b border-border px-3 py-2">
-			<!-- Project selector -->
-			<SearchableSelect
-				bind:value={selectedProjectId}
-				options={projects.map(p => ({ value: p.id, label: p.name }))}
-				placeholder="Chargement..."
-				searchable={true}
-				searchPlaceholder="Rechercher un projet..."
-				class="w-full"
-			/>
-
 			<!-- Tabs: Arborescence / Liste / Carte du site -->
 			<div class="flex gap-1 text-xs">
 				<button
@@ -945,7 +851,7 @@
 						<div class="flex flex-col items-center justify-center py-12 text-center">
 							<FileText class="h-8 w-8 text-muted" />
 							<p class="mt-3 text-sm text-muted-foreground">
-								{selectedVersionId ? 'Aucune page capturée' : 'Sélectionnez une version'}
+								{$selectedVersionId ? 'Aucune page capturée' : 'Sélectionnez une version'}
 							</p>
 						</div>
 					{:else}
@@ -1214,7 +1120,7 @@
 				<div class="flex flex-col items-center justify-center py-12 text-center">
 					<FileText class="h-8 w-8 text-muted" />
 					<p class="mt-3 text-sm text-muted-foreground">
-						{selectedVersionId ? 'Aucune page capturée' : 'Sélectionnez une version'}
+						{$selectedVersionId ? 'Aucune page capturée' : 'Sélectionnez une version'}
 					</p>
 				</div>
 			{:else}
@@ -1376,30 +1282,16 @@
 
 		<!-- Tree footer: version selector + page count -->
 		<div class="border-t border-border px-3 py-2">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-1">
-					<button
-						class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
-						disabled={versions.findIndex((v) => v.id === selectedVersionId) <= 0}
-						onclick={() => navigateVersion(-1)}
-					>
-						<ChevronLeft class="h-3.5 w-3.5" />
-					</button>
-					<span class="text-xs font-medium text-foreground">{selectedVersion?.name ?? '—'}</span>
-					{#if selectedVersion}
-						<Badge variant={getVersionStatusVariant(selectedVersion.status)} class="text-[9px] px-1 py-0">
-							{getVersionStatusLabel(selectedVersion.status)}
-						</Badge>
-					{/if}
-					<button
-						class="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
-						disabled={versions.findIndex((v) => v.id === selectedVersionId) >= versions.length - 1}
-						onclick={() => navigateVersion(1)}
-					>
-						<ChevronRight class="h-3.5 w-3.5" />
-					</button>
-				</div>
-				<span class="text-[11px] text-muted-foreground">
+			<div class="flex items-center justify-between gap-2">
+				<SearchableSelect
+					value={$selectedVersionId ?? ''}
+					onchange={(v) => selectVersion(v)}
+					options={$versions.map(v => ({ value: v.id, label: `${v.name} — ${getVersionStatusLabel(v.status)}` }))}
+					placeholder="Version..."
+					searchable={false}
+					class="flex-1"
+				/>
+				<span class="text-[11px] text-muted-foreground shrink-0">
 					{pageStats().total} page{pageStats().total !== 1 ? 's' : ''}
 				</span>
 			</div>
@@ -1422,7 +1314,7 @@
 			<div class="flex items-center justify-between gap-4 border-b border-border bg-card px-5 py-2.5">
 				<!-- Breadcrumb -->
 				<nav class="flex items-center gap-1.5 text-[13px] shrink-0">
-					<span class="text-muted-foreground">{selectedProject?.name ?? 'Projet'}</span>
+					<span class="text-muted-foreground">{$selectedProject?.name ?? 'Projet'}</span>
 					{#each selectedPage.urlPath.split('/').filter(Boolean) as segment, i}
 						<span class="text-muted-foreground/40">/</span>
 						{#if i < selectedPage.urlPath.split('/').filter(Boolean).length - 1}
@@ -1479,8 +1371,8 @@
 						Comparer
 					</Button>
 					<Button variant="default" size="sm" class="gap-1.5 text-xs h-8" onclick={() => {
-						if (selectedProject?.subdomain && selectedPage) {
-							window.open(`/demo/${selectedProject.subdomain}/${selectedPage.urlPath}`, '_blank');
+						if ($selectedProject?.subdomain && selectedPage) {
+							window.open(`/demo/${$selectedProject.subdomain}/${selectedPage.urlPath}`, '_blank');
 						}
 					}}>
 						<ExternalLink class="h-3.5 w-3.5" />
@@ -1506,7 +1398,7 @@
 									<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
 								</svg>
 								<span>
-									<span class="text-success">https://</span><span class="font-medium text-foreground">{selectedProject?.subdomain ?? ''}.env-ll.com</span>/{selectedPage.urlPath}
+									<span class="text-success">https://</span><span class="font-medium text-foreground">{$selectedProject?.subdomain ?? ''}.env-ll.com</span>/{selectedPage.urlPath}
 								</span>
 							</div>
 						</div>

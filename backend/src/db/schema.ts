@@ -24,6 +24,7 @@ export const projects = sqliteTable('projects', {
   description: text('description'),
   logoUrl: text('logo_url'),
   iconColor: text('icon_color'),
+  faviconUrl: text('favicon_url'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

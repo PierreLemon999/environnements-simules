@@ -99,9 +99,10 @@ router.post(
       await db.insert(versions).values(version);
 
       res.status(201).json({ data: version });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating version:', error);
-      res.status(500).json({ error: 'Internal server error', code: 500 });
+      const msg = process.env.NODE_ENV !== 'production' && error?.message ? error.message : 'Internal server error';
+      res.status(500).json({ error: msg, code: 500 });
     }
   }
 );

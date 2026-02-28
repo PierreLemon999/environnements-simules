@@ -4,6 +4,7 @@ paths:
   - "backend/src/routes/pages.ts"
   - "backend/src/routes/versions.ts"
   - "backend/src/routes/capture-jobs.ts"
+  - "backend/src/routes/transitions.ts"
   - "frontend/src/routes/admin/editor/**"
   - "frontend/src/routes/admin/live-edit/**"
   - "frontend/src/routes/admin/projects/[id]/**"
@@ -18,14 +19,20 @@ Tout ce qui concerne la capture de pages web par l'extension Chrome, leur upload
 ### Extension (source de la capture)
 - `extension/src/lib/capture.ts` — Logique de capture DOM (inline CSS, base64 images)
 - `extension/src/lib/auto-capture.ts` — Crawl BFS automatique
-- `extension/src/lib/guided-capture.ts` — Crawl guidé utilisateur
+- `extension/src/lib/guided-orchestrator.ts` — Orchestration capture guidée (auto/manual)
+- `extension/src/lib/resource-fetcher.ts` — Téléchargement et inlining de ressources externes
+- `extension/src/lib/modal-detector.ts` — Détection de modales/overlays
+- `extension/src/lib/transition-tracker.ts` — Tracking des transitions SPA
+- `extension/src/lib/dom-fingerprint.ts` — Empreinte DOM pour déduplication
+- `extension/src/lib/context.ts` — Contexte de capture partagé
 - `extension/src/background/service-worker.ts` — Orchestration messages
 - `extension/src/popup/MainView.svelte` + `AutoCapturePanel.svelte` — UI
 
 ### Backend (stockage & gestion)
-- `backend/src/routes/pages.ts` (409 LOC) — CRUD pages + upload multipart HTML
-- `backend/src/routes/versions.ts` (353 LOC) — Versions CRUD + duplicate + page tree
-- `backend/src/routes/capture-jobs.ts` (195 LOC) — Jobs de capture auto
+- `backend/src/routes/pages.ts` (581 LOC) — CRUD pages + upload multipart HTML
+- `backend/src/routes/versions.ts` (365 LOC) — Versions CRUD + duplicate + page tree
+- `backend/src/routes/capture-jobs.ts` (247 LOC) — Jobs de capture auto
+- `backend/src/routes/transitions.ts` (182 LOC) — Transitions entre pages (SPA)
 
 ### Frontend (édition & organisation)
 - `frontend/src/routes/admin/editor/[id]/` — Éditeur HTML
@@ -34,10 +41,11 @@ Tout ce qui concerne la capture de pages web par l'extension Chrome, leur upload
 
 ## Tables DB impliquées
 
-- `pages` (id, versionId, title, urlPath, filePath, fileSize, status, capturedAt)
-- `pageLinks` (id, sourcePageId, targetPageId, linkUrl, anchorText)
-- `versions` (id, projectId, name, status, createdAt)
-- `captureJobs` (id, versionId, status, startUrl, maxDepth, pagesFound, pagesCaptured)
+- `pages` (id, versionId, urlSource, urlPath, title, filePath, fileSize, captureMode, thumbnailPath, healthStatus, pageType, parentPageId, domFingerprint, syntheticUrl, captureTimingMs, stateIndex, createdAt)
+- `pageLinks` (id, sourcePageId, targetPageId, originalHref, rewrittenHref)
+- `pageTransitions` (id, versionId, sourcePageId, targetPageId, triggerType, triggerSelector, triggerText, loadingTimeMs, hadLoadingIndicator, captureMode, createdAt)
+- `versions` (id, projectId, name, status, language, authorId, captureStrategy, createdAt)
+- `captureJobs` (id, versionId, mode, targetPageCount, pagesCaptured, status, config, startedAt, completedAt)
 - `interestZones` (id, captureJobId, urlPattern, depthMultiplier)
 
 ## Flux principal : Capture d'une page
@@ -61,7 +69,7 @@ Config { startUrl, maxDepth, blacklist, interestZones[] }
   → BFS queue depuis startUrl
   → Pour chaque page : capturer → extraire liens → filtrer → ajouter à la queue
   → interestZones augmentent le depth pour certains URL patterns
-  → captureJob tracké côté backend (status: pending→running→done)
+  → captureJob tracké côté backend (status: running→paused→done)
 ```
 
 ## Endpoints API
@@ -76,10 +84,12 @@ Config { startUrl, maxDepth, blacklist, interestZones[] }
 - `GET/POST /api/projects/:id/versions` — Lister/créer versions
 - `PUT/DELETE /api/versions/:id` — CRUD version
 - `POST /api/versions/:id/duplicate` — Dupliquer une version
+- `POST /api/versions/:id/transitions` — Enregistrer une transition
+- `GET /api/pages/:pageId/transitions` — Transitions d'une page
 
 ## Points d'attention
 
 - Upload HTML limité à 50 MB (config multer)
 - Les fichiers sont stockés sur disque dans `/data/uploads/{pageId}/`, pas en DB
 - La duplication de version copie toutes les pages + pageLinks
-- Le status d'une version peut être : draft, active, archived (un seul active par projet)
+- Le status d'une version peut être : active, test, deprecated
