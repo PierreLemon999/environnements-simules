@@ -597,8 +597,8 @@
 		>
 			<!-- Logo + Name row -->
 			<div class="flex items-start gap-4">
-				<!-- Logo upload + color pastille -->
-				<div class="shrink-0 relative">
+				<!-- Logo upload -->
+				<div class="shrink-0">
 					<input
 						type="file"
 						accept="image/*"
@@ -634,51 +634,52 @@
 							<span class="text-[9px] font-medium">Logo</span>
 						</button>
 					{/if}
-
-					<!-- Color pastille (badge-style, bottom-right of logo) -->
-					<div class="absolute -bottom-1 -right-1" data-color-picker>
-						<button
-							type="button"
-							class="h-5 w-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
-							style="background-color: {formIconColor || '#6D7481'}"
-							onclick={() => { colorPickerOpen = !colorPickerOpen; }}
-							title="Couleur du projet"
-						></button>
-
-						<!-- Color picker popover -->
-						{#if colorPickerOpen}
-							<div class="absolute top-7 left-1/2 -translate-x-1/2 z-10 rounded-lg border border-border bg-card p-2.5 shadow-lg">
-								<div class="flex gap-1.5">
-									{#each colorPalette as color}
-										<button
-											type="button"
-											class="h-5 w-5 rounded-full transition-all {formIconColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'}"
-											style="background-color: {color}"
-											onclick={() => { formIconColor = color; colorPickerOpen = false; }}
-											title={color}
-										></button>
-									{/each}
-									<label
-										class="relative h-5 w-5 rounded-full cursor-pointer border border-border transition-all hover:scale-110 overflow-hidden"
-										style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)"
-										title="Couleur personnalisée"
-									>
-										<input
-											type="color"
-											bind:value={formIconColor}
-											class="absolute inset-0 cursor-pointer opacity-0"
-											onchange={() => { colorPickerOpen = false; }}
-										/>
-									</label>
-								</div>
-							</div>
-						{/if}
-					</div>
 				</div>
 
-				<!-- Name -->
+				<!-- Name + color pastille -->
 				<div class="flex-1 space-y-1.5">
-					<label for="project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
+					<div class="flex items-center gap-1.5">
+						<!-- Color pastille inline with label -->
+						<div class="relative" data-color-picker>
+							<button
+								type="button"
+								class="h-3 w-3 rounded-full transition-transform hover:scale-125"
+								style="background-color: {formIconColor || '#6D7481'}"
+								onclick={() => { colorPickerOpen = !colorPickerOpen; }}
+								title="Couleur du projet"
+							></button>
+
+							<!-- Color picker popover -->
+							{#if colorPickerOpen}
+								<div class="absolute top-6 left-0 z-10 rounded-lg border border-border bg-card p-2.5 shadow-lg">
+									<div class="flex gap-1.5">
+										{#each colorPalette as color}
+											<button
+												type="button"
+												class="h-5 w-5 rounded-full transition-all {formIconColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-110'}"
+												style="background-color: {color}"
+												onclick={() => { formIconColor = color; colorPickerOpen = false; }}
+												title={color}
+											></button>
+										{/each}
+										<label
+											class="relative h-5 w-5 rounded-full cursor-pointer border border-border transition-all hover:scale-110 overflow-hidden"
+											style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red)"
+											title="Couleur personnalisée"
+										>
+											<input
+												type="color"
+												bind:value={formIconColor}
+												class="absolute inset-0 cursor-pointer opacity-0"
+												onchange={() => { colorPickerOpen = false; }}
+											/>
+										</label>
+									</div>
+								</div>
+							{/if}
+						</div>
+						<label for="project-name" class="text-sm font-medium text-foreground">Nom du projet</label>
+					</div>
 					<Input
 						id="project-name"
 						bind:value={formName}

@@ -3,14 +3,17 @@
   "name": "Lemon Lab",
   "short_name": "Lemon Lab",
   "description": "Capture et gestion de pages web pour Lemon Lab - Lemon Learning",
-  "version": "0.5.2",
+  "version": "0.12.0",
   "permissions": [
     "activeTab",
     "storage",
     "tabs",
     "scripting",
     "alarms",
-    "sidePanel"
+    "sidePanel",
+    "webNavigation",
+    "pageCapture",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -37,7 +40,8 @@
       "js": [
         "content/content-script.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "icons": {

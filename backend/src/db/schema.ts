@@ -52,6 +52,8 @@ export const pages = sqliteTable('pages', {
   fileSize: integer('file_size'),
   captureMode: text('capture_mode', { enum: ['free', 'guided', 'auto'] }).notNull().default('free'),
   thumbnailPath: text('thumbnail_path'),
+  mhtmlPath: text('mhtml_path'),
+  mhtmlSize: integer('mhtml_size'),
   healthStatus: text('health_status', { enum: ['ok', 'warning', 'error'] }).notNull().default('ok'),
   pageType: text('page_type', { enum: ['page', 'modal', 'spa_state'] }).notNull().default('page'),
   parentPageId: text('parent_page_id'),
@@ -59,6 +61,9 @@ export const pages = sqliteTable('pages', {
   syntheticUrl: text('synthetic_url'),
   captureTimingMs: integer('capture_timing_ms'),
   stateIndex: integer('state_index'),
+  guideName: text('guide_name'),
+  captureVariant: text('capture_variant'),
+  guideStepIndex: integer('guide_step_index'),
   createdAt: text('created_at').notNull(),
 });
 

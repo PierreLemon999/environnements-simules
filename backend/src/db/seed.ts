@@ -103,6 +103,8 @@ async function main() {
       file_size INTEGER,
       capture_mode TEXT NOT NULL DEFAULT 'free',
       thumbnail_path TEXT,
+      mhtml_path TEXT,
+      mhtml_size INTEGER,
       health_status TEXT NOT NULL DEFAULT 'ok',
       page_type TEXT NOT NULL DEFAULT 'page',
       parent_page_id TEXT,
@@ -110,6 +112,9 @@ async function main() {
       synthetic_url TEXT,
       capture_timing_ms INTEGER,
       state_index INTEGER,
+      guide_name TEXT,
+      capture_variant TEXT,
+      guide_step_index INTEGER,
       created_at TEXT NOT NULL
     );
 

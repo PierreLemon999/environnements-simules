@@ -532,7 +532,9 @@ export async function uploadCapturedPage(
 	page: { html: string; title: string; url: string },
 	captureMode: string,
 	screenshotBlob?: Blob | null,
-	faviconDataUri?: string | null
+	faviconDataUri?: string | null,
+	guideMetadata?: { guideName?: string; captureVariant?: 'clean' | 'annotated'; guideStepIndex?: number },
+	mhtmlBlob?: Blob | null
 ): Promise<{ id: string; fileSize: number }> {
 	const LOG = '[LL Capture]';
 	const blob = new Blob([page.html], { type: 'text/html' });
@@ -543,6 +545,8 @@ export async function uploadCapturedPage(
 
 	const parts = ['HTML'];
 	if (screenshotBlob) parts.push(`Screenshot(${(screenshotBlob.size / 1024).toFixed(0)}KB)`);
+	if (mhtmlBlob) parts.push(`MHTML(${(mhtmlBlob.size / 1024).toFixed(0)}KB)`);
+	if (guideMetadata?.captureVariant) parts.push(`[${guideMetadata.captureVariant}]`);
 	console.log(`${LOG} Uploading: ${parts.join(' + ')} → /versions/${versionId}/pages`);
 
 	try {
@@ -551,8 +555,11 @@ export async function uploadCapturedPage(
 			urlPath,
 			title: page.title,
 			captureMode,
-			faviconDataUri: faviconDataUri || undefined
-		}, screenshotBlob);
+			faviconDataUri: faviconDataUri || undefined,
+			guideName: guideMetadata?.guideName,
+			captureVariant: guideMetadata?.captureVariant,
+			guideStepIndex: guideMetadata?.guideStepIndex
+		}, screenshotBlob, mhtmlBlob);
 		return response.data;
 	} catch (err) {
 		console.error(`${LOG} Upload failed:`, err instanceof Error ? err.message : err);

@@ -23,3 +23,14 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Database files (dev)
+backend/app.db
+backend/data/lemonlab.db
+
+# Test artifacts
+extension/.test-*
+extension/.test-profile/
+tests/results/
+tests/screenshots/
+tests/capture-results/

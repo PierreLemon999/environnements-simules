@@ -113,7 +113,7 @@ async function fetchWithTimeout(url: string): Promise<Response> {
 	try {
 		const response = await fetch(url, {
 			signal: controller.signal,
-			credentials: 'omit',
+			credentials: 'include',
 		});
 		return response;
 	} finally {

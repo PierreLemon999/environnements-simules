@@ -147,14 +147,21 @@ export async function uploadPage(
 		captureTimingMs?: number;
 		stateIndex?: number;
 		faviconDataUri?: string;
+		guideName?: string;
+		captureVariant?: string;
+		guideStepIndex?: number;
 	},
-	screenshotBlob?: Blob | null
+	screenshotBlob?: Blob | null,
+	mhtmlBlob?: Blob | null
 ): Promise<{ data: { id: string; fileSize: number } }> {
 	const token = await getToken();
 	const formData = new FormData();
 	formData.append('file', file, 'page.html');
 	if (screenshotBlob) {
 		formData.append('screenshot', screenshotBlob, 'screenshot.png');
+	}
+	if (mhtmlBlob) {
+		formData.append('mhtml', mhtmlBlob, 'page.mhtml');
 	}
 	formData.append('metadata', JSON.stringify(metadata));
 

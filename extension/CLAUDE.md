@@ -64,6 +64,26 @@ CHECK_AUTH, LOGOUT
 Alarm Chrome toutes les 30 min → POST /api/auth/verify → refresh si valide
 ```
 
+## Dev Auto-Reload (IMPORTANT — ne pas casser)
+
+L'extension se recharge automatiquement quand du code change pendant `npm run dev`.
+
+**3 pièces interdépendantes :**
+
+| Pièce | Fichier | Rôle |
+|-------|---------|------|
+| Vite plugin | `scripts/reload-plugin.ts` | Serveur HTTP sur port **38587**, met à jour un timestamp après chaque rebuild |
+| Service worker | `service-worker.ts` (fin du fichier) | Poll `http://127.0.0.1:38587` toutes les 1.5s, appelle `chrome.runtime.reload()` si timestamp change |
+| Config Vite | `vite.config.ts` | `emptyOutDir: false` + **pas de hash** dans `chunkFileNames` en dev |
+
+**Pourquoi c'est fragile — NE PAS MODIFIER :**
+- `emptyOutDir` DOIT être `false` en dev : sinon dist/ est vidé entre les rebuilds → Chrome désactive le service worker (status code 15)
+- `chunkFileNames` DOIT être `shared/[name].js` (sans `[hash]`) en dev : sinon le SW importe un chunk qui n'existe plus après rebuild → crash
+- Le port **38587** est hardcodé dans le plugin ET le service worker — changer l'un sans l'autre casse le reload
+- On utilise HTTP (pas un fichier chrome-extension://) car Chrome cache agressivement les fichiers d'extension
+
+**Usage :** `npm run dev` → charger `dist/` comme extension non empaquetée → chaque save recharge l'extension (~1.5s)
+
 ## Versioning (OBLIGATOIRE)
 
 **Source de vérité** : `public/manifest.json` → version synchronisée dans `package.json`.

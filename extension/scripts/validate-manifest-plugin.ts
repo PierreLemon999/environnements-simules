@@ -10,11 +10,13 @@ import { resolve } from 'path';
 
 export function validateManifest(): Plugin {
 	let outDir = 'dist';
+	let isWatch = false;
 
 	return {
 		name: 'validate-manifest',
 		configResolved(config) {
 			outDir = config.build.outDir ?? 'dist';
+			isWatch = !!config.build.watch;
 		},
 		closeBundle() {
 			const manifestPath = resolve(outDir, 'manifest.json');
@@ -76,6 +78,11 @@ export function validateManifest(): Plugin {
 					'Fix: ensure all entry points in vite.config.ts match the manifest.',
 					''
 				].join('\n');
+				if (isWatch) {
+					// In watch mode, don't crash — next rebuild will fix it
+					console.warn(msg);
+					return;
+				}
 				throw new Error(msg);
 			}
 

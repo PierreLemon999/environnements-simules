@@ -38,6 +38,7 @@
 		ZoomIn,
 		ZoomOut,
 		RotateCcw,
+		Archive,
 	} from 'lucide-svelte';
 
 	// Types
@@ -51,6 +52,8 @@
 		fileSize: number | null;
 		captureMode: 'free' | 'guided' | 'auto';
 		thumbnailPath: string | null;
+		mhtmlPath: string | null;
+		mhtmlSize: number | null;
 		healthStatus: 'ok' | 'warning' | 'error';
 		pageType?: 'page' | 'modal' | 'spa_state';
 		parentPageId?: string | null;
@@ -1621,6 +1624,44 @@
 						{/if}
 					</div>
 
+					<!-- MHTML archive section -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<Archive class="h-4 w-4 text-muted-foreground" />
+							Archive MHTML
+						</h3>
+						{#if selectedPage.mhtmlPath}
+							<div class="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
+								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent">
+									<Archive class="h-5 w-5 text-muted-foreground" />
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="text-sm font-medium text-foreground truncate">{selectedPage.title}.mhtml</p>
+									<p class="text-xs text-muted-foreground">
+										{formatFileSize(selectedPage.mhtmlSize)} — Capturée le {formatDate(selectedPage.createdAt)}
+									</p>
+								</div>
+								<a
+									href="/api/pages/{selectedPage.id}/mhtml"
+									download="{selectedPage.title}.mhtml"
+									class="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-accent transition-colors"
+								>
+									<Download class="h-3.5 w-3.5" />
+									Télécharger MHTML
+								</a>
+							</div>
+							<p class="text-[11px] text-muted-foreground">
+								L'archive MHTML contient la page complète avec toutes les ressources. Ouvrez-la dans Chrome pour un rendu fidèle.
+							</p>
+						{:else}
+							<div class="flex flex-col items-center justify-center py-6 rounded-lg border border-dashed border-border bg-accent/20">
+								<Archive class="h-6 w-6 text-muted" />
+								<p class="mt-2 text-sm text-muted-foreground">Aucune archive MHTML disponible</p>
+								<p class="mt-0.5 text-xs text-muted">L'archive MHTML est générée automatiquement lors de la capture.</p>
+							</div>
+						{/if}
+					</div>
+
 					<!-- Page metadata -->
 					<div class="space-y-3">
 						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -1645,6 +1686,12 @@
 									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Taille du fichier</dt>
 									<dd class="mt-0.5 text-foreground">{formatFileSize(selectedPage.fileSize)}</dd>
 								</div>
+								{#if selectedPage.mhtmlSize}
+									<div>
+										<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Taille MHTML</dt>
+										<dd class="mt-0.5 text-foreground">{formatFileSize(selectedPage.mhtmlSize)}</dd>
+									</div>
+								{/if}
 								<div>
 									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Statut</dt>
 									<dd class="mt-0.5 flex items-center gap-1.5">

@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import { get, patch } from '$lib/api';
 	import { toast } from '$lib/stores/toast';
-	import { selectedProject } from '$lib/stores/project';
+	import { selectedProject, selectProject } from '$lib/stores/project';
 	import { Button } from '$components/ui/button';
 	import { Badge } from '$components/ui/badge';
 	import { Input } from '$components/ui/input';
@@ -27,12 +27,16 @@
 		AlignLeft,
 		Undo2,
 		Redo2,
+		Camera,
+		Download,
+		Archive,
 	} from 'lucide-svelte';
 
 	// Types
 	interface PageData {
 		id: string;
 		versionId: string;
+		projectId?: string | null;
 		urlSource: string;
 		urlPath: string;
 		title: string;
@@ -40,6 +44,8 @@
 		fileSize: number | null;
 		captureMode: 'free' | 'guided' | 'auto';
 		thumbnailPath: string | null;
+		mhtmlPath: string | null;
+		mhtmlSize: number | null;
 		healthStatus: 'ok' | 'warning' | 'error';
 		createdAt: string;
 	}
@@ -121,6 +127,22 @@
 	});
 
 	let isDirty = $derived(htmlContent !== originalContent);
+
+	// Preview URL for iframe
+	let previewUrl = $derived(() => {
+		if (!currentPage || !$selectedProject?.subdomain) return '';
+		return `/demo-api/${$selectedProject.subdomain}/${currentPage.urlPath}`;
+	});
+
+	function formatDate(dateStr: string): string {
+		return new Date(dateStr).toLocaleDateString('fr-FR', {
+			day: 'numeric',
+			month: 'short',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	}
 	let editorSearchQuery = $state('');
 
 	// Helpers
@@ -225,6 +247,9 @@
 		(async () => {
 			try {
 				await loadPageContent(pageId ?? '');
+				if (currentPage?.projectId) {
+					await selectProject(currentPage.projectId);
+				}
 				if (currentPage?.versionId) {
 					await loadPages(currentPage.versionId);
 				}
@@ -319,9 +344,17 @@
 			<div class="flex items-center border-b border-border bg-card px-4">
 				<Tabs value={activeEditorTab} onValueChange={(v) => { activeEditorTab = v; }}>
 					<TabsList>
+						<TabsTrigger value="preview" class="gap-1.5 text-xs">
+							<Eye class="h-3 w-3" />
+							Aperçu
+						</TabsTrigger>
 						<TabsTrigger value="html" class="gap-1.5 text-xs">
 							<Code class="h-3 w-3" />
 							Éditeur HTML
+						</TabsTrigger>
+						<TabsTrigger value="resources" class="gap-1.5 text-xs">
+							<Camera class="h-3 w-3" />
+							Ressources
 						</TabsTrigger>
 						<TabsTrigger value="links" class="gap-1.5 text-xs">
 							<Link2 class="h-3 w-3" />
@@ -347,7 +380,50 @@
 			</div>
 
 			<!-- Editor content area -->
-			{#if activeEditorTab === 'html'}
+			{#if activeEditorTab === 'preview'}
+				<!-- Rendered page preview -->
+				<div class="flex flex-1 overflow-hidden bg-[#ebebeb] p-5">
+					<div class="flex flex-1 flex-col overflow-hidden rounded-xl border border-black/5 bg-white shadow-lg">
+						<!-- Browser chrome -->
+						<div class="flex items-center gap-2.5 border-b border-border bg-[#f5f5f4] px-3.5 py-2.5">
+							<div class="flex items-center gap-[5px]">
+								<span class="h-[10px] w-[10px] rounded-full bg-[#ff5f57]"></span>
+								<span class="h-[10px] w-[10px] rounded-full bg-[#ffbd2e]"></span>
+								<span class="h-[10px] w-[10px] rounded-full bg-[#28c840]"></span>
+							</div>
+							<div class="flex flex-1 items-center gap-2 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-mono text-muted-foreground">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3 w-3 shrink-0 text-success">
+									<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+								</svg>
+								<span>
+									<span class="text-success">https://</span><span class="font-medium text-foreground">{$selectedProject?.subdomain ?? ''}.env-ll.com</span>/{currentPage.urlPath}
+								</span>
+							</div>
+						</div>
+						<!-- Page content -->
+						<div class="flex-1 overflow-y-auto bg-[#f4f6f9]">
+							{#if previewUrl()}
+								<iframe
+									src={previewUrl()}
+									title="Aperçu de {currentPage.title}"
+									class="h-full w-full border-0"
+									sandbox="allow-same-origin allow-scripts"
+								></iframe>
+							{:else}
+								<div class="flex h-full items-center justify-center">
+									<div class="text-center text-muted-foreground">
+										<div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-border/50">
+											<Eye class="h-6 w-6" />
+										</div>
+										<p class="text-sm font-medium">Aperçu non disponible</p>
+										<p class="mt-1 text-xs">Sélectionnez un projet pour prévisualiser la page.</p>
+									</div>
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{:else if activeEditorTab === 'html'}
 				<!-- HTML Toolbar -->
 				<div class="flex items-center gap-1.5 border-b border-border bg-card px-4 py-1.5">
 					<button
@@ -588,6 +664,111 @@
 						<Save class="h-3.5 w-3.5" />
 						Enregistrer
 					</Button>
+				</div>
+			{:else if activeEditorTab === 'resources'}
+				<div class="flex-1 overflow-y-auto p-5 space-y-6">
+					<!-- Screenshot section -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<Camera class="h-4 w-4 text-muted-foreground" />
+							Capture d'écran
+						</h3>
+						{#if currentPage.thumbnailPath}
+							<div class="rounded-lg border border-border overflow-hidden bg-white shadow-sm">
+								<img
+									src="/api/pages/{currentPage.id}/screenshot"
+									alt="Capture d'écran de {currentPage.title}"
+									class="w-full h-auto"
+									loading="lazy"
+								/>
+							</div>
+							<div class="flex items-center gap-3 text-xs text-muted-foreground">
+								<span>Capturée le {formatDate(currentPage.createdAt)}</span>
+								<a
+									href="/api/pages/{currentPage.id}/screenshot"
+									download="{currentPage.title}.png"
+									class="inline-flex items-center gap-1 text-primary hover:underline"
+								>
+									<Download class="h-3 w-3" />
+									Télécharger PNG
+								</a>
+							</div>
+						{:else}
+							<div class="flex flex-col items-center justify-center py-8 rounded-lg border border-dashed border-border bg-accent/20">
+								<Camera class="h-8 w-8 text-muted" />
+								<p class="mt-2 text-sm text-muted-foreground">Aucune capture d'écran disponible</p>
+								<p class="mt-0.5 text-xs text-muted">La capture d'écran est générée automatiquement lors de la capture de page.</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- MHTML archive section -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<Archive class="h-4 w-4 text-muted-foreground" />
+							Archive MHTML
+						</h3>
+						{#if currentPage.mhtmlPath}
+							<div class="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
+								<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent">
+									<Archive class="h-5 w-5 text-muted-foreground" />
+								</div>
+								<div class="flex-1 min-w-0">
+									<p class="text-sm font-medium text-foreground truncate">{currentPage.title}.mhtml</p>
+									<p class="text-xs text-muted-foreground">
+										{formatFileSize(currentPage.mhtmlSize)} — Capturée le {formatDate(currentPage.createdAt)}
+									</p>
+								</div>
+								<a
+									href="/api/pages/{currentPage.id}/mhtml"
+									download="{currentPage.title}.mhtml"
+									class="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-accent transition-colors"
+								>
+									<Download class="h-3.5 w-3.5" />
+									Télécharger MHTML
+								</a>
+							</div>
+							<p class="text-[11px] text-muted-foreground">
+								L'archive MHTML contient la page complète avec toutes les ressources. Ouvrez-la dans Chrome pour un rendu fidèle.
+							</p>
+						{:else}
+							<div class="flex flex-col items-center justify-center py-6 rounded-lg border border-dashed border-border bg-accent/20">
+								<Archive class="h-6 w-6 text-muted" />
+								<p class="mt-2 text-sm text-muted-foreground">Aucune archive MHTML disponible</p>
+								<p class="mt-0.5 text-xs text-muted">L'archive MHTML est générée automatiquement lors de la capture.</p>
+							</div>
+						{/if}
+					</div>
+
+					<!-- Quick metadata -->
+					<div class="space-y-3">
+						<h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+							<FileText class="h-4 w-4 text-muted-foreground" />
+							Informations
+						</h3>
+						<div class="rounded-lg border border-border bg-card p-4">
+							<dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Taille HTML</dt>
+									<dd class="mt-0.5 text-foreground">{formatFileSize(currentPage.fileSize)}</dd>
+								</div>
+								{#if currentPage.mhtmlSize}
+									<div>
+										<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Taille MHTML</dt>
+										<dd class="mt-0.5 text-foreground">{formatFileSize(currentPage.mhtmlSize)}</dd>
+									</div>
+								{/if}
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Mode de capture</dt>
+									<dd class="mt-0.5 text-foreground">{currentPage.captureMode === 'free' ? 'Capture libre' : currentPage.captureMode === 'guided' ? 'Capture guidée' : 'Capture automatique'}</dd>
+								</div>
+								<div>
+									<dt class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Capturée le</dt>
+									<dd class="mt-0.5 text-foreground">{formatDate(currentPage.createdAt)}</dd>
+								</div>
+							</dl>
+						</div>
+					</div>
 				</div>
 			{:else if activeEditorTab === 'javascript'}
 				<div class="flex-1 overflow-y-auto p-5">

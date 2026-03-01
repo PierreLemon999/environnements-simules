@@ -260,7 +260,7 @@
 							></span>
 							{#if !collapsed}
 								<span class="truncate flex-1">{project.toolName}</span>
-								<span class="ml-auto mr-1 font-mono text-[11px] text-muted-foreground">{project.pageCount}</span>
+								<span class="ml-auto mr-1 font-mono text-[11px] text-muted-foreground">{project.pageCount >= 1000 ? (project.pageCount / 1000).toFixed(1).replace('.0', '') + 'K' : project.pageCount}</span>
 							{/if}
 						</a>
 					</li>

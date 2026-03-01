@@ -95,3 +95,15 @@ Config { startUrl, maxDepth, blacklist, interestZones[] }
 - Les fichiers sont stockés sur disque dans `/data/uploads/{pageId}/`, pas en DB
 - La duplication de version copie toutes les pages + pageLinks
 - Le status d'une version peut être : active, test, deprecated
+
+## Capture guidée — Références externes (lecture seule)
+
+Pour comprendre le fonctionnement du player Lemon Learning (détection, guides, shadow DOM, API interne) :
+
+- **Code source LL** : `/Users/pierre/Library/Mobile Documents/com~apple~CloudDocs/code/Lemon Learning code/`
+  - `front-v2.65/` — Monorepo React (yarn workspaces, `packages/`)
+  - `back-dev/` — Backend LL
+- **Documentation LL** : `/Users/pierre/Library/Mobile Documents/com~apple~CloudDocs/code/Bienvenue dans la documentation de Lemon Learning /`
+  - Export Notion — sections pertinentes : Le player, L'éditeur, Créer des contenus, Mise en place technique
+
+Ces sources sont en **lecture seule** — ne jamais les modifier. Les consulter pour reverse-engineering du player LL et résolution des problèmes de capture guidée (lancement de guide, bubble observer, shadow DOM, etc.).

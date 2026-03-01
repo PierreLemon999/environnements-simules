@@ -29,7 +29,8 @@ router.post(
   requireRole('admin'),
   upload.fields([
     { name: 'file', maxCount: 1 },
-    { name: 'screenshot', maxCount: 1 }
+    { name: 'screenshot', maxCount: 1 },
+    { name: 'mhtml', maxCount: 1 }
   ]),
   async (req: Request, res: Response) => {
     try {
@@ -47,6 +48,7 @@ router.post(
       const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
       const htmlFile = files?.file?.[0];
       const screenshotFile = files?.screenshot?.[0];
+      const mhtmlFile = files?.mhtml?.[0];
 
       if (!htmlFile) {
         res.status(400).json({ error: 'HTML file is required', code: 400 });
@@ -66,6 +68,9 @@ router.post(
         captureTimingMs?: number;
         stateIndex?: number;
         faviconDataUri?: string;
+        guideName?: string;
+        captureVariant?: string;
+        guideStepIndex?: number;
       } = {};
 
       if (req.body.metadata) {
@@ -87,6 +92,9 @@ router.post(
           syntheticUrl: req.body.syntheticUrl,
           captureTimingMs: req.body.captureTimingMs ? parseInt(req.body.captureTimingMs, 10) : undefined,
           stateIndex: req.body.stateIndex ? parseInt(req.body.stateIndex, 10) : undefined,
+          guideName: req.body.guideName,
+          captureVariant: req.body.captureVariant,
+          guideStepIndex: req.body.guideStepIndex ? parseInt(req.body.guideStepIndex, 10) : undefined,
         };
       }
 
@@ -174,6 +182,13 @@ router.post(
         fs.writeFileSync(path.join(dataDir, screenshotRelativePath), screenshotFile.buffer);
       }
 
+      // Write MHTML archive if provided
+      let mhtmlRelativePath: string | null = null;
+      if (mhtmlFile) {
+        mhtmlRelativePath = `uploads/${req.params.versionId}/${pageId}.mhtml`;
+        fs.writeFileSync(path.join(dataDir, mhtmlRelativePath), mhtmlFile.buffer);
+      }
+
       const page = {
         id: pageId,
         versionId: req.params.versionId,
@@ -184,6 +199,8 @@ router.post(
         fileSize: htmlFile.size,
         captureMode: (metadata.captureMode as 'free' | 'guided' | 'auto') || 'free',
         thumbnailPath: screenshotRelativePath,
+        mhtmlPath: mhtmlRelativePath,
+        mhtmlSize: mhtmlFile?.size ?? null,
         healthStatus,
         pageType,
         parentPageId: metadata.parentPageId || null,
@@ -191,6 +208,9 @@ router.post(
         syntheticUrl: metadata.syntheticUrl || null,
         captureTimingMs: metadata.captureTimingMs ?? null,
         stateIndex: metadata.stateIndex ?? null,
+        guideName: metadata.guideName || null,
+        captureVariant: metadata.captureVariant || null,
+        guideStepIndex: metadata.guideStepIndex ?? null,
         createdAt: new Date().toISOString(),
       };
 
@@ -376,6 +396,13 @@ router.get('/pages/:id', authenticate, async (req: Request, res: Response) => {
       return;
     }
 
+    // Resolve projectId from version
+    const version = await db
+      .select({ projectId: versions.projectId })
+      .from(versions)
+      .where(eq(versions.id, page.versionId))
+      .get();
+
     // Include child modals for this page
     const childModals = await db
       .select()
@@ -388,7 +415,7 @@ router.get('/pages/:id', authenticate, async (req: Request, res: Response) => {
       )
       .all();
 
-    res.json({ data: { ...page, modals: childModals } });
+    res.json({ data: { ...page, projectId: version?.projectId ?? null, modals: childModals } });
   } catch (error) {
     logRouteError(req, error, 'Error getting page');
     res.status(500).json({ error: 'Internal server error', code: 500 });
@@ -562,6 +589,54 @@ router.get(
 );
 
 /**
+ * GET /pages/:id/mhtml
+ * Serve the MHTML archive for a page (download).
+ */
+router.get(
+  '/pages/:id/mhtml',
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const page = await db
+        .select()
+        .from(pages)
+        .where(eq(pages.id, req.params.id))
+        .get();
+
+      if (!page) {
+        res.status(404).json({ error: 'Page not found', code: 404 });
+        return;
+      }
+
+      if (!page.mhtmlPath) {
+        res.status(404).json({ error: 'No MHTML archive for this page', code: 404 });
+        return;
+      }
+
+      const fullPath = path.join(dataDir, page.mhtmlPath);
+      if (!fs.existsSync(fullPath)) {
+        res.status(404).json({ error: 'MHTML file not found on disk', code: 404 });
+        return;
+      }
+
+      const safeTitle = (page.title || 'page').replace(/[^a-zA-Z0-9_\-. ]/g, '_');
+      res.setHeader('Content-Type', 'multipart/related');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mhtml"`);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      const stream = fs.createReadStream(fullPath);
+      stream.on('error', (err) => {
+        logRouteError(req, err, 'MHTML stream error');
+        if (!res.headersSent) res.status(500).json({ error: 'File read error', code: 500 });
+      });
+      stream.pipe(res);
+    } catch (error) {
+      logRouteError(req, error, 'Error serving MHTML');
+      res.status(500).json({ error: 'Internal server error', code: 500 });
+    }
+  }
+);
+
+/**
  * DELETE /pages/:id
  * Delete a page and its HTML file.
  */
@@ -593,6 +668,14 @@ router.delete(
         const screenshotFullPath = path.join(dataDir, page.thumbnailPath);
         if (fs.existsSync(screenshotFullPath)) {
           fs.unlinkSync(screenshotFullPath);
+        }
+      }
+
+      // Delete the MHTML archive if present
+      if (page.mhtmlPath) {
+        const mhtmlFullPath = path.join(dataDir, page.mhtmlPath);
+        if (fs.existsSync(mhtmlFullPath)) {
+          fs.unlinkSync(mhtmlFullPath);
         }
       }
 

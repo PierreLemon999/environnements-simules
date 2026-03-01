@@ -67,6 +67,27 @@
 				: captureState.pages.filter((p) => p.status === PAGE_STATUS.ERROR)
 	);
 
+	// Group pages by guideName for guided capture display
+	let pageGroups = $derived.by(() => {
+		const groups: Array<{ guideName: string; pages: CapturedPage[] }> = [];
+		const ungrouped: CapturedPage[] = [];
+		for (const page of filteredPages) {
+			if (page.guideName) {
+				let group = groups.find((g) => g.guideName === page.guideName);
+				if (!group) {
+					group = { guideName: page.guideName, pages: [] };
+					groups.push(group);
+				}
+				group.pages.push(page);
+			} else {
+				ungrouped.push(page);
+			}
+		}
+		return { groups, ungrouped };
+	});
+
+	let collapsedGuides = $state<Set<string>>(new Set());
+
 	// Load initial data
 	$effect(() => {
 		loadInitialData();
@@ -540,12 +561,24 @@
 					<span class="text-[10px] text-gray-500">
 						Étape {g.currentStepIndex + 1} / {g.totalSteps}
 					</span>
-					{#if g.totalGuides > 1}
-						<span class="text-[10px] text-gray-400">
-							Guide {g.currentGuideIndex + 1}/{g.totalGuides}
-						</span>
-					{/if}
+					<div class="flex items-center gap-2">
+						{#if g.totalRuns && g.totalRuns > 1}
+							<span class="text-[10px] text-primary font-medium">
+								Run {(g.runIndex ?? 0) + 1}/{g.totalRuns}
+							</span>
+						{/if}
+						{#if g.totalGuides > 1}
+							<span class="text-[10px] text-gray-400">
+								Guide {g.currentGuideIndex + 1}/{g.totalGuides}
+							</span>
+						{/if}
+					</div>
 				</div>
+				{#if g.runLabel && g.totalRuns && g.totalRuns > 1}
+					<div class="text-[9px] text-primary/70 mb-1 truncate" title={g.runLabel}>
+						{g.runLabel}
+					</div>
+				{/if}
 				<div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mb-2">
 					<div
 						class="h-full bg-primary rounded-full transition-all duration-500"
@@ -670,16 +703,73 @@
 				<span class="text-[10px] text-gray-400">{filteredPages.length} page{filteredPages.length > 1 ? 's' : ''}</span>
 			</div>
 
-			<div class="space-y-1 px-4 py-2">
-				{#each filteredPages as page (page.localId)}
-					<PageItem
-						{page}
-						{formatSize}
-						subdomain={activeProject?.subdomain}
-						onRemove={() => removePage(page.localId)}
-						onRecapture={() => recapturePage(page.localId)}
-					/>
-				{/each}
+			<div class="px-4 py-2">
+				{#if pageGroups.groups.length > 0}
+					<!-- Grouped pages by guide -->
+					{#each pageGroups.groups as group (group.guideName)}
+						{@const isCollapsed = collapsedGuides.has(group.guideName)}
+						<div class="mb-2">
+							<!-- Guide section header -->
+							<button
+								onclick={() => {
+									const next = new Set(collapsedGuides);
+									if (next.has(group.guideName)) next.delete(group.guideName);
+									else next.add(group.guideName);
+									collapsedGuides = next;
+								}}
+								class="w-full flex items-center gap-2 py-1.5 px-1 text-left hover:bg-gray-50 rounded transition group/header"
+							>
+								<svg
+									class="w-3 h-3 text-gray-400 transition-transform {isCollapsed ? '' : 'rotate-90'}"
+									viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+								><polyline points="9 18 15 12 9 6" /></svg>
+								<span class="text-[11px] font-semibold text-gray-700 truncate flex-1">{group.guideName}</span>
+								<span class="text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5 shrink-0">{group.pages.length}</span>
+							</button>
+							{#if !isCollapsed}
+								<div class="border-l-2 border-primary/20 ml-2.5 pl-2 space-y-1 mt-0.5">
+									{#each group.pages as page (page.localId)}
+										<PageItem
+											{page}
+											{formatSize}
+											subdomain={activeProject?.subdomain}
+											onRemove={() => removePage(page.localId)}
+											onRecapture={() => recapturePage(page.localId)}
+										/>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/each}
+
+					<!-- Ungrouped pages -->
+					{#if pageGroups.ungrouped.length > 0}
+						<div class="space-y-1 mt-2">
+							{#each pageGroups.ungrouped as page (page.localId)}
+								<PageItem
+									{page}
+									{formatSize}
+									subdomain={activeProject?.subdomain}
+									onRemove={() => removePage(page.localId)}
+									onRecapture={() => recapturePage(page.localId)}
+								/>
+							{/each}
+						</div>
+					{/if}
+				{:else}
+					<!-- No guide groups — flat list (free/auto mode) -->
+					<div class="space-y-1">
+						{#each filteredPages as page (page.localId)}
+							<PageItem
+								{page}
+								{formatSize}
+								subdomain={activeProject?.subdomain}
+								onRemove={() => removePage(page.localId)}
+								onRecapture={() => recapturePage(page.localId)}
+							/>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>

@@ -8,7 +8,8 @@ export const STORAGE_KEYS = {
 	ACTIVE_VERSION: 'active_version',
 	CAPTURE_MODE: 'capture_mode',
 	CAPTURE_STATE: 'capture_state',
-	VERSION_OUTDATED: 'version_outdated'
+	VERSION_OUTDATED: 'version_outdated',
+	SCANNED_GUIDES: 'scanned_guides'
 } as const;
 
 export const CAPTURE_MODES = {
@@ -74,6 +75,89 @@ export interface CapturedPage {
 	domFingerprint?: string;
 	syntheticUrl?: string;
 	captureTimingMs?: number;
+	guideName?: string;
+	captureVariant?: 'clean' | 'annotated';
+	guideStepIndex?: number;
+	runIndex?: number;
+	runLabel?: string;
+}
+
+// ---------------------------------------------------------------------------
+// LL Guide data — enriched from React Query cache
+// ---------------------------------------------------------------------------
+
+export const LL_STEP_TYPES = {
+	REGULAR: 'regular',
+	INTRO: 'intro',
+	OUTRO: 'outro',
+	QUESTION: 'question',
+	CONDITION: 'condition',
+	VARIABLE: 'variable',
+	AUTO: 'auto',
+	SUBGUIDE: 'subguide'
+} as const;
+
+export type LLStepType = (typeof LL_STEP_TYPES)[keyof typeof LL_STEP_TYPES];
+
+export const LL_TRIGGER_TYPES = {
+	NEXT: 'NEXT',
+	CLICK: 'CLICK',
+	INPUT: 'INPUT',
+	CHANGE: 'CHANGE',
+	APPEAR: 'APPEAR',
+	DISAPPEAR: 'DISAPPEAR',
+	WAIT: 'WAIT',
+	MULTIPAGE: 'MULTIPAGE',
+	HOVER: 'HOVER',
+	MOUSEDOWN: 'MOUSEDOWN'
+} as const;
+
+export type LLTriggerType = (typeof LL_TRIGGER_TYPES)[keyof typeof LL_TRIGGER_TYPES];
+
+export interface LLQuestionAnswer {
+	id: number;
+	title: string;
+}
+
+export interface LLQuestion {
+	id: number;
+	answers: LLQuestionAnswer[];
+}
+
+export interface LLConditionBranch {
+	id: number;
+	conditionType: string; // 'question', 'element_exists', 'url_contains', etc.
+	conditionContent: string; // JSON string with condition details
+	nextStep: number | null;
+	name: string | null;
+}
+
+export interface LLGuideStep {
+	id: number;
+	stepType: LLStepType;
+	triggers: Array<{ type: LLTriggerType; option?: string }>;
+	targetPaths?: unknown; // LL Player's "paths" object used by TargetAdapter
+	nextStep: number | null;
+	isFirst: boolean;
+	previousEnabled: boolean;
+	title?: string;
+	content?: string;
+	stepKey?: string; // Identifier for linking questions to conditions
+	question?: LLQuestion; // Question data with answer options
+	conditions?: LLConditionBranch[]; // Condition branches for branching steps
+}
+
+export interface RunPlan {
+	answers: Record<string, number>; // stepKey → answerIndex
+	label: string; // e.g. "Q1=Oui, Q2=Option A"
+}
+
+export interface LLGuideData {
+	id: string;
+	name: string;
+	steps: LLGuideStep[];
+	stepCount: number;
+	sectionName?: string;
 }
 
 export interface LLGuide {
@@ -81,6 +165,8 @@ export interface LLGuide {
 	name: string;
 	stepCount: number;
 	selected: boolean;
+	steps?: LLGuideStep[];
+	sectionName?: string;
 }
 
 export interface GuidedProgress {
@@ -92,6 +178,9 @@ export interface GuidedProgress {
 	executionMode: 'manual' | 'auto';
 	capturedPages: number;
 	status: 'waiting_bubble' | 'capturing' | 'advancing' | 'idle' | 'done';
+	runIndex?: number; // Current run index (0-based) for multi-branch capture
+	totalRuns?: number; // Total runs planned for current guide
+	runLabel?: string; // Human-readable label for current run
 }
 
 export interface CaptureState {
@@ -125,3 +214,26 @@ export const CAPTURE_STRATEGIES = {
 } as const;
 
 export type CaptureStrategy = (typeof CAPTURE_STRATEGIES)[keyof typeof CAPTURE_STRATEGIES];
+
+// ---------------------------------------------------------------------------
+// LL Player Bridge — Step action types for guided capture
+// ---------------------------------------------------------------------------
+
+export const STEP_ACTION_TYPES = {
+	NEXT: 'next',
+	CLICK: 'click',
+	INPUT: 'input',
+	CHECKBOX: 'checkbox',
+	UNKNOWN: 'unknown'
+} as const;
+
+export type StepActionType = (typeof STEP_ACTION_TYPES)[keyof typeof STEP_ACTION_TYPES];
+
+export interface StepActionInfo {
+	actionType: StepActionType;
+	targetSelector?: string;
+	targetTagName?: string;
+	hasNextButton: boolean;
+	debugInfo?: string;
+	instructionText?: string;
+}

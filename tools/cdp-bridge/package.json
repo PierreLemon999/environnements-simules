@@ -1,0 +1,11 @@
+{
+  "name": "cdp-bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "node runner.js"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.2"
+  }
+}

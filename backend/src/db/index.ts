@@ -36,6 +36,15 @@ export default db;
 // ── Migrations ──────────────────────────────────────────────────────────────
 try { sqlite.exec(`ALTER TABLE projects ADD COLUMN favicon_url TEXT`); } catch { /* already exists */ }
 
+// v0.8.0: guide capture metadata
+try { sqlite.exec(`ALTER TABLE pages ADD COLUMN guide_name TEXT`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE pages ADD COLUMN capture_variant TEXT`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE pages ADD COLUMN guide_step_index INTEGER`); } catch { /* already exists */ }
+
+// v0.10.0: MHTML capture
+try { sqlite.exec(`ALTER TABLE pages ADD COLUMN mhtml_path TEXT`); } catch { /* already exists */ }
+try { sqlite.exec(`ALTER TABLE pages ADD COLUMN mhtml_size INTEGER`); } catch { /* already exists */ }
+
 try {
   sqlite.exec(`CREATE TABLE IF NOT EXISTS error_logs (
     id TEXT PRIMARY KEY,

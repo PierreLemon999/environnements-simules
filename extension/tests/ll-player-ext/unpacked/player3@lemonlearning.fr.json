@@ -1,0 +1,8 @@
+{
+  "name": "player3@lemonlearning.fr",
+  "description": "The Lemon Learning configuration key",
+  "type": "storage",
+  "data": {
+    "configKey": "The Lemon Learning configuration key"
+  }
+}

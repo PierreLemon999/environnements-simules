@@ -318,15 +318,27 @@ function extractInternalLinks(blacklist: string[]): string[] {
 // ---------------------------------------------------------------------------
 
 function detectLLPlayer(): { detected: boolean; method?: string } {
-	// Check the embed script tag (works from isolated world since DOM is shared)
+	// WXT custom element (LL Player v2.64+ uses WXT framework)
+	if (document.querySelector('lemon-learning-player')) {
+		return { detected: true, method: 'wxt-custom-element' };
+	}
+	// WXT shadow root attribute
+	if (document.querySelector('[data-wxt-shadow-root]')) {
+		return { detected: true, method: 'wxt-shadow-root' };
+	}
+	// Body dataset set by LL salesforce.js content script
+	if (document.body?.dataset?.llUserEmail) {
+		return { detected: true, method: 'll-user-email' };
+	}
+	// Legacy: embed script tag
 	if (document.getElementById('lemonlearning-player-embed')) {
 		return { detected: true, method: 'script-tag' };
 	}
-	// Check shadow DOM host
+	// Legacy: shadow DOM host by ID
 	if (document.getElementById('lemon-learning-player')) {
 		return { detected: true, method: 'shadow-dom-host' };
 	}
-	// Check script src
+	// Script src containing lemonlearning
 	const scripts = document.querySelectorAll('script[src]');
 	for (const script of Array.from(scripts)) {
 		const src = (script as HTMLScriptElement).src;
@@ -751,86 +763,164 @@ function modalEscapeHtml(str: string): string {
 let bubbleObserver: MutationObserver | null = null;
 let lastBubbleContentHash = '';
 let bubbleDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+let bubblePollingTimer: ReturnType<typeof setInterval> | null = null;
 let savedBubbleDisplay: string | null = null;
 
 /**
- * Find the LL Player bubble element in the DOM.
- * The bubble is rendered as a fixed-position element with max z-index,
- * NOT inside a Shadow DOM. We detect it by structural properties.
+ * Find the LL Player guide bubble element in the DOM.
+ * IMPORTANT: Must distinguish the actual guide bubble (large, has text)
+ * from the FAB launcher (small ~75x75, no text, always present).
+ *
+ * Uses querySelector('lemon-learning-player') — the element is a custom
+ * HTML tag, NOT an element with id="lemon-learning-player".
  */
 function findLLBubble(): HTMLElement | null {
-	// Strategy 1: Known LL Player container IDs
-	const knownIds = ['lemon-learning-player', 'lemonlearning-player-embed'];
-	for (const id of knownIds) {
-		const el = document.getElementById(id);
-		if (el) {
-			// Check for shadow root first (player may render inside)
-			const shadow = el.shadowRoot;
-			if (shadow) {
-				// Look for the bubble inside the shadow root
-				const fixedEls = shadow.querySelectorAll('*');
-				for (const child of Array.from(fixedEls)) {
-					const style = window.getComputedStyle(child);
-					if (style.position === 'fixed' && parseInt(style.zIndex, 10) > 2000000000) {
-						return child as HTMLElement;
-					}
+	const candidates: HTMLElement[] = [];
+
+	// Collect candidates from WXT shadow DOM (primary)
+	const wxtHost = document.querySelector('lemon-learning-player');
+	if (wxtHost?.shadowRoot) {
+		for (const child of Array.from(wxtHost.shadowRoot.querySelectorAll('*'))) {
+			const style = window.getComputedStyle(child);
+			const zIndex = parseInt(style.zIndex, 10);
+			if (style.position === 'fixed' && zIndex > 2000000000) {
+				const r = child.getBoundingClientRect();
+				if (r.width > 0 && r.height > 0 && r.width < 700 && r.height < 600) {
+					candidates.push(child as HTMLElement);
 				}
 			}
-			// The element itself might be the bubble container
-			const style = window.getComputedStyle(el);
-			if (style.position === 'fixed') return el;
 		}
 	}
 
-	// Strategy 2: Find fixed element with extremely high z-index
-	const allElements = document.querySelectorAll('*');
-	for (const el of Array.from(allElements)) {
-		const style = window.getComputedStyle(el);
-		if (style.position === 'fixed' && parseInt(style.zIndex, 10) > 2000000000) {
-			// Verify it looks like a bubble (has meaningful content, not just an overlay)
-			const rect = el.getBoundingClientRect();
-			if (rect.width > 50 && rect.width < 600 && rect.height > 50 && rect.height < 500) {
-				return el as HTMLElement;
+	// Legacy fallback: embed by ID
+	const legacyHost = document.getElementById('lemonlearning-player-embed');
+	if (legacyHost?.shadowRoot) {
+		for (const child of Array.from(legacyHost.shadowRoot.querySelectorAll('*'))) {
+			const style = window.getComputedStyle(child);
+			if (style.position === 'fixed' && parseInt(style.zIndex, 10) > 2000000000) {
+				const r = child.getBoundingClientRect();
+				if (r.width > 0 && r.height > 0 && r.width < 700 && r.height < 600) {
+					candidates.push(child as HTMLElement);
+				}
 			}
 		}
 	}
 
-	return null;
+	// Also check main document (React portals, etc.)
+	for (const el of Array.from(document.querySelectorAll('*'))) {
+		const style = window.getComputedStyle(el);
+		if (style.position === 'fixed' && parseInt(style.zIndex, 10) > 2000000000) {
+			const r = el.getBoundingClientRect();
+			if (r.width > 0 && r.height > 0 && r.width < 700 && r.height < 600) {
+				candidates.push(el as HTMLElement);
+			}
+		}
+	}
+
+	if (candidates.length === 0) return null;
+
+	// Filter out the LL Player panel (guides list) — it's NOT a guide bubble.
+	// Panel characteristics: many distinct text sections (>6), large area
+	// Guide bubble characteristics: 1-3 text sections, step indicator, Next button
+	const isBubbleNotPanel = (el: HTMLElement): boolean => {
+		// Count distinct own-text nodes (text that belongs to this element, not children)
+		let ownTextCount = 0;
+		const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+		const seenTexts = new Set<string>();
+		while (walker.nextNode()) {
+			const text = walker.currentNode.textContent?.trim();
+			if (text && text.length > 2 && !seenTexts.has(text)) {
+				seenTexts.add(text);
+				ownTextCount++;
+				if (ownTextCount > 8) return false; // Too many text sections = panel
+			}
+		}
+		return true;
+	};
+
+	// Prefer candidates that look like guide bubbles (text content, not too many sections)
+	const withText = candidates.filter(c =>
+		(c.innerText?.trim().length || 0) > 5 && isBubbleNotPanel(c)
+	);
+	if (withText.length > 0) {
+		return withText.reduce((a, b) => {
+			const ra = a.getBoundingClientRect();
+			const rb = b.getBoundingClientRect();
+			return (ra.width * ra.height) > (rb.width * rb.height) ? a : b;
+		});
+	}
+
+	// No candidate has text — skip small elements (FAB is ~75x75)
+	const notFab = candidates.filter(c => {
+		const r = c.getBoundingClientRect();
+		return r.width > 120 || r.height > 120;
+	});
+
+	return notFab[0] || null;
 }
 
 /**
- * Compute a simple hash of the bubble's visible content to detect step changes.
+ * Compute a hash of the bubble's visible content to detect step changes.
+ * Uses full text + child element positions for reliable change detection.
  */
 function computeBubbleHash(bubble: HTMLElement): string {
 	const text = bubble.innerText?.trim() || '';
-	// Use first 200 chars — enough to detect step changes
-	return text.substring(0, 200);
+	// Include element count and positions of direct children for structural changes
+	const childSignatures: string[] = [];
+	for (const child of Array.from(bubble.children).slice(0, 10)) {
+		const r = (child as HTMLElement).getBoundingClientRect();
+		childSignatures.push(`${Math.round(r.width)}x${Math.round(r.height)}@${Math.round(r.left)},${Math.round(r.top)}`);
+	}
+	return `${text.substring(0, 500)}|${childSignatures.join(';')}`;
 }
 
 /**
  * Start observing the DOM for bubble appearance/changes.
  * Sends BUBBLE_CHANGED to the service worker when detected.
+ *
+ * Multi-layered detection:
+ * 1. MutationObserver on document + LL Player shadow root
+ * 2. Shadow root element count tracking (structural changes)
+ * 3. Polling fallback every 200ms (catches React virtual DOM updates)
  */
 function startBubbleObserver(): void {
 	stopBubbleObserver();
 
 	lastBubbleContentHash = '';
+	let lastShadowElementCount = 0;
+	let bubbleDisappearedCount = 0; // Require 2 consecutive misses before declaring disappeared
 
 	const checkBubble = () => {
+		// Track shadow DOM element count as an additional change signal
+		const wxtHost = document.querySelector('lemon-learning-player');
+		if (wxtHost?.shadowRoot) {
+			const currentCount = wxtHost.shadowRoot.querySelectorAll('*').length;
+			if (lastShadowElementCount > 0 && Math.abs(currentCount - lastShadowElementCount) > 3) {
+				// Significant structural change — force a recheck even if hash matches
+				lastBubbleContentHash = ''; // Reset to force detection
+			}
+			lastShadowElementCount = currentCount;
+		}
+
 		const bubble = findLLBubble();
 		if (!bubble) {
 			if (lastBubbleContentHash !== '') {
-				// Bubble disappeared — guide may have ended
-				lastBubbleContentHash = '';
-				chrome.runtime.sendMessage({
-					type: 'BUBBLE_CHANGED',
-					bubblePresent: false,
-					contentHash: ''
-				}).catch(() => {});
+				bubbleDisappearedCount++;
+				// Require 2 consecutive misses to avoid false positives during transitions
+				if (bubbleDisappearedCount >= 2) {
+					lastBubbleContentHash = '';
+					bubbleDisappearedCount = 0;
+					chrome.runtime.sendMessage({
+						type: 'BUBBLE_CHANGED',
+						bubblePresent: false,
+						contentHash: ''
+					}).catch(() => {});
+				}
 			}
 			return;
 		}
 
+		bubbleDisappearedCount = 0;
 		const hash = computeBubbleHash(bubble);
 		if (hash && hash !== lastBubbleContentHash) {
 			lastBubbleContentHash = hash;
@@ -848,25 +938,53 @@ function startBubbleObserver(): void {
 	checkBubble();
 
 	// Observe DOM mutations to detect bubble changes
-	bubbleObserver = new MutationObserver(() => {
-		// Debounce: wait 300ms of no mutations before checking
+	const observerCallback = () => {
+		// Debounce: wait 150ms of no mutations before checking (was 300ms)
 		if (bubbleDebounceTimer) clearTimeout(bubbleDebounceTimer);
-		bubbleDebounceTimer = setTimeout(checkBubble, 300);
-	});
+		bubbleDebounceTimer = setTimeout(checkBubble, 150);
+	};
 
-	bubbleObserver.observe(document.documentElement, {
+	bubbleObserver = new MutationObserver(observerCallback);
+
+	const observerOptions: MutationObserverInit = {
 		childList: true,
 		subtree: true,
 		characterData: true,
 		attributes: true,
-		attributeFilter: ['style', 'class']
-	});
+		attributeFilter: ['style', 'class', 'hidden', 'aria-hidden']
+	};
+
+	// Observe the main document
+	bubbleObserver.observe(document.documentElement, observerOptions);
+
+	// Observe inside the LL Player's WXT Shadow DOM
+	if (wxtHost?.shadowRoot) {
+		console.log('[LL Bubble] Observing WXT Shadow DOM of <lemon-learning-player>');
+		bubbleObserver.observe(wxtHost.shadowRoot, observerOptions);
+	}
+
+	// Legacy fallback
+	const legacyHost = document.getElementById('lemonlearning-player-embed');
+	if (legacyHost?.shadowRoot) {
+		console.log('[LL Bubble] Observing Shadow DOM of #lemonlearning-player-embed');
+		bubbleObserver.observe(legacyHost.shadowRoot, observerOptions);
+	}
+
+	// Fallback: poll every 200ms for bubble changes (was 500ms)
+	// Critical for catching React virtual DOM updates that don't trigger mutations
+	bubblePollingTimer = setInterval(checkBubble, 200);
+
+	console.log('[LL Bubble] Observer started (DOM + Shadow DOM + 200ms polling)');
 }
 
 function stopBubbleObserver(): void {
 	if (bubbleObserver) {
 		bubbleObserver.disconnect();
 		bubbleObserver = null;
+	}
+	if (bubblePollingTimer) {
+		clearInterval(bubblePollingTimer);
+		bubblePollingTimer = null;
 	}
 	if (bubbleDebounceTimer) {
 		clearTimeout(bubbleDebounceTimer);
@@ -886,7 +1004,7 @@ function hideLLBubble(): boolean {
 	bubble.style.display = 'none';
 
 	// Also hide the shadow host if it exists
-	const shadowHost = document.getElementById('lemon-learning-player');
+	const shadowHost = document.querySelector('lemon-learning-player');
 	if (shadowHost && shadowHost !== bubble) {
 		shadowHost.setAttribute('data-ll-saved-display', shadowHost.style.display);
 		shadowHost.style.display = 'none';
@@ -904,7 +1022,7 @@ function showLLBubble(): void {
 		savedBubbleDisplay = null;
 	}
 
-	const shadowHost = document.getElementById('lemon-learning-player');
+	const shadowHost = document.querySelector('lemon-learning-player');
 	if (shadowHost) {
 		const saved = shadowHost.getAttribute('data-ll-saved-display');
 		if (saved !== null) {
@@ -935,27 +1053,39 @@ function clickLLNextButton(): { clicked: boolean; hasNext: boolean; error?: stri
 		}
 	}
 
-	// Strategy 2: Find last clickable element in the footer area (LL Player pattern)
+	// Strategy 2: aria-label
 	if (!nextButton) {
-		const footerCandidates = bubble.querySelectorAll('div[class*="footer"] button, div[class*="footer"] [role="button"], div[class*="footer"] div[class*="action"]');
-		if (footerCandidates.length > 0) {
-			nextButton = footerCandidates[footerCandidates.length - 1] as HTMLElement;
+		const ariaLabels = ['suivant', 'next', 'continuer', 'continue', 'forward'];
+		for (const label of ariaLabels) {
+			const found = bubble.querySelector(`[aria-label*="${label}" i]`) as HTMLElement | null;
+			if (found) { nextButton = found; break; }
 		}
 	}
 
-	// Strategy 3: Look for arrow/chevron icons (SVG with right-pointing arrow)
+	// Strategy 3: SVG in clickable parent (last = rightmost = next)
 	if (!nextButton) {
 		const svgs = bubble.querySelectorAll('svg');
 		for (const svg of Array.from(svgs)) {
-			const parent = svg.parentElement;
-			if (parent && (parent.tagName === 'BUTTON' || parent.getAttribute('role') === 'button' || parent.style.cursor === 'pointer')) {
-				// Check if SVG looks like a forward/next arrow
-				const pathD = svg.querySelector('path')?.getAttribute('d') || '';
-				if (pathD.includes('l') || pathD.includes('L')) {
-					// Could be an arrow — take the last one found (usually "next" is rightmost)
-					nextButton = parent;
-				}
+			const parent = svg.closest('button, [role="button"]') || svg.parentElement;
+			if (!parent) continue;
+			const s = window.getComputedStyle(parent);
+			if (s.cursor === 'pointer' || parent.tagName === 'BUTTON' || parent.getAttribute('role') === 'button') {
+				nextButton = parent as HTMLElement;
 			}
+		}
+	}
+
+	// Strategy 4: Rightmost clickable element in bubble
+	if (!nextButton) {
+		const allClickable = bubble.querySelectorAll('button, [role="button"]');
+		if (allClickable.length > 0) {
+			let rightmost: HTMLElement | null = null;
+			let maxRight = -Infinity;
+			for (const el of Array.from(allClickable)) {
+				const r = el.getBoundingClientRect();
+				if (r.right > maxRight) { maxRight = r.right; rightmost = el as HTMLElement; }
+			}
+			nextButton = rightmost;
 		}
 	}
 
@@ -963,8 +1093,23 @@ function clickLLNextButton(): { clicked: boolean; hasNext: boolean; error?: stri
 		return { clicked: false, hasNext: false, error: 'Next button not found' };
 	}
 
-	// Click the button
-	nextButton.click();
+	// Simulate REAL click with full pointer+mouse event sequence
+	const rect = nextButton.getBoundingClientRect();
+	const x = Math.round(rect.left + rect.width / 2);
+	const y = Math.round(rect.top + rect.height / 2);
+	const opts: MouseEventInit = {
+		bubbles: true, cancelable: true, composed: true,
+		view: window, clientX: x, clientY: y,
+		screenX: x + window.screenX, screenY: y + window.screenY,
+		button: 0, buttons: 1,
+	};
+	nextButton.dispatchEvent(new PointerEvent('pointerdown', { ...opts, pointerId: 1, pointerType: 'mouse' }));
+	nextButton.dispatchEvent(new MouseEvent('mousedown', opts));
+	nextButton.focus?.();
+	nextButton.dispatchEvent(new PointerEvent('pointerup', { ...opts, pointerId: 1, pointerType: 'mouse', buttons: 0 }));
+	nextButton.dispatchEvent(new MouseEvent('mouseup', { ...opts, buttons: 0 }));
+	nextButton.dispatchEvent(new MouseEvent('click', { ...opts, buttons: 0 }));
+
 	return { clicked: true, hasNext: true };
 }
 

@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "configKey": {
+      "type": "string",
+      "description": "The Lemon Learning configuration key"
+    },
+    "domain": {
+      "type": "string",
+      "description": "The domain of the Lemon Learning platform"
+    },
+    "stats_url": {
+      "type": "string",
+      "description": "The base URL for the stats endpoint"
+    },
+    "analytics_url": {
+      "type": "string",
+      "description": "The base URL for the analytics endpoint"
+    }
+  }
+}
